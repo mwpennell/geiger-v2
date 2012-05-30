@@ -5,7 +5,7 @@ Version: 0.666.05202012
 Date: 2012-05-20
 Author: Luke Harmon <lukeh@uidaho.edu>, Jason Weir, Chad Brock, Rich Glor, Wendell Challenger, Gene Hunt
 Maintainer: Luke Harmon <lukeh@uidaho.edu>
-Depends: ape (>= 1.9-4), MASS, mvtnorm, msm, ouch
+Depends: ape (>= 1.9-4), MASS, mvtnorm, msm, diversitree (>=0.9-4)
 Description: Running macroevolutionary simulation, and estimating parameters related to diversification from comparative phylogenetic data.
 License: GPL (>=2)
 URL: http://www.webpages.uidaho.edu/~lukeh/index.html
