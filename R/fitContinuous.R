@@ -1,494 +1,353 @@
-`fitContinuous` <-
-function(phy, data, data.names=NULL, model=c("BM", "OU", "lambda", "kappa", "delta", "EB", "white", "trend"), bounds=NULL,  meserr=NULL)
-{
-	
-	# sort is T because sub-functions assume data are in
-	# this particular order
-	
-	model<-match.arg(model)
-	
-	td<-treedata(phy, data, data.names, sort=T)
+## MAIN FUNCTION for OPTIMIZATION
+# to replace geiger:::fitContinuous
 
-	ntax=length(td$phy$tip.label)
 
-	if(is.null(meserr)) {
-		me=td$data
-		me[]=0
-		meserr=me	
-	} else if(length(meserr)==1) {
-		me=td$data
-		me[]=meserr
-		meserr=me
-	} else if(is.vector(meserr)) {
-		if(!is.null(names(meserr))) {
-			o<-match(rownames(td$data), names(meserr))
-			if(length(o)!=ntax) stop("meserr is missing some taxa from the tree")
-			meserr<-as.matrix(meserr[o,])
+
+fitContinuous=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"), bounds=list(), control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200)){
+
+	require(auteur)
+	
+	# SE: can be vector or single value (numeric, NULL, or NA); vector can include NA
+	# opt: a list with elements 'method', 'niter', 'FAIL'; 'method' may include several optimization methods
+	# bounds: a list with elements specifying constraint(s): e.g., bounds=list(alpha=c(0,1))
+	# control: a list with elements specifying method to compute likelihood
+	
+	
+	# CONTROL OBJECT for optimization
+	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(any(is.na(SE)), 100, 50), FAIL=1e200)
+	if("method"%in%names(control)) control$method=match.arg(control$method, c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"), several.ok=TRUE)
+	ct[names(control)]=control
+	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
+	
+	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
+	
+	# CONTROL OBJECT for likelihood
+	con=list(method="pruning",backend="C")
+	con[names(control)]=control
+	lik=bm.lik(phy,dat,SE,model)
+	argn=unlist(argnames(lik))
+	
+
+	## CONSTRUCT BOUNDS ##
+	mn=c(-500, -500, -3, -100, -500, -500, -500, -500)
+	mx=c(100, 5, 3, 100, 0, 0, log(2.999999), 100)
+	bnds=as.data.frame(cbind(mn, mx))
+	bnds$typ=c("exp", "exp", "nat", "nat", "exp", "exp", "exp", "exp")
+	rownames(bnds)=c("sigsq", "alpha", "a", "slope", "lambda", "kappa", "delta", "SE")
+	bnds$model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "SE")
+	
+	# User bounds
+	if(length(bounds)>0){
+		mm=match(names(bounds), rownames(bnds))
+		if(all(!is.na(mm))){
+			for(i in 1:length(mm)){
+				ww=mm[i]
+				tmp=sort(bounds[[i]])
+				if(bnds$typ[ww]=="exp") {
+					if(any(tmp==0)) tmp[tmp==0]=exp(-500)
+					bnd=log(tmp) 
+				} else {
+					bnd=tmp
+				}
+				bnds[ww,c("mn","mx")]=bnd
+			}
 		} else {
-			if(length(meserr)!=ntax) stop("No taxon names in meserr, and the number of taxa does not match the tree")
-			me<-td$data
-			me[]=meserr
-			meserr=me
+			stop(paste("'bounds' not expected:\n\t", paste(names(bounds)[is.na(mm)], sep="", collapse="\n\t"), sep=""))
+		}
+	}
+		
+	par=argn[1]
+
+	
+	## likelihood function for optimizer 
+	xx=function(p){
+		if(par=="sigsq") {
+			if("SE"%in%argn){
+				tmp=-lik(exp(p[1]), exp(p[2]))
+			} else {
+				tmp=-lik(exp(p[1]))
+			}
+		} else {
+			if(bnds[par,"typ"]=="nat"){
+				if("SE"%in%argn){
+					tmp=-lik(p[1], exp(p[2]), exp(p[3]))
+				} else {
+					tmp=-lik(p[1], exp(p[2]))
+				}
+			} else {
+				if("SE"%in%argn){
+					tmp=-lik(exp(p[1]), exp(p[2]), exp(p[3]))
+				} else {
+					tmp=-lik(exp(p[1]), exp(p[2]))
+				}
+			}
+		}
+		if(is.infinite(tmp)) {
+			tmp=ct$FAIL
+		}
+		tmp
+	}
+	
+	# boxconstrain from diversitree
+	boxconstrain=function (f, lower, upper, fail.value = FAIL) 
+	{
+		function(x) {
+			if (any(x < lower | x > upper)) fail.value else f(x)
+		}
+	}
+	f=boxconstrain(xx, min, max, fail.value=ct$FAIL)
+
+	
+	## STARTING POINT -- problematic models ##
+	if(par%in%c("alpha","lambda","delta","kappa")){
+		bmstart=try(.bm.smartstart(phy,dat),silent=TRUE)
+		if(inherits(bmstart, "try-error")) bmstart=0.01 
+		if(par=="alpha") oustart=.ou.smartstart(bmstart,var(dat))
+	}
+
+	## OPTIMIZATION ##
+	mm=matrix(NA, nrow=ct$niter, ncol=length(argn)+2)
+	mt=character(ct$niter)
+	
+	# 'method' optimization
+	for(i in 1:ct$niter){
+		bnds$st=sapply(1:nrow(bnds), function(x) runif(1, bnds$mn[x], bnds$mx[x]))
+		start=bnds[argn,"st"]
+		
+		## OU ##
+		if(par=="alpha"){
+			if(i==1 | runif(1)<0.25) start[match(c("sigsq", par), argn)]=c(bmstart, oustart)
+			if(runif(1) < 0.5) start[match(c("sigsq", par), argn)]=c(0,oustart)
+		}
+		
+		## PAGEL MODELS ##
+		if(par%in%c("lambda","delta","kappa")){
+			ww=match(par, rownames(bnds))
+			if(runif(1)<0.5){
+				if(runif(1)<0.5){
+					start[match(c("sigsq", par), argn)]=c(bmstart, bnds$mx[ww])
+				} else {
+					start[match(c("sigsq", par), argn)]=c(bmstart, bnds$mn[ww])
+				}
+			}
+		}
+		
+		## WHITE NOISE ##
+		if(par=="white"){
+			if(runif(1)<0.5){
+				start[match("sigsq", argn)]=var(dat)
+			}
+		}
+				
+		names(start)=argn
+		min=bnds[argn,"mn"]
+		max=bnds[argn,"mx"]
+		typs=bnds[argn, "typ"]
+
+		
+		# resolve method	
+		if(length(argn)==1) {
+			method="Brent" 
+		} else {
+			if(runif(1)<ifelse(model=="OU", 0.25, 0.5)){
+				method="subplex"
+			} else {
+				method=sample(ct$method,1)
+			}
+		}
+		
+		if(method=="subplex"){
+			op=try(suppressWarnings(subplex(par=start, fn=f, control=list(reltol = .Machine$double.eps^0.25, parscale = rep(0.1, length(argn))))),silent=TRUE)
+		} else {
+			op=try(suppressWarnings(optim(par=start, fn=f, upper=max, lower=min, method=method)),silent=TRUE)
+		}
+		op$method=method
+
+		if(!inherits(op,"try-error")){
+			op$value=-op$value
+			names(op)[names(op)=="value"]="lnL"
+			names(op$par)=argn
+			
+			op$par=sapply(1:length(typs), function(x) if(typs[x]=="exp") return(exp(op$par[x])) else return(op$par[x]))
+			mm[i, ]=c(op$par, op$lnL, op$convergence)
+			mt[i]=op$method
+		}
+	}
+	res=mm
+	colnames(res)=c(argn,"lnL","convergence")
+	rownames(res)=mt
+
+	## HANDLE OPTIMIZER OUTPUT ##
+	colnames(mm)=c(argn, "lnL", "convergence")
+	conv=mm[,"convergence"]==0
+	mm=mm[,-which(colnames(mm)=="convergence")]
+	valid=apply(mm, 1, function(x) !any(is.na(x)))
+	if(sum(valid & conv)>=1){
+		mm=matrix(mm[valid,], nrow=sum(valid), dimnames=dimnames(mm))
+		mt=mt[valid]
+		mm=mm[z<-min(which(mm[,"lnL"]==max(mm[,"lnL"]))),]
+	} else {
+		z=NA
+		mm=c(rep(NA, length(argn)), -Inf)
+		names(mm)=c(argn,"lnL")
+	}
+	mm=as.list(mm)
+	mm$method=ifelse(is.na(z), NA, mt[z])
+	mm$k=length(argn)+1
+	
+	# check estimates against bounds #
+	range=as.data.frame(cbind(min, max))
+	range$typ=typs
+	range$mn=ifelse(range$typ=="exp", exp(range$min), range$min)
+	range$mx=ifelse(range$typ=="exp", exp(range$max), range$max)
+	par=mm[argn]
+	rownames(range)=argn
+	chk=sapply(1:length(par), function(idx){
+		   p=par[[idx]]
+		   if(!is.na(p)){
+				return((p<=range$mn[idx] | p>=range$mx[idx]))
+		   } else {
+				return(FALSE)
+		   }
+	})
+	if(any(chk)){
+			warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
+	}
+	
+	mm=.aic(mm, n=length(dat))
+	return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm))
+}
+
+
+## WORKHORSE -- built from diversitree:::make.bm by tricking models into multivariate normal 
+# likelihood function creation
+bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white")) 
+{
+	## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species) 
+
+	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
+
+	# resolve binary tree
+	if(!is.binary.tree(phy)){
+		phy=multi2di(phy)
+	}
+	phy=reorder(phy)
+	
+	# resolve estimation of SE
+	if(is.null(SE)) SE=NA
+	if(any(is.na(SE))) {
+		if(model=="white"){
+			warning("'SE' and 'sigsq' are confounded in the 'white' model:\n\t'SE' will be ignored")
+			adjSE=FALSE 
+			SE[is.na(SE)]=0
+		} else {
+			adjSE=TRUE 
+			SE[is.na(SE)]=0
 		}
 	} else {
-		if(!is.null(rownames(meserr))) {
-			o<-match(rownames(td$data), rownames(meserr))
-			meserr=meserr[o,]
-		} else {
-			if(sum(dim(meserr)!=dim(td$data))!=0)
-				stop("No taxon names in meserr, and the number of taxa does not match the tree")
-			print("No names in meserr; assuming that taxa are in the same order as tree")	
-		}
+		adjSE=FALSE
 	}
-
-	#--------------------------------
-    #---    PREPARE DATA LIST     ---
-    #--------------------------------
-	ds			<- list()
-   		ds$tree 		<- td$phy          # TIP data 
-    #--------------------------------
-    #--- SET MODEL SPECIFICATIONS ---
-    #--------------------------------
-    cat("Fitting ", model, "model:\n")
-    #-----------------------------
-    #---  SET PARAMETER BOUNDS ---
-    #-----------------------------
-    #---- DEFAULT BOUNDS
-    bounds.default			 <- matrix(c(0.00000001, 20, 0.0000001,1, 0.000001, 1, 0.00001, 2.999999, 0.0000001, 50, -3, 0, 0.0000000001, 100, -100, 100), nrow=8, ncol=2, byrow=TRUE)
-    rownames(bounds.default) <- c("beta", "lambda", "kappa", "delta", "alpha", "a", "nv", "mu");
-    colnames(bounds.default) <- c("min", "max")
-
- 	#---- USER DEFINED PARAMETER BOUNDS
- 	if (is.null(bounds)) {
- 		bounds <- bounds.default       # USE DEFAULTS
- 	}else{
- 		if (class(bounds)!="list"){
- 			stop("Please specify user defined parameter bounds as a list()")
- 		}else{
- 			specified   <- !c(is.null(bounds$beta), is.null(bounds$lambda), 
- 							  is.null(bounds$kappa), is.null(bounds$delta),  is.null(bounds$alpha), is.null(bounds$a),
- 							  is.null(bounds$nv), is.null(bounds$mu)
- 							  )
- 			bounds.user <- matrix(c(bounds$beta, bounds$lambda, bounds$kappa, bounds$delta, bounds$alpha, bounds$a, bounds$nv, bounds$mu), 
- 								  nrow=sum(specified), ncol=2, byrow=TRUE
- 								  )
- 			rownames(bounds.user) <- c("beta", "lambda", "kappa", "delta", "alpha", "a",  "nv", "mu")[specified]
-   	 		colnames(bounds.user) <- c("min", "max")
-  
-   	 		#----  SET FINAL SEARCH BOUNDS
- 			bounds <- bounds.default
- 			bounds[specified,] <- bounds.user     # Final Bounds
-   		} # END if list
-   	}  # END user bound if loop
-   	#--------------------------------
-    #---   APPEND MODEL SETTINGS  ---
-    #--------------------------------
-  	ds$bounds <- data.frame(t(bounds))
-	print(ds$bounds)
-  	ds$model  <- model
-  	#--------------------------------
-    #---        FIT MODEL         ---
-    #--------------------------------
-    result<-list()
-    for(i in 1:ncol(td$data)) {
-    	ds$data=td$data[,i]
-    	ds$meserr=meserr[,i]
-  		result[[i]]<-fitContinuousModel(ds, print=print)
-  		if(!is.null(colnames(td$data))) names(result)[i]<-colnames(td$data)[i] else names(result)[i]<-paste("Trait", i, sep="")
-
-  	}
-  	result
-}
-
-
-`fitContinuousModel` <-
-function(ds, print=TRUE)
-{
-	bounds 	<- ds$bounds
-	model 	<- ds$model
-	n 		<- length(ds$data)
-	print(bounds)
-	#----- MINIMIZE NEGATIVE LOG LIKELIHOOD
 	
-	beta.start<-var(ds$data)/max(branching.times(ds$tree))
+	# cache object for likelihood computation
+	cache = diversitree:::make.cache.bm(phy, dat, SE, control=list(method="pruning", backend="C"))
+	cache$ordering=attributes(cache$info$phy)$order
+		
+	FUN=switch(model, 
+			   BM=.null.cache(cache),
+			   OU=.ou.cache(cache),
+			   EB=.eb.cache(cache),
+			   trend=.trend.cache(cache),
+			   lambda=.lambda.cache(cache),
+			   kappa=.kappa.cache(cache),
+			   delta=.delta.cache(cache),
+			   white=.white.cache(cache)
+			   )
 
-
-	out         <- NULL
+	cache$adjustSE=ifelse(cache$y$y[2,]==0, TRUE, FALSE)
 	
-	y			<- ds$data				# TIP data
-	tree		<- ds$tree			# Tree
-	meserr		<- ds$meserr
-	n			<- length(y)
+    z = length(cache$len)
+    rr = numeric(z)
+    rootidx = as.integer(cache$root)
+	nn = length(cache$len)
 	
-
-	#----------------------------------
-	#-----       DEFAULT FIT      -----
-	#----------------------------------
-	if (model=="BM") {
-		k<-2
+    datc = list(intorder = as.integer(cache$order[-length(cache$order)]), 
+				tiporder = as.integer(cache$y$target), 
+				root = rootidx, 
+				y = as.numeric(cache$y$y[1, ]), 
+				n = as.integer(z), 
+				descRight = as.integer(cache$children[ ,1]), 
+				descLeft = as.integer(cache$children[, 2]))
 	
-		vcv<-vcv.phylo(tree)
-
-		start=log(beta.start)
-		lower=log(bounds[1,"beta"])
-		upper=log(bounds[2,"beta"])
+    ll.bm.direct = function(q, sigsq, se, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
 		
-		foo<-function(x) {
-			vv<-exp(x)*vcv
-			diag(vv)<-diag(vv)+meserr^2
-			mu<-phylogMean(vv, y)
-			mu<-rep(mu, n)
-			-dmvnorm(y, mu, vv, log=T)
-		}
-		
-		o<-optim(foo, p=start, lower=lower, upper=upper, method="L")
-		
-		sigSquared<-exp(o$par)
-		vv<-exp(sigSquared)*vcv
-		diag(vv)<-diag(vv)+meserr^2
-		zBar<-phylogMean(vv, y)[1,1]
-		results<-list(lnl=-o$value, zBar=zBar, sigSquared= sigSquared)
-
-	#----------------------------------
-	#-----       LAMBDA ONLY      -----
-	#----------------------------------
-	} else if (model=="lambda"){
-		k<-3
-		
-		start=log(c(beta.start, 0.5))
-		lower=log(bounds[1,c("beta","lambda")])
-		upper=log(bounds[2,c("beta","lambda")])
-		
-		
-		foo<-function(x) {
-
-
-			vcv<-vcv.phylo(tree)
-
-			index			<-	matrix(TRUE, n,n)
-			diag(index)		<- FALSE
-			vcv[index] 	<- vcv[index]*exp(x[2])
-			
-			vv<-exp(x[1])*vcv
-
-			
-			diag(vv)<-diag(vv)+meserr^2
-			mu<-phylogMean(vv, y)
-			mu<-rep(mu, n)
-			
-			-dmvnorm(y, mu, vv, log=T)
-		}
-		o<-optim(foo, p=start, lower=lower, upper=upper, method="L")
-			
-		results<-list(lnl=-o$value, beta= exp(o$par[1]), lambda=exp(o$par[2]))
-
-	#----------------------------------
-	#-----        KAPPA ONLY      -----
-	#----------------------------------
-	} else if (model=="kappa"){
-		k<-3
-		start=log(c(beta.start, 0.5))
-		lower=log(bounds[1,c("beta","kappa")])
-		upper=log(bounds[2,c("beta","kappa")])
-				
-		
-		foo<-function(x) {
-
-			t<-kappaTree(tree, kappa=exp(x[2]))
-			vcv<-vcv.phylo(t)
-
-			
-			vv<-exp(x[1])*vcv
-
-			
-			diag(vv)<-diag(vv)+meserr^2
-			mu<-phylogMean(vv, y)
-			mu<-rep(mu, n)
-			
-			-dmvnorm(y, mu, vv, log=T)
-		}
-		o<-optim(foo, p=start, lower=lower, upper=upper, method="L")
-		
-		results<-list(lnl=-o$value, beta= exp(o$par[1]), kappa=exp(o$par[2]))
-
-
-	#----------------------------------
-	#-----        DELTA ONLY      -----
-	#----------------------------------	
-	} else if (model=="delta"){
-		
-		k<-3
-		start=log(c(beta.start, 0.5))
-		lower=log(bounds[1,c("beta","delta")])
-		upper=log(bounds[2,c("beta","delta")])
-		
-		foo<-function(x) {
-
-			t<-deltaTree(tree, delta=exp(x[2]))
-			vcv<-vcv.phylo(t)
-
-			
-			vv<-exp(x[1])*vcv
-
-			
-			diag(vv)<-diag(vv)+meserr^2
-			mu<-phylogMean(vv, y)
-			mu<-rep(mu, n)
-			
-			-dmvnorm(y, mu, vv, log=T)
-		}
-		o<-optim(foo, p=start, lower=lower, upper=upper, method="L")
-		
-		results<-list(lnl=-o$value, beta= exp(o$par[1]), delta=exp(o$par[2]))	
-	#----------------------------------
-	#-----        WHITE NOISE     -----
-	#----------------------------------	
-	} else if (model=="white"){
-		
-		k<-2
-		start=c(mean(y), log(var(y)))
-		lower=c(-Inf, log(bounds[1,"nv"]))
-		upper=c(Inf, log(bounds[2, "nv"]))
-		
-		lnl.noise<- function (p, x, se)
-		# p is the vector of parameters, tree is not needed
-		# x and se are trait means and std errors
-		{
-  			## prep parameters
-  			root<- p[1]	# trait value of root of tree (also optimum)
-  			vs<- exp(p[2])		# white noise variance 
-  			n<- length(x)
-  			VV<- diag(vs, nrow=n)	
-  			diag(VV)<- diag(VV) + se^2	# add sampling variance to diagonal
-    
-  			## logl
-  			M<- rep(root,n)
-  			-dmvnorm(x, M, VV, log=TRUE)
-		}
-		
-		o<- optim(start, fn=lnl.noise, x=y, se=meserr, lower=lower, upper=upper, method="L")
-		
-		results<-list(lnl=-o$value, mean= o$par[1], nv=exp(o$par[2]))	
-	#----------------------------------
-	#-----        TREND           -----
-	#----------------------------------	
-	} else if (model=="trend"){
-		
-		k<-3
-		vcv<- vcv.phylo(tree)
-  		ww<- lm(y ~ diag(vcv))
-  		p0<- c(phylogMean(vcv, y), var(y)/max(branching.times(tree)), coef(ww)[2])
-		if(is.na(p0[3])) {
-			p0[3]<-0
-			if(is.ultrametric(tree))
-				cat("WARNING: Cannot estimate a trend with an ultrametric tree; lnl will be the same as the BM model")
-		}
-		lower=c(-Inf, log(bounds[1,"beta"]), bounds[1,"mu"])
-		upper=c(Inf, log(bounds[2,"beta"]), bounds[2,"mu"])
-		
-
-		lnl.BMtrend<- function(p, vcv, x, se)
-		# p is vector of parameters, tr is tree
-		# x and se are vectors of trait means and standard errors
-		{
-  			## prep parameters
-  			root<- p[1]	# trait value of root of tree
-  			vs<- exp(p[2])		# BM variance 
-  			ms<- p[3]		# BM trend
-  			VV<- vs*vcv	
-  			diag(VV)<- diag(VV) + se^2	# add sampling variance to diagonal
-  			n<- length(x)
-  
- 			## logl
-  			M<- root+ ms*diag(vcv)
-  			- dmvnorm(x, M, VV, log=TRUE)
-  		}
-
-		o<- optim(p0, fn=lnl.BMtrend, vcv=vcv, x=y, se=meserr, lower=lower, upper=upper, method="L")
-		names(o$par)<-NULL
-		results<-list(lnl=-o$value, mean= o$par[1], beta=exp(o$par[2]), mu=o$par[3])		
-	#----------------------------------
-	#-----        ALPHA ONLY      -----
-	#----------------------------------			
-	} else if (model=="OU"){
-	## modified 12 dec 07 to call ouMatrix(x) instead of vcv.phylo(ouTree(x))
-
-		k<-3
-		
-		start=log(c(beta.start, 0.5))
-		lower=log(bounds[1,c("beta","alpha")])
-		upper=log(bounds[2,c("beta","alpha")])
-	
-		print(lower)
-		print(upper)
-	
-		vcvOrig<-vcv.phylo(tree)
-		foo<-function(x) {
-			vcv <- ouMatrix(vcvOrig, exp(x[2]))
-			
-			## t<-ouTree(tree, exp(x[2]))
-			##vcv<-vcv.phylo(t)
-			
-			vv<-exp(x[1])*vcv
-			diag(vv)<-diag(vv)+meserr^2
-			
-			mu<-phylogMean(vv, y)
-			mu<-rep(mu, n)
-			
-			-dmvnorm(y, mu, vv, log=T)
-		}
-		
-		outTries<-list()
-		
-		# First one: try near BM solution
-		start=c(log(beta.start), -50)
-		outTries[[1]]<-optim(foo, p=start, lower=lower, upper=upper, method="L")
-		
-		# Second one: try one with very strong constraints
-		tv<-var(y)
-		start=log(c(tv*2000, 1000))
-		outTries[[2]]<-optim(foo, p=start, lower=lower, upper=upper, method="L")
-	
-
-	
-		# Try ten random ones
-		for(i in 1:10){
-			while(1) {
-
-				ll=c(runif(2, min=-20, max=-1))
-				uu=ll+runif(2, min=0, max=10)
-				start=c(runif(1, min=ll[1], max=uu[1]), runif(1, min=ll[2], max=uu[2]))
-				te<-try(outTries[[i+2]]<-optim(foo, p=start, lower=lower, upper=upper, method="L"), silent=T)
-				if(class(te)!="try-error") break
+		if(is.null(argnames(FUN))) new=FUN() else new=FUN(q)
+		datc$len=as.numeric(new$len)
+		.xxSE=function(cache){
+			vv=cache$y$y[2,]
+			ff=function(x){
+				if(adjSE){
+					vv[which(cache$adjustSE)]=x^2 
+					return(vv)
+				} else {
+					return(vv)
 				}
-				
-		}
-		
-		# Try range of alphas
-		atry<- -5:4
-		stry<- log(tv*2*exp(atry))
-		for(i in 1:10){
-			while(1) {
-
-				ll=c(-20, -20)
-				uu=c(10, 10)
-				start=c(stry[i], atry[i])
-				te<-try(outTries[[i+12]]<-optim(foo, p=start, lower=lower, upper=upper, method="L"), silent=T)
-				if(class(te)!="try-error") break
-				}
-				
-		}
-		
-		
-		
-		ntries<-22
-		ltry<-numeric(ntries)
-		lsol<-matrix(nrow= ntries, ncol=2)
-		for(j in 1:ntries) {
-				ltry[j]<-outTries[[j]]$value
-				lsol[j,]<-exp(outTries[[j]]$par)
 			}
-
-		ltd<-ltry-min(ltry)
-		b<-min(which(ltry==min(ltry)))
-
-		gc<-which(ltd<0.01)
-		us<-lsol[gc,1]
-		usc<-sum((us-min(us))>0.01)			
-		out<-outTries[[b[1]]]	
-		if(usc>1) {out$message="Warning: likelihood surface is flat."}
-			
-		if(out$convergence!=0) {out$message="Warning: may not have converged to a proper solution."}
-
-		sigSquared<-exp(out$par[1])
-		alpha=exp(out$par[2])
-		
-		vcv <- ouMatrix(vcvOrig, alpha)
-		vv<-sigSquared*vcv
-		diag(vv)<-diag(vv)+meserr^2
-			
-		zBar <-phylogMean(vv, y)[1,1]
-
-		
-		
-		results<-list(lnl=-out$value, zBar=zBar, sigSquared= sigSquared, alpha=alpha, convergence=out$convergence, message=out$message, k=k)
-
-
-	#----------------------------------
-	#-----        EB ONLY      -----
-	#----------------------------------	
-	} else if(model=="EB"){
-
-		k<-3
-		start=c(log(beta.start), 0.01)
-		lower=c(log(bounds[1,"beta"]),bounds[1,"a"])
-		upper=c(log(bounds[2,"beta"]),bounds[2,"a"])
-		
-		foo<-function(x) {
-			t<-exponentialchangeTree(tree, a=x[2])
-
-			vcv<-vcv.phylo(t)
-			
-			vv<-exp(x[1])*vcv
-			diag(vv)<-diag(vv)+meserr^2
-			
-			mu<-phylogMean(vv, y)
-			mu<-rep(mu, n)
-			
-			-dmvnorm(y, mu, vv, log=T)
+			return(ff)
 		}
-		o<-optim(foo, p=start, lower=lower, upper=upper, method="L")
+		modSE=.xxSE(cache)
 		
-		sigSquared<-exp(o$par[1])
-		r<-o$par[2]
+		datc$var=as.numeric(modSE(se))
 		
-		t<-exponentialchangeTree(tree, a=r)
-
-		vcv<-vcv.phylo(t)
-			
-		vv<-sigSquared*vcv
-		diag(vv)<-diag(vv)+meserr^2
-			
-		zBar<-phylogMean(vv, y)[1,1]
-
-				
+        out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, nn)), package = "auteur")
+        vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
+        loglik <- auteur:::.root.bm.direct(vals, out$lq[-rootidx], root, root.x)
+        if (intermediates) {
+            attr(loglik, "intermediates") <- intermediates
+            attr(loglik, "vals") <- vals
+        }
+		if(is.na(loglik)) loglik=-Inf
+        return(loglik)
+    }
+    class(ll.bm.direct) <- c("bm", "dtlik", "function")
+	
+	
+	## EXPORT LIKELIHOOD FUNCTION
+	if(is.null(argnames(FUN))){
 		
-		results<-list(lnl=-o$value, zBar=zBar, sigSquared= sigSquared, r=r)
-
+		if(adjSE){
+			lik <- function(sigsq, SE) {
+				ll = ll.bm.direct(q=NULL, sigsq = sigsq, se=SE, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+				return(ll)
+			}
+			attr(lik, "argnames") = list(sigsq="sigsq", SE="SE")
+		} else {
+			lik <- function(sigsq) {
+				ll = ll.bm.direct(q=NULL, sigsq = sigsq, se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+				return(ll)
+			}
+			attr(lik, "argnames") = list(sigsq="sigsq")
+		}
+		
+	} else {
+		if(adjSE){
+			lik <- function(q, sigsq, SE) {
+				ll = ll.bm.direct(q, sigsq = sigsq, se=SE, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+				return(ll)
+			}
+			attr(lik, "argnames") = list(par=argnames(FUN), sigsq="sigsq", SE="SE")			
+		} else {
+			lik <- function(q, sigsq) {
+				ll = ll.bm.direct(q, sigsq = sigsq, se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+				return(ll)
+			}
+			attr(lik, "argnames") = list(par=argnames(FUN), sigsq="sigsq")			
+		}
 	}
-	results$aic<-2*k-2*results$lnl
-	results$aicc<-2*k*(n-1)/(n-k-2)-2*results$lnl
-	results$k<-k
-	return(results) 
+	
+    attr(lik, "cache") <- cache
+    class(lik) = c("bm", "function")
+    lik
 }
 
 
 
-phylogMean<-function(phyvcv, data) 
-{
-	o<-rep(1, length(data))
-	ci<-solve(phyvcv)
-	
-	m1<-solve(t(o) %*% ci %*% o)
-	m2<-t(o) %*% ci %*% data
-	
-	return(m1 %*% m2)
-	
-	}
-	
-ouMatrix <- function(vcvMatrix, alpha) 
-{
-## follows Hansen 1997; does not assume ultrametricity (AH 12 dec 07)
-## vectorized by LJH
-  vcvDiag<-diag(vcvMatrix)
-  diagi<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag))
-  diagj<-matrix(vcvDiag, nrow=length(vcvDiag), ncol=length(vcvDiag), byrow=T)
-
-  Tij = diagi + diagj - (2 * vcvMatrix)
-    
-  vcvRescaled = (1 / (2 * alpha)) * exp(-alpha * Tij) * (1 - exp(-2 * alpha * vcvMatrix))
-  return(vcvRescaled) 
-}
-
-
-    	

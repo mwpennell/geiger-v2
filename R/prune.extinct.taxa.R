@@ -17,7 +17,7 @@ prune.extinct.taxa<-function (phy, tol = .Machine$double.eps^0.5)
         xx[i] <- xx[base] + phy$edge.length[ind]
     }
     depth <- max(xx)
-    offset <- depth - xx[as.integer(names(xx)) > 0]
+    offset <- depth - xx[names(xx) > 0]
     drops <- phy$tip.label[offset > tol]
     if (length(drops) >= (nb.tip - 1)) 
         return(NULL)

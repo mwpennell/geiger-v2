@@ -144,13 +144,13 @@ function(phy, data, model=c("ER", "SYM", "ARD"), treeTransform=c("none", "lambda
 			if(out$convergence==0) {out$message="R thinks that this is the right answer."}
 
 			if(treeTransform=="none" & model=="ER") {
-				res[[i]]<-list(lnl=-out$value, q=-getQ(exp(out$par), nlevels(factor(td$data)), model)[1,1], message=out$message)
+				res[[i]]<-list(lnl=-out$value, q=-getQ(exp(out$par), nRateCats, model)[1,1], message=out$message)
 			} else if(treeTransform=="none" & model!="ER") {
-				res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par), nlevels(factor(td$data)), model), message=out$message)
+				res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par), nRateCats, model), message=out$message)
 
 			} else if(treeTransform=="twoRate") {
-				res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par[-(1:2)]), nlevels(factor(td$data)), model), breakpoint=out$par[1], endRate=exp(out$par[2]), message=out$message)
-			} else 	res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par[-1]), nlevels(factor(td$data)), model), treeParam=exp(out$par[1]), message=out$message)
+				res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par[-(1:2)]), nRateCats, model), breakpoint=out$par[1], endRate=exp(out$par[2]), message=out$message)
+			} else 	res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par[-1]), nRateCats, model), treeParam=exp(out$par[1]), message=out$message)
 
 				
 			if(!is.null(colnames(td$data))) names(res)[i]<-colnames(td$data)[i] else names(res)[i]<-paste("Trait", i, sep="")

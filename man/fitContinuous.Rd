@@ -5,186 +5,181 @@
 	Fits macroevolutionary models to phylogenetic trees
 }
 \usage{
-fitContinuous(phy, data, data.names=NULL, model=c("BM", "OU", "lambda", "kappa", "delta", "EB", "white", "trend"), bounds=NULL,  meserr=NULL)
+fitContinuous(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"), bounds=list(), control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200))
 }
 \arguments{
-  \item{phy}{ object of type phylo }
-  \item{data}{ Data vector (one trait) or matrix (multiple traits) }
-  \item{data.names}{ Tip names for data vector that match tree species; ignored if data includes names}
-  \item{model}{ Model to fit to comparative data; see below for options }
-  \item{bounds}{ Range to constrain estimates; see below for details }
-  \item{meserr}{ Measurement error for each trait for each tip species; can also be a single vector (if so, error is assumed to be equal for all traits) 
-  					or a single number (error assumed equal for all traits across all species).}
+  \item{phy}{ a phylogenetic tree of class phylo}
+  \item{dat}{ data vector for a single trait, with names matching tips in \code{phy}}
+  \item{SE}{ a single value or named vector of standard errors associated with values in \code{dat}; if any elements in the vector \code{SE} are NA, SE will be estimated }
+  \item{model}{ model to fit to comparative data (see \bold{Details}) }
+  \item{bounds}{ range to constrain parameter estimates (see \bold{Details})  }
+  \item{control}{ settings used for optimization of the model likelihood}
 }
 \details{
-This function fits various likelihood models for continuous character evolution.  The function 
-returns parameter estimates, (approximate) confidence intervals based on the Hessian of the likelihood
-function, and the likelihood.  Likelihood is maximized using the r function nlm.  This is a purely univariate function at this point - if multivariate data 
-are sent to the function, it will carry out calculations for each character independently.  Possible models are
-as follows:
- model="BM": Brownian motion 
- model="OU": Ornstein-Uhlenbeck; fits a model of random walk with a central tendency proportional to the parameter alpha.
- 							Also called the "hansen" model in ouch, although the way the parameters are fit 
- 							is slightly different here.
- model="lambda": Pagel's lambda; multiplies all internal branches of the tree by lambda, leaving tip branches as their original length.
- model="kappa": Pagel's kappa; raises all branch lengths to the power kappa.  As kappa approaches zero, the model becomes speciational.
- model="delta": Pagel's delta; raises all node depths to the power delta. If delta is less than one, evolution in concentrated early in the tree; delta > 1 concentrates evolution towards the tips.
+This function fits various likelihood models for continuous character evolution. The function 
+returns parameter estimates and the likelihood for univariate datasets. 
 
- model="EB": Early burst, also called the ACDC model. Set by the eb parameter; fits a model where the rate of evolution increases or decreases exponentially through time, under the model
- 					r(t) = ro * exp(r * t), where ro is the inital rate and r is the rate change parameter.  The actual parameter estimated, endRate, 
- 					is the proportion of the initial rate represented by the end rate.
-Bounds for the parameters in the likelihood search are sometimes necessary. This is because in some cases, the likelihood surface can have long flat ridges that 
-cause the search to get "stuck."  This is particularly common, in my experience, for the OU model.  You can set bounds with the "bounds" parameter.  For example, 
-to set bounds on alpha, use bounds=list(alpha=c(0.0001, 10)).  One can also set multiple bounds at once: bounds=list(alpha=c(0.0001, 10), beta=c(1, 100)). 
-This function might work better than in previous versions of Geiger. 
-model="white": White noise model; all species drawn from the same normal distribution (no phylogenetic signal).
-model="trend": Brownian motion with a trend.
+The model likelihood is maximized using methods available 
+in \code{\link[stats]{optim}} as well as \code{\link[subplex]{subplex}}. Optimization methods to be used 
+within \code{optim} can be specified through the \code{control} object. A number of random starting points 
+are used in optimization and are given through the \code{niter} element within the \code{control} object 
+(e.g., \code{control$niter}). The \code{FAIL} value within the \code{control} object should be a large value 
+that will be considerably far from -lnL of the maximum model likelihood. In most cases, the default setting 
+for \code{control$FAIL} will be appropriate.   
 
+Bounds for the relevant parameters of the fitted model may be given through the \code{bounds} argument. Bounds 
+may be necessary (particularly under the \code{OU} model) if the likelihood surface is characterized by a long, 
+flat ridge which can be exceedingly difficult for optimization methods. Several bounds can be given at a time 
+(e.g., \code{bounds=list(SE=c(0,0.1),alpha=c(0,1))} would constrain measurement error as well as the 'constraint' 
+parameter of the Ornstein-Uhlenbeck model).  Default bounds under the different models are given below. 
+
+Possible models are as follows:
+\itemize{
+	\item{\bold{BM} }{is the Brownian motion model (Felsenstein 1973), which assumes the correlation structure among trait values is proportional to the extent of shared ancestry 
+		for pairs of species. Default bounds on the rate parameter are \code{sigsq=c(min=0,max=Inf)}. The same bounds are applied to all other 
+		models, which also estimate \code{sigsq}}
+	\item{\bold{OU} }{is the Ornstein-Uhlenbeck model (Butler and King 2004), which fits a random walk with a central tendency with an attraction strength proportional to the parameter \code{alpha}.
+		The \code{OU} model is called the \code{hansen} model in \pkg{ouch}, although the way the parameters are fit is slightly different here. Default 
+		bounds are \code{alpha = c(min = 0, max = 150)}}
+	\item{\bold{EB} }{is the Early-burst model (Harmon et al. 2010) and also called the \code{ACDC} model (accelerating-decelerating; Blomberg et al. 2003). Set by the \code{a} rate parameter, \code{EB} 
+		fits a model where the rate of evolution increases or decreases exponentially through time, under the model r[t] = r[0] * exp(a * t), where \code{r[0]} is the 
+		initial rate, \code{a} is the rate change parameter, and \code{t} is time. Default bounds are \code{a = c(min = -3, max = 3)}}
+	\item{\bold{trend} }{is a diffusion model with linear trend in character value through time (toward larger or smaller trait values). Support for the \code{trend} model will be lacking for 
+		ultrametric trees. Default bounds are \code{slope = c(min = -100, max = 100)}}
+	\item{\bold{lambda} }{is one of the Pagel (1999) models that fits the extent to which the phylogeny predicts covariance among trait values for species. The model effectively transforms the tree: 
+		values of \code{lambda} near 0 cause the phylogeny to become more star-like, and a \code{lambda} value of 1 recovers the \code{BM} model. Default 
+		bounds are \code{lambda = c(min = 0, max = 1)}}
+	\item{\bold{kappa} }{is a punctuational (speciational) model of trait evolution (Pagel 1999), where character divergence is related to the number of speciation events between two species. Note that if 
+		there are speciation events in the given phylogeny (due to extinction or incomplete sampling), interpretation under the \code{kappa} model may be difficult. Considered as a tree 
+		transformation, the model raises all branch lengths to an estimated power (\code{kappa}). Default bounds are \code{kappa = c(min = 0, max = 1)}  }
+	\item{\bold{delta} }{is a time-dependent model of trait evolution (Pagel 1999).  The \code{delta} model is similar to \code{ACDC} insofar as the \code{delta} model fits the relative contributions of 
+		early versus late evolution in the tree to the covariance of species trait values.  Where \code{delta} is greater than 1, recent evolution has been relatively fast; if \code{delta} is less 
+		than 1, recent evolution has been comparatively slow. Intrepreted as a tree transformation, the model raises all node depths to an estimated power (\code{delta}). Default bounds are \code{delta = c(min = 0, max = 3)}}   
+	\item{\bold{white} }{is a \code{white}-noise (non-phylogenetic) model, which assumes data come from a single normal distribution with no covariance structure among species. The variance parameter \code{sigsq} 
+		takes the same bounds defined under the \code{BM} model}
+}
 }
 \value{
-	Returns a matrix of parameter estimates, along with approximate standard errors and 95% confidence intervals. 
-	Also returns the log-likelihood of the model (lnl).
+	\code{fitContinuous} returns a list with the following four elements: 
+	
+	\itemize{
+		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model. 
+			For instance, if estimating a Brownian-motion model with unknown standard error, the arguments to the \code{lik} function would be \code{sigsq} and \code{SE} 
+			(see \bold{Examples}). The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing 
+			the likelihood under different parameter values 
+		}
+		\item{\bold{bnd} }{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
+		}
+		\item{\bold{res} }{is a matrix of results from optimization. Rownames of the \code{res} matrix are the optimization methods 
+			(see \code{\link[stats]{optim}} and \code{\link[subplex]{subplex}}). The columns in the \code{res} matrix are the estimated 
+			parameter values, the estimated model likelihood, and an indication of optimization convergence. Values of convergence not 
+			equal to zero are not to be trusted  
+		}
+		\item{\bold{opt} }{is a list of the primary results: estimates of the parameters, the maximum-likelihood estimate (\code{lnL}) of the model, the 
+			optimization method used to compute the MLE, the number of model parameters (\code{k}, including one parameter for the root state), the AIC (\code{aic}) 
+			and sample-size corrected AIC (\code{aicc}). The number of observations for AIC computation is taken to be the number of trait values observed
+		}
+	
+	
+	}
 }
-\references{Lambda, kappa, and delta: Pagel, M. 1999. Inferring the historical patterns of biological evolution. Nature 401:877-884.
-			OU: Butler, M.A. and A.A. King, 2004. Phylogenetic comparative analysis: a modeling approach for adaptive evolution. American Naturalist 164:683-695.
-			Early burst: Paper in revision., L. J. Harmon et al. }
+\references{Blomberg SP, T Garland, and AR Ives. 2003. Testing for phylogenetic signal in comparative data: behavioral traits are more labile. Evolution 57:717–745.
+
+			Butler MA and AA King, 2004. Phylogenetic comparative analysis: a modeling approach for adaptive evolution. American Naturalist 164:683-695.
+			
+			Felsenstein J. 1973. Maximum likelihood estimation of evolutionary trees from continuous characters. American Journal of Human Genetics 25:471-492.
+			
+			Harmon LJ et al. 2010. Early bursts of body size and shape evolution are rare in comparative data. Evolution 64:2385-2396. 
+			
+			Pagel M. 1999. Inferring the historical patterns of biological evolution. Nature 401:877-884
+}
+
 \author{Luke J. Harmon and Wendell Challenger}
 \examples{
 
 data(geospiza)
 attach(geospiza)
 
-
-#---- PRINT RESULTS
-fitContinuous(geospiza.tree, geospiza.data)
+tmp=treedata(geospiza.tree, geospiza.data)
+phy=tmp$phy
+dat=as.matrix(tmp$data)
  
 #---- STORE RESULTS 
-brownFit <-  fitContinuous(geospiza.tree, geospiza.data)
+brownFit <-  fitContinuous(phy, dat[,"wingL"])
 
-aic.brown<-numeric(5)
-for(i in 1:5) aic.brown[i]<-brownFit[[i]]$aic
+#---- PRINT RESULTS
+print(names(brownFit))
+print(brownFit)
 
-#----------------------------------------------------
-#   PHYLOGENETIC SIGNAL: FIT LAMBDA
-#----------------------------------------------------
 
-lambdaFit<-fitContinuous(geospiza.tree, geospiza.data, model="lambda")
+#---- COMPUTE LIKELIHOOD
+flik=brownFit$lik
+print(argnames(flik))
+print(flik(sigsq=0.01, SE=0))
+print(flik(sigsq=0.02, SE=0.1))
 
-# Compare likelihoods:
-
-d.lambda<-numeric(5)
-for(i in 1:5) d.lambda[i]=2*(lambdaFit[[i]]$lnl-brownFit[[i]]$lnl)
-
-# Calculate p values assuming chi-squared distribution with 1 d.f.
-p.lambda=pchisq(d.lambda, 1, lower.tail=FALSE)
-
-aic.lambda<-numeric(5)
-for(i in 1:5) aic.lambda[i]<-lambdaFit[[i]]$aic
-
-#----------------------------------------------------
-#    TIME PROPORTIONALITY: DELTA 
-#---------------------------------------------------
-
-deltaFit<-fitContinuous(geospiza.tree, geospiza.data, model="delta")
-
-# Compare likelihoods:
-
-d.delta<-numeric(5)
-for(i in 1:5) d.delta[i]=2*(deltaFit[[i]]$lnl-brownFit[[i]]$lnl)
-
-# Calculate p values assuming chi-squared distribution with 1 d.f.
-p.delta=pchisq(d.delta, 1, lower.tail=FALSE)
-
-aic.delta<-numeric(5)
-for(i in 1:5) aic.delta[i]<-deltaFit[[i]]$aic
-
-#----------------------------------------------------
-#   SPECIATIONAL MODEL: KAPPA 
-#---------------------------------------------------
-
-kappaFit<-fitContinuous(geospiza.tree, geospiza.data, model="kappa")
-
-# Compare likelihoods:
-
-d.kappa<-numeric(5)
-for(i in 1:5) d.kappa[i]=2*(kappaFit[[i]]$lnl-brownFit[[i]]$lnl)
-
-# Calculate p values assuming chi-squared distribution with 1 d.f.
-p.kappa=pchisq(d.kappa, 1, lower.tail=FALSE)
-
-aic.kappa<-numeric(5)
-for(i in 1:5) aic.kappa[i]<-kappaFit[[i]]$aic
-
-#----------------------------------------------------
-#   OU MODEL: ALPHA 
-#---------------------------------------------------
-
-ouFit<-fitContinuous(geospiza.tree, geospiza.data, model="OU")
-
-# Compare likelihoods:
-
-d.ou<-numeric(5)
-for(i in 1:5) d.ou[i]=2*(ouFit[[i]]$lnl-brownFit[[i]]$lnl)
-
-# Calculate p values assuming chi-squared distribution with 1 d.f.
-p.ou=pchisq(d.ou, 1, lower.tail=FALSE)
-
-aic.ou<-numeric(5)
-for(i in 1:5) aic.ou[i]<-ouFit[[i]]$aic
-
-#----------------------------------------------------
-#   EARLY BURST MODEL: R 
-#---------------------------------------------------
-
-ebFit<-fitContinuous(geospiza.tree, geospiza.data, model="EB")
-
-# Compare likelihoods:
-
-d.eb<-numeric(5)
-for(i in 1:5) d.eb[i]=2*(ebFit[[i]]$lnl-brownFit[[i]]$lnl)
-
-# Calculate p values assuming chi-squared distribution with 1 d.f.
-p.eb=pchisq(d.eb, 1, lower.tail=FALSE)
-
-aic.eb<-numeric(5)
-for(i in 1:5) aic.eb[i]<-ebFit[[i]]$aic
-
-#----------------------------------------------------
-#   COMPARE ALL MODELS
-#---------------------------------------------------
-
-# One way: use likelihood ratio test to compare all models to Brownian model
-
-d.all<-cbind(d.lambda, d.delta, d.kappa, d.ou, d.eb)
-p.all<-cbind(p.lambda, p.delta, p.kappa, p.ou, p.eb)
-
-cat("Trait\tlambda\tdelta\tkappa\tou\teb\n")
-
-for(i in 1:5) {
-	cat("Tr", i, "\t");
-	for(j in 1:5) {
-		cat(round(d.all[i,j],2));
-		if(p.all[i,j]<0.05) cat("*");
-		if(p.all[i,j]<0.01) cat("*");
-		if(p.all[i,j]<0.001) cat("*");
-		cat("\t");
+#---- CREATE a FUNCTION to COMPARE MODELS
+fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
+	
+	trait=match.arg(trait, c("wingL","tarsusL","culmenL","beakD","gonysW"))
+	
+	# define set of models to compare
+	models=c("BM", "OU", "EB", "lambda", "kappa", "delta", "white")
+	summaries=c("diffusion", "Ornstein-Uhlenbeck", "early burst", "phylogenetic signal", "speciational", "time proportionality", "white noise")
+	
+	## ESTIMATING measurement error ##
+	aic.se=numeric(length(models))
+	lnl.se=numeric(length(models))
+	
+	for(m in 1:length(models)){
+		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], " with SE ***\n\n", sep="")
+		tmp=fitContinuous(phy,dat[,trait],model=models[m],bounds=list(SE=c(0,0.5)))
+		print(tmp$opt)
+		aic.se[m]=tmp$opt$aicc
+		lnl.se[m]=tmp$opt$lnL
 	}
-	cat("\n");
+	
+	
+	## ASSUMING no measurement error ##
+	aic=numeric(length(models))
+	lnl=numeric(length(models))
+	
+	for(m in 1:length(models)){
+		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], " ***\n\n", sep="")
+		tmp=fitContinuous(phy,dat[,trait],SE=0,model=models[m])
+		print(tmp$opt)
+		aic[m]=tmp$opt$aicc
+		lnl[m]=tmp$opt$lnL
+	}
+	
+	## COMPARE AIC ##
+	names(aic.se)<-names(lnl.se)<-names(aic)<-names(lnl)<-models
+	delta_aic<-function(x) x-x[which(x==min(x))]
+		
+	# no measurement error
+	daic=delta_aic(aic)
+	cat("\n\n\n\t\t\t\t*** MODEL COMPARISON: ",trait,"*** \n",sep="")
+	cat("\tdelta-AIC values for models assuming no measurement error\n\t\t\t\t zero indicates the best model\n\n")
+	print(daic, digits=2)
+	
+		# measurement error
+	daic.se=delta_aic(aic.se)
+	cat("\n\n\n\n\t\t\t\t*** MODEL COMPARISON: ",trait," ***\n",sep="")
+	cat("\t\t   delta-AIC values for models estimating SE\n\t\t\t\t zero indicates the best model\n\n")
+	print(daic.se, digits=2)
+	cat("\n\n\n")
+
+	res_aicc=rbind(aic, aic.se, daic, daic.se)
+	rownames(res_aicc)=c("AICc","AICc_SE","dAICc", "dAICc_SE")
+	
+	
+	
+	return(res_aicc)
 }
 
-# Another way: use AIC
-
-aic.all<-cbind(aic.brown, aic.lambda, aic.delta, aic.kappa, aic.ou, aic.eb)
-foo<-function(x) x-x[which(x==min(x))]
-daic<-t(apply(aic.all, 1, foo))
-
-rownames(daic)<-colnames(geospiza.data)
-colnames(daic)<-c("Brownian", "Lambda", "Delta", "Kappa", "OU", "EB")
-
-cat("Table of delta-aic values; zero - best model\n")
-print(daic, digits=2)
-
-
+#---- COMPARE MODELS for WING LENGTH
+res=fitGeospiza("wingL")
+print(res)
 
 }
 

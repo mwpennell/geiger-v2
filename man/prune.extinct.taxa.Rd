@@ -18,12 +18,10 @@ prune.random.taxa(phy, n)
   being pruned just due to rounding error}
   \item{n}{Number of random taxa to prune from the tree}
 }
-\details{
-}
+
 \value{
 	New tree without these taxa
 }
-\references{ }
 \author{ Luke J. Harmon }
 \examples{
 

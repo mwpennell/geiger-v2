@@ -13,8 +13,6 @@ tip.disparity(phy, data, data.names=NULL, disp = "avg.sq")
   \item{data.names}{Tip names for data vector that match tree species; ignored if data includes names}
   \item{disp}{ Disparity metric }
 }
-\details{
-}
 \value{
  	Vector of disparities
 }

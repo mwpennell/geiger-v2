@@ -5,7 +5,7 @@ phy.anova<-function(phy, data, group, data.names=NULL, nsim=1000)
 	s<-mean(pic(td$data, td$phy)^2)
 	a<-anova(lm(td$data~group))
 	f.data<-a[1,4]
-	sims<-sim.char(td$phy, as.matrix(s), nsim=nsim)
+	sims<-sim.char(td$phy, as.matrix(s), nsims=nsim)
 	
 	foo<-function(xx) anova(lm(xx~group))[1,4]
 	f.null<-apply(sims, 3, foo)
@@ -29,7 +29,7 @@ phy.manova<-function(phy, data, group, data.names=NULL, nsim=1000, test="Wilks")
 	
 	w.data<-m[[4]][1,2]
 	
-	sims<-sim.char(td$phy, s, nsim=nsim)
+	sims<-sim.char(td$phy, s, nsims=nsim)
 	
 	foo<-function(xx) summary.manova(manova(as.matrix(xx)~group), test=test)[[4]][1,2]
 	

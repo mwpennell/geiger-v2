@@ -26,7 +26,6 @@ getAncStates(x, phy)
 	Vector of ancestral character states at each node.
 	Nodes are numbered following the order in phy edge
 	}
-\references{ }
 \author{Luke J. Harmon}
 \seealso{
 ace

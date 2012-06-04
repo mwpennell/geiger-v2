@@ -86,9 +86,17 @@ dtt.full<-function(phy, data, data.names=NULL, disp="avg.sq", nsims=1000, mdi.ra
 	td<-treedata(phy, data, data.names)
 
 	dtt.data<-dtt(td$phy, td$data, disp=disp)
-	ltt<-sort(branching.times(td$phy), decr=TRUE)	ltt<-c(0, (max(ltt)-ltt)/max(ltt));	plot(ltt, dtt.data, type="l", lwd=2, xlab="Relative time", ylab="Disparity");
+	ltt<-sort(branching.times(td$phy), decreasing=TRUE)
+	ltt<-c(0, (max(ltt)-ltt)/max(ltt));
+	plot(ltt, dtt.data, type="l", lwd=2, xlab="Relative time", ylab="Disparity");
 	
-	s<-ic.sigma(td$phy, td$data)	sims<-sim.char(td$phy, s, nsims)	dtt.sims<-dtt(td$phy, sims)	mean.sims<-apply(dtt.sims, 1, mean)	lines(ltt, mean.sims, lty=2)
+	s<-ic.sigma(td$phy, td$data)
+	sims<-sim.char(td$phy, s, nsims)
+
+	dtt.sims<-dtt(td$phy, sims)
+	mean.sims<-apply(dtt.sims, 1, mean)
+
+	lines(ltt, mean.sims, lty=2)
 
 	MDI<-area.between.curves(ltt, apply(dtt.sims, 1, median), dtt.data, mdi.range)
 

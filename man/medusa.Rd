@@ -57,9 +57,6 @@ Carnevale, and L. J. Harmon. 2009. Nine exceptional radiations plus high turnove
 species diversity in jawed vertebrates. Proceedings of the National Academy of Sciences 
 106:13410-13414.}
 \author{Luke J. Harmon and Daniel Rabosky}
-\seealso{
-
-}
 \examples{
 
 data(geospiza)

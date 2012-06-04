@@ -33,8 +33,6 @@ stem.limits(r, epsilon, time, prob=c(0.025, 0.975))
   \item{r}{ Net diversification rate, birth - death }
   \item{prob}{ Range of probabilities for calculating confidence region }
 }
-\details{
-}
 \value{
 	rate.estimate: Returns net diversification rate r = lambda - mu, and confidence interval
 	crown.p and stem.p: Returns the probability of obtaining a clade as big as, 

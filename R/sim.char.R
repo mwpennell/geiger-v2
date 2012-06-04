@@ -44,7 +44,7 @@ function(phy, model.matrix, nsims=1, model="brownian", root.state=1)
 					r<-runif(1)
 					node.value[i]<-min(which(r<probs))
 	   			}
-	   			result[,j,k]<- node.value[match(seq_len(nspecies), as.integer(phy$edge[,2]))]
+	   			result[,j,k]<-node.value[as.numeric(phy$edge[,2])>0]
 	   		}	
 		}
 		rownames(result)<-phy$tip.label;

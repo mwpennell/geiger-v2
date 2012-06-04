@@ -5,7 +5,7 @@ function (b, d, time.stop=0, taxa.stop=0, seed=0, print.seed=FALSE, return.all.e
 # Modified by Luke J. Harmon
 # The following simulates Yule trees to a given time T
 
-if(seed==0) seed=set.seed.clock(print=print.seed) else set.seed(seed)
+if(seed==0) seed=set.seed.clock(print=print.seed);
 
 if(time.stop==0 & taxa.stop==0)
 	stop("Must have stopping criterion\n");

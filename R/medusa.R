@@ -1,6 +1,3 @@
-# problem right now if you do internal nodes, you don't need to look for these internal splits
-
-
 #takes a phylogeny where the tips of the phylogeny may represent stems of unresolved clades and a list of taxonomic richness for each tip clade and fits a series of birth-death models to each branch in the tree.   Default is estimate d/b. Model limit is the upper limit on splits to be tried. If AIC scores are still improving substanitally after 20 splits, this limit should be increased. 
 runMedusa <- function (phy, richness, estimateExtinction=T, modelLimit=20, cutAtStem=T, startR=0.05, startE=0.5, ...) 
 {
@@ -16,25 +13,11 @@ runMedusa <- function (phy, richness, estimateExtinction=T, modelLimit=20, cutAt
 	if(modelLimit>(2*N-2)) modelLimit=2*N-2
    
   #holds parameter estimates  
-    allRes<-matrix(nrow=modelLimit+1, ncol=6)
+    allRes<-matrix(nrow=modelLimit+1, ncol=5)
     
     root <- max(phy$edge) - phy$Nnode + 1
-    node.list<-match(richness[,1], phy$tip.label)
-    
-    
-    xx<-max(node.list)
-    intNodes<-(xx+1):max(phy$edge)
-    cs<-numeric(length=length(node.list)+length(intNodes))
-
-	for(i in 1:length(node.list))
-		cs[i]<-sum(node.list[1:i]==node.list[i])
-
-
-    node.list<-c(node.list, intNodes)
-    cs[node.list %in% intNodes]<-1
-
-    
-    
+    node.list <- 1:max(phy$edge)
+    node.list <- node.list[node.list != root]
 
 #First pass estimates a birth-death model that integrates phylogenetic and taxonomic likelihoods described in Rabosky et al., 2007      	  
 	  
@@ -42,7 +25,7 @@ runMedusa <- function (phy, richness, estimateExtinction=T, modelLimit=20, cutAt
 
 	baseModel<-fitDiversification(phy, richness, estimateExtinction=T)
 
-      allRes[1,]<-c(0, 0, baseModel$LH, baseModel$np, baseModel$aic, baseModel$aicc)
+      allRes[1,]<-c(0, baseModel$LH, baseModel$np, baseModel$aic, baseModel$aicc)
       
 	#Now split the tree on all branches. 
 
@@ -52,7 +35,7 @@ runMedusa <- function (phy, richness, estimateExtinction=T, modelLimit=20, cutAt
         z1 <- NULL
         z2 <- NULL
         z <- NULL
-        z <- splitEdgeMatrixGeiger(phy, node.list[i], richness, cutAtStem, n2=cs[i])
+        z <- splitEdgeMatrixGeiger(phy, node.list[i], richness, cutAtStem)
         z1 <- z[z[, 7] == 1, ]
         z2 <- z[z[, 7] == 2, ]
         
@@ -93,14 +76,13 @@ runMedusa <- function (phy, richness, estimateExtinction=T, modelLimit=20, cutAt
         res$LH2[i] <- r2$LH
         
         res$np[i]<-np
-        res$cs[i]<-cs[i]
-
+        
 
       }
 
       bestModel<-which(res$LH==max(res$LH))[1]
-      allRes[2,]<-c(res$node[bestModel], res$cs[bestModel], res$LH[bestModel], res$np[bestModel], res$aic[bestModel], res$aicc[bestModel])
-      z<-splitEdgeMatrixGeiger(phy, node.list[bestModel], richness, cutAtStem, n2=cs[bestModel])
+      allRes[2,]<-c(res$node[bestModel], res$LH[bestModel], res$np[bestModel], res$aic[bestModel], res$aicc[bestModel])
+      z<-splitEdgeMatrixGeiger(phy, node.list[bestModel], richness, cutAtStem)
       
     
     for(j in 2:modelLimit) {
@@ -108,7 +90,7 @@ runMedusa <- function (phy, richness, estimateExtinction=T, modelLimit=20, cutAt
       res <- list()
       for (i in 1:length(node.list)) {
  
-        zNew <- resplitEdgeMatrixGeiger(z, phy, node.list[i], cutAtStem, n2=cs[i])# resplit edge matrix adds a new split to an already-split tree
+        zNew <- resplitEdgeMatrixGeiger(z, phy, node.list[i], cutAtStem)# resplit edge matrix adds a new split to an already-split tree
         LH=0
         np=0
         for(k in 1:max(zNew[,7])){
@@ -134,14 +116,14 @@ runMedusa <- function (phy, richness, estimateExtinction=T, modelLimit=20, cutAt
         res$aicc[i]<-res$aic[i]+2*np*(np+1)/(k-np-1)
 
         res$np[i] <- np
-        res$cs[i]<-cs[i]
 
       }
 
       bestModel<-which(res$LH==max(res$LH))[1]
-      allRes[j+1,]<-c(res$node[bestModel], res$cs[bestModel], res$LH[bestModel], res$np[bestModel], res$aic[bestModel], res$aicc[bestModel])
+      allRes[j+1,]<-c(res$node[bestModel], res$LH[bestModel], res$np[bestModel], res$aic[bestModel], res$aicc[bestModel])
       
-      z <- resplitEdgeMatrixGeiger(z, phy, node.list[bestModel], cutAtStem, n2=cs[bestModel])
+      z <- resplitEdgeMatrixGeiger(z, phy, node.list[bestModel], cutAtStem)
+      cat(j, "\n")
       
     }
     
@@ -149,30 +131,21 @@ runMedusa <- function (phy, richness, estimateExtinction=T, modelLimit=20, cutAt
 }
 
 # Adds a new split to an already-split edge matrix
-resplitEdgeMatrixGeiger <- function (z, phy, node, cutAtStem=T, n2=1) 
+resplitEdgeMatrixGeiger <- function (z, phy, node, cutAtStem=T) 
 {
 	newTag<-max(z[,7])+1
     rootnode <- length(phy$tip.label) + 1
-
-	dec2<-numeric(length(z[,2]))
-	for(i in 1:max(z[,2])) {
-		ss<-z[,2]==i
-		nn<-sum(ss)
-		oo<-order(z[ss,4], decreasing=T)
-		dec2[ss]<-oo
-		}
-
 
     if (node >= rootnode) {
         node.desc <- node
         pos <- 1
         
         if(cutAtStem) {
-        	row1<-which(z[, 2] == node.desc[1] & dec2 >= n2)
-        	row2<-which(z[, 1] == node.desc[1] & dec2 >= n2)
+        	row1<-which(z[, 2] == node.desc[1])
+        	row2<-which(z[, 1] == node.desc[1])
  			row<-c(row1, row2)
  		} else {
- 			row<-which(z[, 2] == node.desc[1] & dec2 >= n2)
+ 			row<-which(z[, 2] == node.desc[1])
  			}       
         base<-min(z[row,7])
         ok<- z[row,7]==base 
@@ -194,10 +167,10 @@ resplitEdgeMatrixGeiger <- function (z, phy, node, cutAtStem=T, n2=1)
             }
             pos <- pos + 1
         }
-    } else if (node > 0) {
-        ok<-z[,2]==node & dec2>=n2
-        z[ok,7] <- newTag
     }
+    else if (node > 0) 
+        z[z[, 2] == node,7] <- newTag
+
     return(z)
 }
 
@@ -211,29 +184,21 @@ getBD<-function(r, eps) {
 	
 #This takes a phylogeny and a list of branches where rates shift and returns a list that describes the shift points and new rates.
 
-getFullSplitModel<-function(phy, estimateExtinction=T, breakList, richness, cutAtStem=T, csList){
+getFullSplitModel<-function(phy, estimateExtinction=T, breakList, richness, cutAtStem=T){
 
 	res<-list()
 	phy$node.label <- NULL
-	
-	root <- max(phy$edge) - phy$Nnode + 1
-    node.list<-match(richness[,1], phy$tip.label)
-    
-    
-    xx<-max(node.list)
-    intNodes<-(xx+1):max(phy$edge)
-
+    root <- max(phy$edge) - phy$Nnode + 1
+    node.list <- 1:max(phy$edge)
+    node.list <- node.list[node.list != root]
     x <- branching.times(phy)
 
 	# First break
 
-
-    z <- splitEdgeMatrixGeiger(phy, breakList[1], richness, cutAtStem=cutAtStem, n2=csList[1])
+    z <- splitEdgeMatrixGeiger(phy, breakList[1], richness, cutAtStem=cutAtStem)
 	if(length(breakList)>1)
 	  for(i in 2:length(breakList)) {
-	  	kk<-which(node.list==breakList[i])
-
-		z <- resplitEdgeMatrixGeiger(z, phy, breakList[i], cutAtStem=cutAtStem, n2=csList[i])
+		z <- resplitEdgeMatrixGeiger(z, phy, breakList[i], cutAtStem=cutAtStem)
 
 		}
 	
@@ -265,11 +230,6 @@ getFullSplitModel<-function(phy, estimateExtinction=T, breakList, richness, cutA
 
 fitDiversification <- function (phy, richness, estimateExtinction=T, ...) 
 {
-	
-	if(dim(richness)[2]==2) {
-		nr<-dim(richness)[1]
-		richness<-data.frame(richness[,1], rep(0, nr), richness[,2])
-	}
     z <- splitEdgeMatrixGeiger(phy, NA, richness, cutAtStem=T)
     r1 <- getDiversificationModel(z, estimateExtinction, ...)
     if(estimateExtinction) np<-2 else np<-1    
@@ -303,8 +263,7 @@ getDiversificationModel <- function (z, estimateExtinction=T,     startR=0.05, s
     lalphaF<-function(b, d, aa, tt) {
     	num<-log(d)+log(exp((b-d)*tt)-1)
     	den<-log(b*(exp((b-d)*tt))-d)     	
-    	# res<-aa*(num-den) # wrong according to dr
-		res<-(num-den) # correction by dr - has worked through the code
+    	res<-aa*(num-den)
     	res
     	}	
     
@@ -542,7 +501,7 @@ fitSplitModel <- function (phy, estimateExtinction=T,     startR=0.05, startE=0.
 
 
 
-splitEdgeMatrixGeiger <- function (phy, node, richness, cutAtStem=T, n2=1) 
+splitEdgeMatrixGeiger <- function (phy, node, richness, cutAtStem=T) 
 {
     bt <- branching.times(phy)
     rootnode <- length(phy$tip.label) + 1
@@ -591,35 +550,21 @@ splitEdgeMatrixGeiger <- function (phy, node, richness, cutAtStem=T, n2=1)
 			z[nn,][o[j],5]<-z[nn,][o[j-1],6]
 			}
 		}
-		
-	dec2<-numeric(length(z[,2]))
-	for(i in 1:max(z[,2])) {
-		ss<-z[,2]==i
-		nn<-sum(ss)
-		oo<-order(z[ss,4], decreasing=T)
-		dec2[ss]<-oo
-		}
-	
-		
 	if(is.na(node)) {
 		z[,7]<-1
 	} else {
-		setZ<-function(z, n, n2, atTipFlag=T) {
+		setZ<-function(z, n) {
 			if(n %in% z[,2]) {
-				if(atTipFlag) {
-       				ok<-z[,2]==n & dec2 >= n2
-       			} else {
-       				ok<-z[,2]==n
-       			}
+       			ok<-z[,2]==n
        			z[ok,7]<-2
 				ns<-node.sons(phy, n)
 				if(length(ns)!=0) for(k in 1:length(ns))
-					z=setZ(z, ns[k], n2, atTipFlag=F)
+					z=setZ(z, ns[k])
 			} else if(n %in% z[,1]) z[,7]<-2
 			z
 		}
 		
-		z<-setZ(z, node, n2)
+		z<-setZ(z, node)
         
     	z[is.na(z[,7]),7]<-1
     }            
@@ -637,24 +582,15 @@ splitEdgeMatrixGeiger <- function (phy, node, richness, cutAtStem=T, n2=1)
 
 
 summaryMedusa<-function(phy, richness, out, cutoff=4, plotTree=T, useCorrection=F, cutAtStem=T) {
-	
-	if(dim(richness)[2]==2) {
-		nr<-dim(richness)[1]
-		richness<-data.frame(richness[,1], rep(0, nr), richness[,2])
-	}
 	breaks<-numeric()
-	csList<-numeric()
 	i=2
-	ml<-dim(out)[1]-1
-	if(useCorrection) col=6 else col=5
+	if(useCorrection) col=5 else col=4
 	while(1) {
-		if(i>ml) break;
 		if((out[i-1,col]-out[i,col])<cutoff) break;
 		breaks[i-1]<-out[i,1]
-		csList[i-1]<-out[i,2]
 		i<-i+1
 		}
-	rr<-getFullSplitModel(phy, breakList=breaks, richness=richness, cutAtStem=cutAtStem, csList=csList)
+	rr<-getFullSplitModel(phy, breakList=breaks, richness=richness, cutAtStem=cutAtStem)
 	
 	if(plotTree) {
 		mm<-match(phy$edge[,2], rr$z[,2])

@@ -32,7 +32,6 @@ sim.char(phy, model.matrix, nsims = 1, model = "brownian", root.state = 1)
  	The first dimension is the number of taxa, the second the number of characters, and the third the 
  	number of simulated data sets.
 }
-\references{ }
 \author{ Luke J, Harmon }
 \examples{
 data(geospiza)
