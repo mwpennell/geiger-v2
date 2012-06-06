@@ -1,422 +1,447 @@
-`fitDiscrete` <-
-function(phy, data, model=c("ER", "SYM", "ARD"), treeTransform=c("none", "lambda", "kappa", "delta", "linearChange", "exponentialChange", "twoRate"), data.names=NULL, plotlnl=F, qLimits=c(0.0001, 1000), pLimits=c(0.00001, 10))
-{
-	
-	model<-match.arg(model)
+#require(auteur)
+#require(diversitree)
+#atr=as.integer(unlist(strsplit(toString(packageVersion("auteur")),".",fixed=TRUE))[3])
+#div=as.integer(unlist(strsplit(toString(packageVersion("diversitree")),".",fixed=TRUE))[3])
+#if(atr<507) {
+#	stop("Update 'auteur': contact jonathan.eastman@gmail.com")
+#}
+#if(div<4){
+# MUST BE DIVERSITREE 0.9-4 or greater due to bug fix in make.bm()
+#	stop("Update 'diversitree': download and install from 'https://github.com/richfitz/diversitree'")
+#}
 
-	
+#source("fitDiscrete.R")
+#source("fitContinuous.R")
 
+#source("sourcer.R")
+### EXAMPLES ###
+#require(auteur)
+
+gen=FALSE
+if(gen){
+	require(auteur)
+	phy=rescaleTree(ultrametricize.phylo(rtree(20), "max"),100)
+	dis=as.integer(rTraitDisc(phy, matrix(c(-.1,.1,.1,.1,-.1,.1,.1,.1,-.1), nrow=3), states=c(1,2,3)))
+	names(dis)=phy$tip.label
+	con=rTraitCont(phy)
+	m=matrix(sample(1:3,9, replace=TRUE), nrow=3) 
+	mkn=make.mkn(phy,dis,k=length(unique(dis)))
 	
-	treeTransform<-match.arg(treeTransform)
-	if(treeTransform=="twoRate" & plotlnl==T) {
-				cat("Plotting surfaces not supported for twoRate tree transformation\n")
-				plotlnl=F
+	cat("\n\n\n*** 'm', 'phy','dis',and, 'con' are in memory ***\n")
+	
+}
+
+## create 'standard' constraint likelihood function given a patterned matrix
+constrain.k=function(f, model=c("ER", "SYM", "ARD", "meristic"), ...){
+	e=environment(f)
+	k=e$k
+	
+	m=matrix(1:k^2,nrow=k,byrow=TRUE)
+	model=match.arg(model,c("ER", "SYM", "ARD", "meristic"))
+	mm=switch(model,
+			  ER=.er.matrix(m),
+			  SYM=.sym.matrix(m),
+			  ARD=.ard.matrix(m),
+			  meristic=.meristic.matrix(m, ...)
+			  )
+	attributes(mm)
+	ff=constrain.m(f,mm)
+	attr(ff,"constraint.m")=.reshape.constraint.m(mm)
+	ff
+}
+
+.reshape.constraint.m=function(m){
+	k=unique(dim(m))
+	if(length(k)>1) stop("'m' must be a square matrix")
+	diag(m)=NA
+	tt=table(m)
+	map=cbind(as.integer(names(tt)), seq_along(1:max(as.integer(length(tt)))))
+	z=match(m, map[,1])
+	m[]=map[z,2]
+	class(m)=c("constraint.m",class(m))
+	m
+}
+
+print.constraint.m=function(x, printlen=3, ...){
+	cat("matrix representation of unique and shared transitions \n")
+	tt=table(x)
+	if(any(tt==1)){
+		cat("\tunique transition classes:", paste(sort(as.integer(names(tt[tt==1]))), collapse=", "), "\n")
 	}
+	if(any(tt>1)){
+		cat("\tshared transition classes:", paste(sort(as.integer(names(tt[tt>1]))), collapse=", "),"\n")
+	}
+	cat("\n")
+	class(x)="matrix"
+	print(x)
+}
+
+
+
+
+## MAIN FUNCTION for OPTIMIZATION
+# to replace geiger:::fitContinuous
+
+fd=function(	phy, 
+						dat, 
+						model=c("ER","SYM","ARD","meristic"),
+						transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
+						bounds=list(), 
+						control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, root=ROOT.OBS, hessian=FALSE),
+						...
+					  )
+{
+#	
+#		transform="none"
+#		model="SYM"
+#		bounds=list()
+#		control=list(hessian=TRUE) 
+
+	constrain=model
+	model=match.arg(transform, c("none", "EB", "lambda", "kappa", "delta", "white"))
+
+	# CONTROL OBJECT
+	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(model=="none", 50, 100), FAIL=1e200, root=ROOT.OBS)
+	if("method"%in%names(control)) control$method=match.arg(control$method, c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"), several.ok=TRUE)
+	ct[names(control)]=control
+	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
 	
-	if(!is.ultrametric(phy)) {
-		cat("Warning: some tree transformations in GEIGER might not be sensible for nonultrametric trees.\n")
-		}
-
-	if(hasZeroLengthTips(phy)) {
-		cat("Warning: your tree has some zero-length tip branches. If the desendent species have different trait values, the likelihood will be zero and this approach will not work.\n")
-		}
-
-	td<-treedata(phy, data, data.names, sort=T)
-
+	lik=mkn.lik(phy, dat, constrain=constrain, transform=model, control=list(method="exp", root=ct$root), ...)
+	if(model=="white") return(list(opt=lik))
+	argn=unlist(argnames(lik))
 	
-
-	res<-list()
-
-	for(i in 1:ncol(td$data))
-	{
-
+	## CONSTRUCT BOUNDS ##
+	mn=c(-5, -500, -500, -5, -500)
+	mx=c(0.1, 0, 0, log(2.999999), log(1000))
+	bnds=as.data.frame(cbind(mn, mx))
+	bnds$typ=c("nat", "exp", "exp", "exp", "exp")
+	rownames(bnds)=c("a", "lambda", "kappa", "delta", "trns")
+	bnds$model=c("EB", "lambda", "kappa", "delta", "trns")
 	
-		if(treeTransform=="none") {
-			f<-function(x) {
-				likelihoodDiscrete(td$phy, td$data[,i], exp(x), model)
-			}
-			nep=0; pLow=-10; pHigh=log(1); pStart=NULL;		
-		}	
-		if(treeTransform=="lambda") {
-			f<-function(x) {
-				likelihoodDiscrete(td$phy, td$data[,i], exp(x[-1]), lambda=exp(x[1]), model=model)
-			}	
-			nep=1; pLow=-10; pHigh=log(1); pStart=0.1;
-		}
-		if(treeTransform=="delta") {
-			f<-function(x) {
-				likelihoodDiscrete(td$phy, td$data[,i], exp(x[-1]), delta=exp(x[1]), model=model)
-				}
-			nep=1; pLow=-10; pHigh=log(10);pStart=0.1;
-		}
-		if(treeTransform=="kappa") {
-			f<-function(x) {
-				likelihoodDiscrete(td$phy, td$data[,i], exp(x[-1]), kappa=exp(x[1]), model=model)
-				}
-			nep=1; pLow=-10; pHigh=log(1);pStart=0.1;
-		}
-		if(treeTransform=="linearChange") {
-			f<-function(x) {
-				likelihoodDiscrete(td$phy, td$data[,i], exp(x[-1]), endRate=exp(x[1]), linear=T, model=model)
-				}
-			nep=1; pLow=-10; pHigh=log(10);pStart=0.1;
-		}
-		if(treeTransform=="exponentialChange") {
-			f<-function(x) {
-				likelihoodDiscrete(td$phy, td$data[,i], exp(x[-1]), endRate=exp(x[1]), model=model)
-				}
-			nep=1; pLow=-10; pHigh=log(10);pStart=0.1;
-		}
-		if(treeTransform=="twoRate") {
-			f<-function(x) {
-				likelihoodDiscrete(td$phy, td$data[,i], exp(x[-(1:2)]), breakPoint=x[1], endRate=exp(x[2]), model=model)
-				}
-			mv<-max(branching.times(td$phy))	
-			nep=2; pLow=c(mv/1000, -10); pHigh=c(mv, 10);pStart=c(0.1, 0.1);
-		}
-				
-						
-			nRateCats<-getRateCats(td$data[,i], model)
-			
-			outTries<-list()
-			totalbl<-sum(td$phy$edge.length)
-			minQ=log(0.01/totalbl)
-			maxQ=log(1000/totalbl)
-			ntries<-20
-			ltry<-numeric(ntries)
-			ltry[]<-NA
-			lsol<-matrix(nrow= ntries, ncol=nRateCats+nep)
-			sp<-numeric(nRateCats)
-			qTries<-exp(-7:2)
-			
-			if(nep==0) {
-				lower=rep(minQ, nRateCats)
-				upper=rep(maxQ, nRateCats)
-			} else {
-				lower=c(pLow, rep(minQ, nRateCats))
-				upper=c(pHigh, rep(maxQ, nRateCats))
-			}
-			
-			cat("Finding the maximum likelihood solution\n")
-			cat("[0        50      100]\n")
-			cat("[")
-			
-			for(j in 1:10) {
-				sp<-c(pStart, log(rep(qTries[j], nRateCats)))
-				te<-try(outTries[[j]]<-optim(f, par=sp, method="L",  lower=lower, upper=upper), silent=T)
-				
-				if(class(te)!="try-error") {
-					ltry[j]<-outTries[[j]]$value
-					lsol[j,]<-exp(outTries[[j]]$par)
-				}
-				cat(".")
-
-			}
-			for(j in 1:10) {
-				sp<-c(pStart, runif(nRateCats, minQ, maxQ))
-				te<-try(outTries[[10+j]]<-optim(f, par=sp, method="L",  lower=lower, upper=upper), silent=T)
-				if(class(te)!="try-error") {
-					ltry[10+j]<-outTries[[10+j]]$value
-					lsol[10+j,]<-exp(outTries[[10+j]]$par)
-				}
-				cat(".")
-
-			}
-			
-			cat("]\n")
-			
-			ok<-!is.na(ltry)
-			
-			if(sum(ok)==0) stop("ERROR: No solution found. Does your tree contain zero-length tip branches?")
-			
-			ltd<-ltry-min(ltry[ok])
-			b<-min(which(ltry==min(ltry[ok])))
-
-			gc<-which(ltd<0.1)
-			us<-lsol[gc,1]
-			usc<-sum((us-min(us))>0.1)			
-			b<-min(which(ltry==min(ltry[ok])))
-			out<-outTries[[b[1]]]	
-			if(usc>1) {out$message="Warning: likelihood surface is flat."}
-			
-			if(out$convergence!=0) {out$message="Warning: may not have converged to a proper solution."}
-
-			if(out$convergence==0) {out$message="R thinks that this is the right answer."}
-
-			if(treeTransform=="none" & model=="ER") {
-				res[[i]]<-list(lnl=-out$value, q=-getQ(exp(out$par), nRateCats, model)[1,1], message=out$message)
-			} else if(treeTransform=="none" & model!="ER") {
-				res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par), nRateCats, model), message=out$message)
-
-			} else if(treeTransform=="twoRate") {
-				res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par[-(1:2)]), nRateCats, model), breakpoint=out$par[1], endRate=exp(out$par[2]), message=out$message)
-			} else 	res[[i]]<-list(lnl=-out$value, q=getQ(exp(out$par[-1]), nRateCats, model), treeParam=exp(out$par[1]), message=out$message)
-
-				
-			if(!is.null(colnames(td$data))) names(res)[i]<-colnames(td$data)[i] else names(res)[i]<-paste("Trait", i, sep="")
-		
-		if((model=="SYM" | model=="ARD") & nRateCats>2) {
-				cat("Plotting surfaces currently not supported for SYM and ARD models unless your character has only two states.\n")
-				plotLnlSurf=F
-		}
-		
-		if(plotlnl) {
-			cat("Calculating surface\n")
-			if(qLimits[1]<=0) {
-				cat("Q must be positive, resetting lower plotting limit to 0.00000001")
-				qLimits[1]=0.00000001
-			}
-			if(treeTransform=="none") {
-				if(model=="ER") {
-					qx<-exp(seq(log(qLimits[1]), log(qLimits[2]), length=50))
-					lnl<-numeric(50)
-					for(j in 1:50)
-						lnl[j]<- -f(log(qx[j]))
-					
-					lnlDiff<- -out$value-lnl
-					plot(qx, lnl, log="x", type="l", xlab="Rate (q)", ylab="lnL")
+	parnm=ifelse(argn%in%rownames(bnds), argn, "trns")
+	partp=bnds[parnm, "typ"]
+	
+	# User bounds
+	if(length(bounds)>0){
+		mm=match(names(bounds), rownames(bnds))
+		if(any(is.na(mm)->zz)) mm[zz]=match(names(bounds)[zz], bnds$model)
+		if(all(!is.na(mm))){
+			for(i in 1:length(mm)){
+				ww=mm[i]
+				tmp=sort(bounds[[i]])
+				if(bnds$typ[ww]=="exp") {
+					if(any(tmp==0)) tmp[tmp==0]=exp(-500)
+					bnd=log(tmp) 
 				} else {
-					qx<-exp(seq(log(qLimits[1]), log(qLimits[2]), length=20))
-					qy<-exp(seq(log(qLimits[1]), log(qLimits[2]), length=20))
-					lnl<-matrix(nrow=20, ncol=20)
-					for(j in 1:20)
-						for(k in 1:20)
-							lnl[j,k]<- -f(log(c(qx[j], qy[k])))
-					
-					lnlDiff<- -out$value-lnl
-					contour(qx, qy, lnl, xlab="Forward Rate", ylab="Backward Rate")
-				}	
+					bnd=tmp
+				}
+				bnds[ww,c("mn","mx")]=bnd
+			}
+		} else {
+			stop(paste("'bounds' not expected:\n\t", paste(names(bounds)[is.na(mm)], sep="", collapse="\n\t"), sep=""))
+		}
+	}
+	
+	par=argn[1]
+
+	xx=function(p){
+		if(par%in%c("a")){
+			tmp=-lik(c(p[1], exp(p[-1])))
+		} else {
+			tmp=-lik(exp(p))
+		}
+		if(is.infinite(tmp)) {
+			tmp=ct$FAIL
+		}
+		tmp
+	}
+	
+	
+	# boxconstrain from diversitree
+	boxconstrain=function (f, lower, upper, fail.value = FAIL) 
+	{
+		function(x) {
+			if (any(x < lower | x > upper)) fail.value else f(x)
+		}
+	}
+	f=boxconstrain(xx, min, max, fail.value=ct$FAIL)
+	
+	# transition rates
+	smarttrns=log(seq(max(c(exp(bnds["trns","mn"]),0.01)), min(c(exp(bnds["trns","mx"]),2)), length.out=10))
+	
+	## OPTIMIZATION ##
+	mm=matrix(NA, nrow=ct$niter, ncol=length(argn)+2)
+	mt=character(ct$niter)
+	out=list()
+	
+	# 'method' optimization
+	for(i in 1:ct$niter){
+		bnds$st=sapply(1:nrow(bnds), function(x) runif(1, bnds$mn[x], bnds$mx[x]))
+		start=bnds[parnm,"st"]
+				
+		## PAGEL MODELS ##
+		if(par%in%c("lambda","delta","kappa")){
+			ww=match(par, rownames(bnds))
+			if(runif(1)<0.5){
+				if(runif(1)<0.5){
+					start[match(par, argn)]=bnds$mx[ww]
+				} else {
+					start[match(par, argn)]=bnds$mn[ww]
+				}
+			}
+		}
+		
+		## TRANSITION RATES
+		if(runif(1)<0.5){
+			start[which(parnm=="trns")][]=smarttrns[sample(1:length(smarttrns),1)]
+		}
+				
+		names(start)=argn
+		min=bnds[parnm,"mn"]
+		max=bnds[parnm,"mx"]
+		typs=bnds[parnm, "typ"]
+		
+		# resolve method	
+		if(length(argn)==1) {
+			method="Brent" 
+		} else {
+			if(runif(1)<0.5){  ### FIXME ###
+				method="subplex"
 			} else {
-				px<-exp(seq(log(pLimits[1]), log(pLimits[2]), length=20))
-				qy<-exp(seq(log(qLimits[1]), log(qLimits[2]), length=20))
-				lnl<-matrix(nrow=20, ncol=20)
-				for(j in 1:20)
-					for(k in 1:20)
-						try(lnl[j,k]<- -f(log(c(px[j], qy[k]))))
-				
-				lnlDiff<- -out$value-lnl
-				contour(px, qy, lnlDiff, levels=c(1, 2, 3, 4, 8, 10, 20, 30, 40, 50, 100, 500, 1000), xlab="Tree Transform parameter estimate", ylab="Rate (q)", main="lnL Surface")		
-						
-				
+				method=sample(ct$method,1)
+			}
+		}
+		
+		if(method=="subplex"){
+			op<-out[[i]]<-try(suppressWarnings(subplex(par=start, fn=f, control=list(reltol = .Machine$double.eps^.25, parscale = rep(0.1, length(argn))), hessian=ct$hessian)),silent=TRUE)
+		} else {
+			op<-out[[i]]<-try(suppressWarnings(optim(par=start, fn=f, upper=max, lower=min, method=method, hessian=ct$hessian)),silent=TRUE)
+		}
+		
+		if(!inherits(op,"try-error")){
+			op$value=-op$value
+			names(op)[names(op)=="value"]="lnL"
+			names(op$par)=argn
+			
+			op$par=sapply(1:length(typs), function(x) if(typs[x]=="exp") return(exp(op$par[x])) else return(op$par[x]))
+			mm[i, ]=c(op$par, op$lnL, op$convergence)
+			mt[i]=method
+		} else {
+			mt[i]="FAIL"
+		}
+	}
+	res=mm
+	colnames(res)=c(argn,"lnL","convergence")
+	rownames(res)=mt
+	
+	## HANDLE OPTIMIZER OUTPUT ##
+	colnames(mm)=c(argn, "lnL", "convergence")
+	conv=mm[,"convergence"]==0
+	mm=mm[,-which(colnames(mm)=="convergence")]
+	valid=apply(mm, 1, function(x) !any(is.na(x)))
+	if(sum(valid & conv)>=1){
+		mm=matrix(mm[valid,], nrow=sum(valid), dimnames=dimnames(mm))
+		mt=mt[valid]
+		out=out[valid]
+		mm=mm[z<-min(which(mm[,"lnL"]==max(mm[,"lnL"]))),]
+		mod=mt[z]
+	} else {
+		mod=NA
+		z=NA
+		mm=c(rep(NA, length(argn)), -Inf)
+		names(mm)=c(argn,"lnL")
+	}
+	k=length(argn)+1
+	llx=which(names(mm)=="lnL")
+	ll=mm[[llx]]
+	mm=mm[-llx]
+	
+	## HESSIAN-based CI of par estimates
+	if(ct$hessian){
+		print(mm)
+		print(partp)
+		print(out[[z]]$hessian)
+		hessian=out[[z]]$hessian
+		CI=.bnd.hessian(hessian, mm, partp)
+		if(!all(is.na(CI))){
+			if(diversitree:::is.constrained(lik)){
+				CI=rbind(lik(CI[1,], pars.only=TRUE), rbind(lik(CI[2,], pars.only=TRUE)))
+			} 
+			dimnames(hessian)=NULL
+			rownames(CI)=c("lb", "ub")
+		}
+	} else {
+		hessian=NULL
+		CI=NULL
+	}
+	
+	# resolve all transition estimates (if constrained model)
+	trn=!names(mm)%in%c("a", "lambda", "kappa", "delta")
+	if(diversitree:::is.constrained(lik)){
+		constr=TRUE
+		allq=lik(mm, pars.only=TRUE) 
+	} else {
+		constr=FALSE
+		allq=mm[argnames(lik)]
+	}
+	allq=allq[!names(allq)%in%names(mm)[!trn]]
+
+	qparnm=rep("trns", length(allq))
+	allparnm=c(parnm[!trn],qparnm)
+	min=bnds[allparnm,"mn"]
+	max=bnds[allparnm,"mx"]
+	typs=bnds[allparnm, "typ"]
+	argn=c(argn[!trn], names(allq))
+	mmcomplete=c(mm[!trn], allq, ll)
+	names(mmcomplete)=c(argn, "lnL")
+		
+	mm=as.list(mmcomplete)
+	mm$method=mod
+	mm$k=k
+	mm=.aic(mm, n=length(dat))
+
+	
+	# check estimates against bounds #
+	range=as.data.frame(cbind(min, max))
+	range$typ=typs
+	range$mn=ifelse(range$typ=="exp", exp(range$min), range$min)
+	range$mx=ifelse(range$typ=="exp", exp(range$max), range$max)
+	par=mm[argn]
+	rownames(range)=argn
+	chk=sapply(1:length(par), function(idx){
+			   p=par[[idx]]
+			   if(!is.na(p)){
+			   return((p<=range$mn[idx] | p>=range$mx[idx]))
+			   } else {
+			   return(FALSE)
+			   }
+			   })
+	if(any(chk)){
+		warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
+	}
+	
+	# RETURN OBJECT
+	mm$CI=CI
+	mm$hessian=hessian
+	
+#	if(is.null(CI)){
+		return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm))	
+
+#	} else {
+#		return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm, CI=CI))	
+
+#	}
+	
+}
+
+## WORKHORSE -- built from diversitree:::make.mkn  
+# likelihood function creation
+mkn.lik=function(
+	phy, 
+	dat, 
+	constrain=c("ER","SYM","ARD","meristic"),
+	transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
+	control=list(root=ROOT.OBS),
+	...)
+{
+	
+	# control object for make.mkn()
+	ct = list(method="exp", root=ROOT.OBS)
+	ct[names(control)]=control
+	if(ct$method!="exp") stop(paste("method",sQuote(ct$method),"is not currently supported",sep=" "))
+		
+	# primary cache
+	k<-nlevels(as.factor(dat))
+    control <- diversitree:::check.control.mkn(ct, k)
+    cache <- diversitree:::make.cache.mkn(phy, dat, k, strict=TRUE, control=ct)
+	cache$ordering=attributes(cache$info$phy)$order
+	
+	# tree transforms
+	trns=match.arg(transform, c("none", "EB","lambda", "kappa", "delta", "white"))
+	
+	FUN=switch(trns, 
+			   none=.null.cache(cache),
+			   EB=.eb.cache(cache),
+			   lambda=.lambda.cache(cache),
+			   kappa=.kappa.cache(cache),
+			   delta=.delta.cache(cache), 
+			   white=white.mkn(cache$states))
+									 
+	if(trns=="white") return(FUN)	
+	
+	## KIND OF WORKING
+	ll.mkn=function(cache, control) {
+		k <- cache$info$k
+		f.pars <- diversitree:::make.pars.mkn(k)
+		f.pij <- diversitree:::make.pij.mkn(cache$info, control)
+		idx.tip <- cache$idx.tip
+		n.tip <- cache$n.tip
+		n <- length(cache$len)
+		map <- t(sapply(1:k, function(i) (1:k) + (i - 1) * k))
+		idx.tip <- cbind(c(map[cache$states, ]), rep(seq_len(n.tip), k))
+		children.C <- diversitree:::toC.int(t(cache$children))
+		order.C <- diversitree:::toC.int(cache$order)
+		
+		.ll.mkn.exp=function(q, pars, intermediates=FALSE, preset = NULL) { # based on diversitree:::make.all.branches.mkn.exp
+			if(is.null(argnames(FUN))) new=FUN() else new=FUN(q)
+			
+			len.uniq <- sort(unique(new$len))
+			len.idx <- match(new$len, len.uniq)
+			
+			if (!is.null(preset)) stop("Preset values not allowed")
+			pij <- f.pij(len.uniq, pars)[, len.idx]
+			lq <- numeric(n)
+			branch.init <- branch.base <- matrix(NA, k, n)
+			storage.mode(branch.init) <- "numeric"
+			ans <- matrix(pij[idx.tip], n.tip, k)
+			q <- rowSums(ans)
+			branch.base[, seq_len(n.tip)] <- t.default(ans/q)
+			lq[seq_len(n.tip)] <- log(q)
+			ans <- .C("r_mkn_core", k = as.integer(k), n = length(order.C) - 
+					  1L, order = order.C, children = children.C, pij = pij, 
+					  init = branch.init, base = branch.base, lq = lq, 
+					  NAOK = TRUE, DUP = FALSE, PACKAGE="diversitree")
+			
+			list(init = ans$init, base = ans$base, lq = ans$lq, vals = ans$init[, cache$root], pij = pij)
+		}
+	
+		# build likelihood function
+		if(is.null(argnames(FUN))){ # NO TRANSFORM
+			ll=function(pars){
+				qmat=f.pars(pars)
+				ans=.ll.mkn.exp(q=NULL, pars=qmat, intermediates=FALSE)
+				diversitree:::rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
+			}
+		} else {
+			ll=function(pars){ # TREE TRANSFORM
+				qmat=f.pars(pars[-1])
+				ans=.ll.mkn.exp(q=pars[1], pars=qmat, intermediates=FALSE)
+				diversitree:::rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
 			}
 			
 		}
-		
+		class(ll) <- c("mkn", "dtlik", "function")
+		attr(ll,"argnames") <- c(argnames(FUN), cache$info$argnames)
+		return(ll)
 	}
-	return(res)
-
-}
-
-
-###Felsenstein's pruning algorithm
-### Modified June 13 2008 to work on log-likelihoods instead of likelihoods
-likelihoodDiscrete<-function(phy, tip.data, q, model="ER", delta=1, lambda=1,  kappa=1, endRate=1, linear=F, breakPoint=0, f=1, rtt.rescale=0, total.rescale=F, returnFull=F)
-{
 	
-	if(!is.factor(tip.data)) tip.data<-factor(tip.data)
-	Q<-getQ(q, n=nlevels(tip.data), model=model)
-	if (class(phy) != "phylo")
-		stop("object \"phy\" is not of class \"phylo\"");
-	#new2old.phylo(phy)->phy ##converts back to old ape tree format with negative values denoting internal nodes
-	tmp <- as.numeric(phy$edge)
-	nb.tip <- max(tmp) #number of tips
-	nb.node <- -min(tmp) #number of internal nodes
-	nb.states <- nlevels(tip.data) #numbers of states in character
-	l <- matrix(-Inf, nrow=nrow(phy$edge), ncol=nb.states) #makes matrix that will store likelihoods of each character state at each node
-	root <- numeric(nb.states) #makes vector that will store root likelihoods
-	m <- match(phy$tip.label, names(tip.data)) ##identifies elements of tip.data matrix that corresponds with the tip.label
-	if (delta != 1)
-		deltaTree(phy, delta) -> phy;
-	if (lambda != 1)
-		lambdaTree(phy, lambda) -> phy;
-	if (kappa != 1)
-		kappaTree(phy, kappa) -> phy;
-	if (endRate != 1) {
-		if(breakPoint!=0) {
-			tworateTree(phy, breakPoint, endRate) -> phy;
-		} else if(linear==T) {
-			linearchangeTree(phy, endRate) -> phy;
-		} else exponentialchangeTree(phy, endRate)->phy;
-	}
-
-
+	lik=ll.mkn(cache, control)
 	
-	#When comparing deltas across different qs, it might be useful to rescale the total tree length to one	
-	if(rtt.rescale!=0)	
-		rescaleTree(phy, rtt.rescale) -> phy
-		
-	new2old.phylo(phy)->phy
-	
-	for(i in 1:nrow(phy$edge)) #for each edge
-		if(as.numeric(phy$edge[i,2])>0) {
-
-			l[i,tip.data[m[as.numeric(phy$edge[i,2])]]] <- 0 
-		}
-			#if the edge is connected to a terminal taxon, you set the likelihood of the tip value equal to 1 and all others equal to zero.
-		times <- branching.times(old2new.phylo(phy)) #get node to tip distances
-		-1*(1:(max(as.numeric(names(times)))-min(as.numeric(names(times)))+1))->names(times)
-		times = max(times) - times #convert into root to node tips
-		if(total.rescale) {
-			sum(phy$edge.length) -> total.tree
-			phy$edge.length <- phy$edge.length/total.tree
-		}
-	while(1) {
-		
-		if(sum(as.numeric(phy$edge[,2])>0)==2) break 
-	
-		#obtain ancestors of current tips
-		x <- match(phy$edge[,1], phy$edge[,2])[as.numeric(phy$edge[,2])>0] #finds nodes connected to terminal taxa
-		#find last node with two tip descendent
-		a <- max(x[duplicated(x)])
-		t <- which(phy$edge[,1]==phy$edge[a,2])
-		bl <- phy$edge.length[t]
-		age = times[which(names(times)==phy$edge[a,2])]
-		l[a,] <- frag.like(l[t,], bl, Q)
-		#next line effectively prunes out the tips just used
-		phy$edge[a,2]<-1
-		phy$edge[t,2]<-0
-
-	
-	}
-	t <- which(as.numeric(phy$edge[,2])>0)
-	bl <- phy$edge.length[t]
-	root <- frag.like(l[t,], bl, Q)
-	neglnl=-logspace_sum(root)+log(nb.states)
-	if(returnFull==F) {
-		return(neglnl)
-	} else return(list(neglnl=neglnl, root=root, l=l))
-}
-
-getQ<-function(q, n, model)
-{
-	if(model=="ER") Q=evenQ(n)*q
-	if(model=="SYM") {
-		if(length(q)!=n*(n-1)/2) stop("You must supply the correct number of rate categories.")
-		Q<-diag(n)
-		xx=1
-		for(i in 2:n) {
-			for(j in 1:(i-1)) {
-				Q[i,j]<-Q[j,i]<-q[xx]
-				xx<-xx+1
+	## CONSTRAINTS
+	if(!all(constrain=="ARD")){
+		if(is.character(constrain)){
+			cc=match.arg(constrain, c("ER","SYM","ARD","meristic"))
+			lik=constrain.k(lik, model=cc, ...)
+		} else {
+			if(is.matrix(constrain)){
+				if(ncol(constrain)==max(dat)){
+					lik=constrain.m(lik, m=constrain)
+				}
+			} else {
+				stop("'constrain' must be supplied as a dummy matrix representing constraints on transition classes")
 			}
-		}	
-		for(i in 1:n) diag(Q)[i]<- -sum(Q[i,-i])
+		}
 	}
-	
-	if(model=="ARD") {
-		if(length(q)!=n*(n-1)) stop("You must supply the correct number of rate categories.")
-		Q<-diag(n)
-		xx=1
-		for(i in 1:n) {
-			for(j in (1:n)[-i]) {
-				Q[i,j]<-q[xx]
-				xx<-xx+1
-			}
-		}	
-		for(i in 1:n) diag(Q)[i]<- -sum(Q[i,-i])
-	}
-	
-	return(Q)
+	lik
 }
 
-getRateCats<-function(data, model)
-{
-	if(model=="ER") return(1)
-	n<-nlevels(factor(data))
-	if(model=="SYM") return(n*(n-1)/2)
-	if(model=="ARD") return(n*(n-1))
-	
-}
-
-##evenQ is an internal function of GEIGER
-##This function makes a template for the calculate of a rate matrix that will set all transitions to the same value (based on the total number of states).  One can then multiply the resulting matrix by the overall rate to get the rate matrix for a particular analysis.
-
-
-`evenQ` <-
-function(n)
-
-{
-
-	q<--diag(n)
-
-	q[q==0]<-1/(n-1)
-
-	return(q)
-
-}
-
-#This function calculates the likelihood on one branch of a tree
-
-`frag.like` <-
-function(tip.like, bl, q)
-
-{
-
-	nb.states<-ncol(tip.like)
-
-	r<-rep(0, nb.states)
-
-	d<-length(bl)
-
-	p<-list(d)
-
-	for(i in 1:d)
-
-		p[[i]]<-MatrixExp.eig(q*bl[i])
-
-	for(i in 1:nb.states)
-
-		for(j in 1:d) 
-
-			r[i]<-r[i]+logspace_sum(log(p[[j]][i,])+tip.like[j,])
-
-	return(r)
-
-}
-
-#This function is required so that the matrix exponentiation never blows up during the likelihood calculation - but it only works for  symmetric matrices (ie evenQ matrices)
-
-
-`MatrixExp.simple` <-
-function(Q)
-{
-	n<-nrow(Q)
-	res<-matrix(0, nrow=n, ncol=n)
-	q<-Q[1,2]
-	for(i in 1:n)
-		res[i, i]<-1/n+(n-1)/n*exp(-n*q)
-	res[res==0]<-1/n-1/n*exp(-n*q)
-	return(res)
-}
-
-## Code lifted from ape function "ace"
-MatrixExp.eig<-
-function(Q)
-{
-	 tmp <- eigen(Q, symmetric = FALSE)
-	 P1 <- tmp$vectors %*% diag(exp(tmp$values)) %*% solve(tmp$vectors)
-	 return(P1)
-	
-}
-
-hasZeroLengthTips<-function(phy)
-{
-	ntips<-length(phy$tip.label)
-	tips<-phy$edge[,2]<=ntips
-	nn<-phy$edge.length[tips]==0
-	if(sum(nn)>0) return(T)
-	return(F)
-	}
-	
-
-logspace_add<-function(logx, logy) {
-	if(logx==-Inf) return(logy) else max(logx, logy) + log1p(exp (-abs (logx - logy)));
-}
-
-logspace_sum<-function(logx) {
-      r<-logx[1]
-      if(length(logx)>1)
-      	for(i in 2:length(logx))
-      		r<-logspace_add(r, logx[i])
-      r	
-}

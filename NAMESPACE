@@ -12,3 +12,5 @@ export(getAncStates)
 export(runMedusa, summaryMedusa)
 export(print.bm, print.mkn)
 export(transform.phylo)
+## IN PROGRESS
+export(fd)

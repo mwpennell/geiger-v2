@@ -3,7 +3,14 @@
 
 
 
-fitContinuous=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"), bounds=list(), control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200)){
+fitContinuous=function(
+	phy, 
+	dat, 
+	SE = NA, 
+	model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"), 
+	bounds=list(), 
+	control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE))
+{
 
 	require(auteur)
 	
@@ -29,8 +36,8 @@ fitContinuous=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "la
 	
 
 	## CONSTRUCT BOUNDS ##
-	mn=c(-500, -500, -3, -100, -500, -500, -500, -500)
-	mx=c(100, 5, 3, 100, 0, 0, log(2.999999), 100)
+	mn=c(-500, -500, -5, -100, -500, -500, -500, -500)
+	mx=c(100, 5, 0.1, 100, 0, 0, log(2.999999), 100)
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("exp", "exp", "nat", "nat", "exp", "exp", "exp", "exp")
 	rownames(bnds)=c("sigsq", "alpha", "a", "slope", "lambda", "kappa", "delta", "SE")
@@ -108,6 +115,7 @@ fitContinuous=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "la
 	## OPTIMIZATION ##
 	mm=matrix(NA, nrow=ct$niter, ncol=length(argn)+2)
 	mt=character(ct$niter)
+	out=list()
 	
 	# 'method' optimization
 	for(i in 1:ct$niter){
@@ -157,9 +165,9 @@ fitContinuous=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "la
 		}
 		
 		if(method=="subplex"){
-			op=try(suppressWarnings(subplex(par=start, fn=f, control=list(reltol = .Machine$double.eps^0.25, parscale = rep(0.1, length(argn))))),silent=TRUE)
+			op<-out[[i]]<-try(suppressWarnings(subplex(par=start, fn=f, control=list(reltol = .Machine$double.eps^0.25, parscale = rep(0.1, length(argn))), hessian=ct$hessian)),silent=TRUE)
 		} else {
-			op=try(suppressWarnings(optim(par=start, fn=f, upper=max, lower=min, method=method)),silent=TRUE)
+			op<-out[[i]]<-try(suppressWarnings(optim(par=start, fn=f, upper=max, lower=min, method=method, hessian=ct$hessian)),silent=TRUE)
 		}
 		op$method=method
 
@@ -171,6 +179,8 @@ fitContinuous=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "la
 			op$par=sapply(1:length(typs), function(x) if(typs[x]=="exp") return(exp(op$par[x])) else return(op$par[x]))
 			mm[i, ]=c(op$par, op$lnL, op$convergence)
 			mt[i]=op$method
+		} else {
+			mt[i]="FAIL"
 		}
 	}
 	res=mm
@@ -185,15 +195,34 @@ fitContinuous=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "la
 	if(sum(valid & conv)>=1){
 		mm=matrix(mm[valid,], nrow=sum(valid), dimnames=dimnames(mm))
 		mt=mt[valid]
+		out=out[valid]
 		mm=mm[z<-min(which(mm[,"lnL"]==max(mm[,"lnL"]))),]
 	} else {
 		z=NA
 		mm=c(rep(NA, length(argn)), -Inf)
 		names(mm)=c(argn,"lnL")
 	}
+	zz=mm[-which(names(mm)%in%c("lnL"))]
 	mm=as.list(mm)
 	mm$method=ifelse(is.na(z), NA, mt[z])
 	mm$k=length(argn)+1
+	
+	## HESSIAN-based CI of par estimates
+	if(ct$hessian){
+		hessian=out[[z]]$hessian
+		CI=.bnd.hessian(hessian, zz, typs)
+		if(!all(is.na(CI))){
+			if(diversitree:::is.constrained(lik)){
+				CI=rbind(lik(CI[1,], pars.only=TRUE), rbind(lik(CI[2,], pars.only=TRUE)))
+			} 
+			dimnames(hessian)=NULL
+			rownames(CI)=c("lb", "ub")
+		}
+	} else {
+		hessian=NULL
+		CI=NULL
+	}
+	
 	
 	# check estimates against bounds #
 	range=as.data.frame(cbind(min, max))
@@ -215,7 +244,18 @@ fitContinuous=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "la
 	}
 	
 	mm=.aic(mm, n=length(dat))
-	return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm))
+
+	# RETURN OBJECT
+	mm$CI=CI
+	mm$hessian=hessian
+#	if(is.null(CI)){
+		return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm))	
+		
+#	} else {
+#		return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm, CI=CI))	
+#		
+#	}
+	
 }
 
 

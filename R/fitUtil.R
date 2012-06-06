@@ -28,6 +28,35 @@
 ###############
 
 
+.bnd.hessian=function(m, p, s){
+	dm=unique(dim(m))
+	if(length(dm)!=1) {warning("FAILURE in Hessian CI computation: 'm' must be a square matrix"); return(NA)}
+	if(dm!=length(p) | dm!=length(s)) {warning("FAILURE in Hessian CI computation: 'p' and 's' must be of equal length to the dimensions of 'm'"); return(NA)}
+	if(!all(s%in%c("exp","nat"))) {warning("FAILURE in Hessian CI computation: 's' must indicate the space of 'p': expecting either 'exp' or 'nat' as elements"); return(NA)}
+
+	qq=qnorm(0.975)
+	dd=try(sqrt(diag(solve(m))),silent=TRUE)
+	if(inherits(dd, "try-error")){
+		warning(paste("ERROR in inversion of Hessian matrix:", gsub(">", "", gsub("<", "", gsub("\n", "", toString(attributes(dd)$condition))))))
+		return(NA)
+	}
+	bb=qq*dd
+#	bb=ifelse(s=="exp", exp(qq)*dd, qq*dd)
+	res=sapply(1:length(s), function(idx) {
+		if(s[idx]=="exp"){
+		   
+		   return(c(lb=exp(log(p[idx])-bb[idx]), ub=exp(log(p[idx])+bb[idx])))
+		} else {
+		   return(c(lb=p[idx]-bb[idx], ub=p[idx]+bb[idx]))
+		}
+	})
+	rownames(res)=c("lb", "ub")
+	colnames(res)=names(p)
+	res
+	
+}
+
+
 ## MKN CONSTRAINT FUNCTIONS
 .er.matrix=function(m){
 	m[]=1
@@ -233,6 +262,9 @@ argnames.mkn=function(x, ...){
 
 ## tree transformation
 transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white")){
+	
+	require(auteur)
+	
 	model=match.arg(model, c("OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
 	
 	if(!"phylo"%in%class(phy)) stop("supply 'phy' as a 'phylo' object")
@@ -651,5 +683,18 @@ transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "d
 	}
 	attr(z,"argnames")="kappa"
 	return(z)
+}
+
+
+white.mkn=function(dat){
+	tt=table(dat)
+	n=sum(tt)
+	p=tt/n
+	ll=sum(log(p^tt))
+	
+	k=length(tt)-1
+	opt=list(lnL=ll, method="MLE", k=k)
+	opt=.aic(opt, n)
+	opt
 }
 

@@ -43,7 +43,7 @@ Possible models are as follows:
 		bounds are \code{alpha = c(min = 0, max = 150)}}
 	\item{\bold{EB} }{is the Early-burst model (Harmon et al. 2010) and also called the \code{ACDC} model (accelerating-decelerating; Blomberg et al. 2003). Set by the \code{a} rate parameter, \code{EB} 
 		fits a model where the rate of evolution increases or decreases exponentially through time, under the model r[t] = r[0] * exp(a * t), where \code{r[0]} is the 
-		initial rate, \code{a} is the rate change parameter, and \code{t} is time. Default bounds are \code{a = c(min = -3, max = 3)}}
+		initial rate, \code{a} is the rate change parameter, and \code{t} is time. Default bounds are \code{a = c(min = -5, max = 0.1)}}
 	\item{\bold{trend} }{is a diffusion model with linear trend in character value through time (toward larger or smaller trait values). Support for the \code{trend} model will be lacking for 
 		ultrametric trees. Default bounds are \code{slope = c(min = -100, max = 100)}}
 	\item{\bold{lambda} }{is one of the Pagel (1999) models that fits the extent to which the phylogeny predicts covariance among trait values for species. The model effectively transforms the tree: 
