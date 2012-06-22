@@ -1,0 +1,220 @@
+.rjmcmc.bm.multi=function(phy, dat, SE, ngen, sample.freq, ...){
+	con=list(...)
+	fb=con$filebase
+	trees=hashes.phylo(phy)
+#	Sys.setenv(ignoreMULTICORE=TRUE)
+	nm=names(phy)
+	if(is.null(nm)) nm=1:length(phy)
+	if(!is.null(fb)) files=paste(fb, nm, sep="_") else files=nm
+#	if(.check.multicore()) FUN=function(X, FUN) mclapply(X, FUN, mc.silent = TRUE) else FUN=lapply
+	FUN=lapply
+	FUN(1:length(phy), function(idx){
+		rjmcmc.bm(phy=trees[[idx]], dat=dat, SE=SE, ngen=ngen, sample.freq=sample.freq, hashtips=attributes(trees[[idx]])$hashtips, filebase=files[idx], ...)
+	})
+}
+
+rjmcmc.bm <- function ( phy, dat, SE=0, ngen=50000, sample.freq=100, ... ) 
+{ 
+	
+	if(sample.freq>ngen) stop("increase 'ngen' or decrease 'sample.freq'")
+	if("multiPhylo"%in%class(phy)) return(.rjmcmc.bm.multi(phy, dat, SE, ngen, sample.freq, ...))
+	
+	# controller objects 
+	tmp=controller(phy, dat, SE, type="bm", ...)
+	ct=tmp$control
+	ct$thin=sample.freq
+	ct$ngen=ngen
+	cache=tmp$cache
+	sp=tmp$start
+	lik=ct$lik
+	nd=argnames(lik)$rates
+	max_j=max(attr(attr(ct$dlnJUMP,"density"),"count"))
+	jumpsedgewise=.jumps.edgewise(cache$phy)
+	
+	# runtime objects
+	cur.root=sp$root
+	cur.rates=sp$rates
+	cur.delta=sp$delta
+	cur.nR=sum(cur.delta)
+	cur.jumps=sp$jumps
+	cur.nJ=sum(cur.jumps)
+	cur.jumpvar=sp$jumpvar
+	cur.jumprates=cur.jumps*cur.jumpvar
+	cur.scalars=cur.jumprates+cur.rates
+	cur.mod=ct$beta*lik(cur.scalars, cur.root)
+		
+	tickerFreq=ceiling(ngen/30)
+	
+	### begin rjMCMC
+    for (i in 1:ngen) {
+		
+		## LEVY IMPLEMENTATION ##
+		
+		# initialize updates
+		new.root=cur.root
+		new.rates=cur.rates
+		new.delta=cur.delta
+		new.nR=cur.nR
+		new.jumps=cur.jumps
+		new.nJ=cur.nJ
+		new.jumpvar=cur.jumpvar
+		new.jumprates=cur.jumprates
+		new.scalars=cur.scalars
+		
+		while(1) {
+			lnLikelihoodRatio <- lnHastingsRatio <- lnPriorRatio <- 0
+			cur.proposal=min(which(runif(1)<ct$prop.cs))
+			
+			if (cur.proposal==1) {												## update BM process
+				if(runif(1) < ct$bm.jump & is.null(ct$constrainSHIFT)) {			# adjust rate categories
+					if(runif(1) < ct$mergesplit.shift) {
+						nr=.splitormerge(cur.delta=cur.delta, cur.values=cur.rates, control=ct, cache=cache)
+						new.rates=nr$new.values
+						new.delta=nr$new.delta
+						new.nR=sum(new.delta)
+						new.scalars=new.rates+cur.jumprates
+						lnHastingsRatio=nr$lnHastingsRatio
+						lnPriorRatio=.dlnratio(cur.nR, new.nR, ct$dlnSHIFT)
+						lnPriorRatio=lnPriorRatio + .dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
+						subprop="mergesplit"
+						break()	
+					} else if(cur.nR>0){											# shift local rate
+						nr=.adjustshift(cur.delta=cur.delta, cur.values=cur.rates, control=ct, cache=cache)
+						new.rates=nr$new.values
+						new.delta=nr$new.delta 
+						new.scalars=new.rates+cur.jumprates
+						lnHastingsRatio=nr$lnHastingsRatio
+						lnPriorRatio=.dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
+						subprop="moveshift"
+						break()						
+					} else {
+						next()
+					}
+				} else {														## update JUMP process
+					if(runif(1) < ct$mergesplit.shift & is.null(ct$constrainJUMP)){					
+						if(cur.nJ==0) {												# adjust N jumps
+							if(runif(1)<0.5 & cur.nJ<max_j) {								# -- 0 -> 1
+								new.nJ=1
+								tmp=.adjustjump(cur.jumps, add=TRUE, drop=FALSE, swap=FALSE, control=ct, cache=cache)
+								subprop="incjump"
+							} else {														# -- 0 -> 0
+								tmp=list(jumps=cur.jumps, lnHastingsRatio=0)
+								subprop="movejump"
+							}  
+						} else {
+							if(runif(1)<0.5 & cur.nJ<max_j){								# -- j -> j + 1
+								new.nJ=cur.nJ+1
+								tmp=.adjustjump(cur.jumps, add=TRUE, drop=FALSE, swap=FALSE, control=ct, cache=cache)
+								subprop="incjump"
+							} else {															
+								if(cur.nJ==max_j & runif(1)<0.5){							# -- max_j -> max_j
+									tmp=list(jumps=cur.jumps, lnHastingsRatio=0)
+									subprop="movejump"
+								} else {													# -- j -> j - 1
+									new.nJ=cur.nJ-1
+									tmp=.adjustjump(cur.jumps, add=FALSE, drop=TRUE, swap=FALSE, control=ct, cache=cache)
+									subprop="decjump"	
+								}
+							}
+						}
+					} else if(cur.nJ>0){											# adjust location of a jump
+						if(cur.nJ==max_j & runif(1)<0.5){									# -- max_j -> max_j
+							tmp=list(jumps=cur.jumps, lnHastingsRatio=0)
+							subprop="movejump"
+						} else {															# swap a jump
+							tmp=.adjustjump(cur.jumps, add=FALSE, drop=FALSE, swap=TRUE, control=ct, cache=cache)
+							subprop="movejump"
+						}
+					} else {
+						next()
+					}
+					new.jumps=tmp$jumps
+					new.jumprates=new.jumps*cur.jumpvar
+					new.scalars=new.jumprates+cur.rates
+					lnHastingsRatio=tmp$lnHastingsRatio
+					lnPriorRatio=.dlnratio(cur.nJ, new.nJ, ct$dlnJUMP)
+					lnPriorRatio=lnPriorRatio + .dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
+					break()
+				}
+			} else if(cur.proposal==2){													
+				if(runif(1) < ct$tune.scale & cur.nR>0) {						## tune local rate
+					nr=.tune.rate(rates=cur.rates, ct)
+					new.rates=nr$values
+					new.scalars=new.rates+cur.jumprates
+					lnHastingsRatio=nr$lnHastingsRatio
+					lnPriorRatio=.dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
+					subprop="ratetune"
+					break()						
+				} else {														## scale rates
+					if(runif(1) < ct$bm.jump){										# BM rates
+						nr=.tune.rate(cur.rates, ct)
+						new.rates=nr$v
+						new.scalars=new.rates+cur.jumprates
+						lnHastingsRatio=nr$lnHastingsRatio
+						lnPriorRatio=.dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
+						subprop="ratescale"
+						break()						
+					} else if(cur.nJ>0){											# JUMP effectsize
+						nr=.tune.rate(cur.jumpvar, ct)
+						new.jumpvar=nr$values
+						new.jumprates=new.jumpvar*cur.jumps
+						new.scalars=cur.rates+new.jumprates
+						lnHastingsRatio=nr$lnHastingsRatio
+						lnPriorRatio=.dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
+						lnPriorRatio=lnPriorRatio + .dlnratio(cur.jumpvar, new.jumpvar, ct$dlnPULS)
+						subprop="jumpvar"
+						break()						
+					} else {
+						next()
+					}
+				} 
+			} else if(cur.proposal==3) {										## adjust root
+				nr=.tune.value(cur.root, ct)
+				new.root=nr$v
+				lnHastingsRatio=nr$lnHastingsRatio
+				lnPriorRatio=.dlnratio(cur.root, new.root, ct$dlnROOT)
+				subprop="rootstate"
+				break()
+			}
+		}
+		
+		ct$n.subprop[subprop]=ct$n.subprop[subprop]+1				
+		
+		# compute fit of proposed model
+		new.mod=ct$beta*lik(new.scalars, new.root)
+		r=.proc.lnR(i, subprop, cur.mod, new.mod, lnPriorRatio, lnHastingsRatio, heat=1, control=ct)
+		
+		if (runif(1) <= r$r) {			## adopt proposal ##
+			new.root->cur.root
+			new.rates->cur.rates
+			new.delta->cur.delta
+			new.nR->cur.nR
+			new.jumps->cur.jumps
+			new.nJ->cur.nJ
+			new.jumpvar->cur.jumpvar
+			new.jumprates->cur.jumprates
+			new.scalars->cur.scalars
+			
+			ct$n.subaccept[subprop] = ct$n.subaccept[subprop]+1
+			
+			new.mod->cur.mod
+		} 
+		
+		# iteration-specific functions
+		if(i%%tickerFreq==0 & ct$summary) {
+			if(i==tickerFreq) cat("|",rep(" ",9),toupper("generations complete"),rep(" ",9),"|","\n")
+			cat(". ")
+		}
+		if(i%%sample.freq==0 & ct$summary) {
+			pr=.compute_prior.bm(cur.scalars, cur.jumpvar, cur.nJ, cur.nR, cur.root, ct)
+
+			parms=list(principal=list(shifts=list(delta=cur.delta, shifts=cur.rates), jumps=list(delta=cur.jumps)), gen=i, lnL=cur.mod, 
+					   lnLp=pr, qlnL.p=lnPriorRatio, qlnL.h=lnHastingsRatio, jumpvar=cur.jumpvar, root=cur.root)
+			.parlog.rjmcmc(init=FALSE, end=FALSE, parameters=parms, control=ct)
+		}
+	}
+	
+	# end rjMCMC
+	.cleanup.rjmcmc(ct, cache)
+}
+

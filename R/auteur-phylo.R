@@ -1,0 +1,988 @@
+
+## GENERIC FUNCTION
+heights <- function(phy)
+UseMethod("heights")
+
+
+heights.phylo=function(phy){
+	phy <- reorder(phy)
+	n <- length(phy$tip.label)
+	n.node <- phy$Nnode
+	xx <- numeric(n + n.node)
+	for (i in 1:nrow(phy$edge)) xx[phy$edge[i, 2]] <- xx[phy$edge[i, 
+	1]] + phy$edge.length[i]
+	root = ifelse(is.null(phy$root.edge), 0, phy$root.edge)
+	labs = c(phy$tip.label, phy$node.label)
+	depth = max(xx)
+	tt = depth - xx
+	idx = 1:length(tt)
+	dd = phy$edge.length[idx]
+	mm = match(1:length(tt), c(phy$edge[, 2], Ntip(phy) + 1))
+	dd = c(phy$edge.length, root)[mm]
+	ss = tt + dd
+	res = cbind(ss, tt)
+	rownames(res) = idx
+	colnames(res) = c("start", "end")
+	res = data.frame(res)
+	res	
+}
+
+
+heights.multiPhylo=function(phy){
+	phy=hashes.phylo(phy)
+	hh=unique(unlist(lapply(phy, function(x) x$hash)))
+	times=lapply(phy, function(x) {tmp=heights.phylo(x); tmp$hash=x$hash; tmp})
+	if(is.null(names(times))) names(times)=1:length(times)
+	out=lapply(hh, function(hash){
+			   tmp=sapply(times, function(dat){
+						  if(hash%in%dat$hash) dat[which(dat$hash==hash),c("start","end")]  else return(c(0,0))
+						  })
+			   res=data.frame(t(tmp))
+			   rownames(res)=names(times)
+			   names(res)=c("start","end")
+			   gg=apply(res, 1, function(x) all(x==0))
+			   if(any(gg)) res=res[-which(gg),]
+			   return(res)
+			   })
+	attr(out,"hash")=hh
+	out
+}
+
+.unique.phylo=function(phy){
+# phy is assumed to have tips that are redundant (and whose exemplars are monophyletic)
+# prunes tree to leave one member of each unique label
+	
+	mon=table(phy$tip.label)
+	if(all(mon==1)) return(phy)
+	mon=mon[mon>1]
+	for(i in 1:length(mon)){
+		m=names(mon[i])
+		drop=which(phy$tip.label==m)
+		drop=drop[2:length(drop)]
+		phy$tip.label[drop]="null"
+	}
+	phy=drop.tip(phy, phy$tip.label[phy$tip.label=="null"])
+	return(phy)
+}
+
+
+unique.phylo=function(x, incomparables=FALSE, ...){
+# phy: has tip.labels that are not unique
+# returns phylogeny with unique tip labels
+# if a taxon (indicated by multiple tip labels of same string) is non-monophyletic, all tips of that taxon are removed with warning
+# likely used where an exemplar phylogeny is needed and phy$tip.label is 'tricked' into a non-unique vector of names
+	
+	phy=x
+	if(incomparables) warning("'incomparables' exerts no effect in this setting")
+	.exemplar.monophyly=function(tip, phy) {
+# tip: occurs multiply in phy$tip.label
+		nn=which(phy$tip.label==tip)
+		if(length(nn)==1) return(TRUE) 
+		anc=getMRCA(phy, nn)
+		dd=unique(phy$tip.label[.get.descendants.of.node(anc, phy, tips=TRUE)])
+		if(length(dd)==1) return(TRUE) else return(FALSE)
+	}
+
+	
+	tt=table(phy$tip.label)
+	if(!any(tt>1)) {
+		return(phy)
+	} else {
+		todo=names(tt[tt>1])
+#		cat("checking monophyly of groups...\n")
+		mon=sapply(todo, function(t) {
+				   cat(paste("\n\t",t, sep=""))
+				   .exemplar.monophyly(t, phy)
+				   })
+#		cat("\n")
+		
+		if(any(!mon)) {
+			warning(paste("non-monophyletic lineages encountered:\n\t", paste(todo[!mon], collapse="\n\t"), "\n", sep=""))
+			phy=drop.tip(phy, names(!mon))
+		}
+		return(.unique.phylo(phy))
+	}
+}
+
+unique.multiPhylo=function(x, incomparables=FALSE, ...){
+	phy=x
+	if(incomparables) warning("'incomparables' exerts no effect in this setting")
+	ss=sapply(phy, digest)
+	if(any(dd<-duplicated(ss))){
+		sub=phy[-which(dd)]
+		class(sub)="multiPhylo"
+		return(sub)
+	} else {
+		return(phy)
+	}
+}
+
+
+
+#general phylogenetic utility for determining whether a node is the root of the phylogeny
+#author: JM EASTMAN 2011
+
+is.root <-
+function(node,phy) {
+	if(node==Ntip(phy)+1) return(TRUE) else return(FALSE)
+}
+
+
+.nodefind.phylo=function(phy, label){
+	N=Ntip(phy)
+	ww=match(label, phy$node.label)
+	if(!all(is.na(ww))) {
+		return(N+ww)
+	} else {
+		warning(paste("Encountered no node.label for ",label,sep=""))
+		return(NULL)
+		
+	}
+}
+
+.compile_descendants=function(phy){
+# fetches all tips subtended by each internal node
+	
+	N=as.integer(Ntip(phy))
+	n=as.integer(Nnode(phy))
+	
+	phy=reorder(phy, "pruningwise")
+	
+	zz=list( N=N,
+			MAXNODE=N+n,
+			ANC=as.integer(phy$edge[,1]), 
+			DES=as.integer(phy$edge[,2])
+			)
+	
+	res=.Call("compile_descendants", phy=zz, package="geiger")
+	return(res)
+}
+
+
+.vmat <- function(phy){
+	n=Ntip(phy)
+	out <- .Call("vmat", tree=list(
+								   ROOT = as.integer(n+1),
+								   MAXNODE = as.integer(max(phy$edge[,1])),
+								   ENDOFCLADE = as.integer(dim(phy$edge)[1]),
+								   ANC = as.integer(phy$edge[,1]),
+								   DES = as.integer(phy$edge[,2]),
+								   EDGES = as.double(c(phy$edge.length,0)),
+								   VCV = as.double(array(matrix(0, n, n)))),
+				 PACKAGE = "geiger")
+	v=matrix(out$VCV,nrow=n,byrow=FALSE)
+	rownames(v)<-colnames(v)<-phy$tip.label
+	return(v)
+} 
+
+
+.polytomy.phylo=function(tips, age=1){
+	N=length(tips)+1
+	edge=cbind(N,1:(N-1))
+	length=rep(age, N-1)
+	phy=list(edge=edge, edge.length=length, tip.label=tips, Nnode=1)
+	class(phy)="phylo"
+	return(phy)
+}
+
+
+nodelabel.phylo=function(phy, taxonomy){
+# all phy$tip.label must be in taxonomy
+# taxonomy: exclusivity highest on left, lowest on right (species, genus, family, etc., as columns)
+# columns in 'taxonomy' should ONLY be taxonomic ranks
+	
+## FIXME: add multicore support
+## FIXME: warn on missing labels (due to non-monophyly)
+
+#	tt=as.matrix(taxonomy)
+#	tt[!is.na(tt)]=""
+#	drp=apply(tt, 1, function(x) all(x==""))
+#	if(any(drp)) taxonomy=taxonomy[-which(drp),]
+	
+	taxonomy=cbind(rownames=rownames(taxonomy),taxonomy)
+	rank="rownames"
+	
+	taxonomy=as.data.frame(as.matrix(taxonomy),stringsAsFactors=FALSE)
+			
+	if(!all(xx<-phy$tip.label%in%taxonomy[,rank])) {
+		warning(paste("taxa not found in 'taxonomy':\n\t", paste(phy$tip.label[!xx], collapse="\n\t"), sep=""))
+	}
+	taxonomy[taxonomy==""]=NA
+	options(expressions=50000)
+	
+	unmatched=phy$tip.label[!xx]
+	idx=match(phy$tip.label, taxonomy[,rank])
+	tax=taxonomy[idx,]
+	
+	labels=unique(unlist(tax[,-which(names(tax)==rank)]))
+	labels=labels[!is.na(labels)]
+	
+	dat=tax[,-which(names(tax)==rank)]
+	hashes_labels=character(length(labels))
+	zz=tax[,rank]
+	tips=phy$tip.label[xx]
+	for(i in 1:ncol(dat)){
+		uu=unique(dat[,i])
+		uu=uu[!is.na(uu)]
+		for(j in uu){
+			cur=zz[which(dat[,i]==j)]
+			if(length(cur)>1){
+				hashes_labels[which(labels==j)]=.hash.tip(cur, tips)
+			} else {
+				hashes_labels[which(labels==j)]=NA
+			}
+			
+		}
+	}
+	names(hashes_labels)=labels
+	hashes_labels=hashes_labels[!is.na(hashes_labels)]
+#	if(any(hashes_labels=="")) hashes_labels=hashes_labels[-which(hashes_labels=="")]
+	tmp=table(hashes_labels)
+	if(any(tmp[tmp>1]->redund)){
+		for(r in names(redund)){
+			rdx=which(hashes_labels==r)
+			warning(paste("redundant labels encountered:\n\t", paste(names(hashes_labels[rdx]), collapse="\n\t"), sep=""))
+			hashes_labels=hashes_labels[-rdx[!rdx==max(rdx)]]
+		}
+	}
+	
+#	cat("resolving descendants for splits in tree...\n")
+	tmp=hashes.phylo(phy, tips)
+	hashes_tree=tmp$hash
+	phy$node.label=rep("",max(phy$edge))
+	mm=match(hashes_tree, hashes_labels)
+	nodelabels=ifelse(is.na(mm), "", names(hashes_labels[mm]))
+	nodelabels[is.na(nodelabels)]=""
+	nodelabels=nodelabels[(Ntip(phy)+1):max(phy$edge)]
+	tmp=table(nodelabels[nodelabels!=""])
+	if(any(tmp[tmp>1]->redund)){
+		for(r in names(redund)){
+			rdx=which(nodelabels==r)
+			nodelabels[rdx[rdx!=min(rdx)]]=""
+		}
+	}
+	
+	phy$node.label=nodelabels
+	phy
+}
+
+
+root.phylo=function(phy, outgroup, taxonomy=NULL){
+## GENERAL FUNCTION FOR ROOTING (based on outgroup)
+# taxonomy: classification data.frame with 'species' minimally as a rownames
+
+	sys=taxonomy
+	if(!is.null(sys)) {
+		rows=unique(unlist(sapply(outgroup, function(o) which(sys==o, arr.ind=TRUE)[,1])))
+		outgroup=rownames(sys)[rows]
+		outgroup=outgroup[outgroup%in%phy$tip.label]
+	} else {
+		if(!all(outgroup%in%phy$tip.label)) stop("Some 'outgroup' appear missing from 'phy'.")
+	}
+	
+	tips=match(outgroup, phy$tip.label)
+	node=getMRCA(phy,tips)
+	if(node==Ntip(phy)+1 & !is.null(sys)){
+		node=getMRCA(phy, (1:Ntip(phy))[-tips])
+	}
+	rooted=root(phy, node=node, resolve.root=TRUE)
+	rooted
+}
+
+
+
+
+
+ultrametricize.phylo=function(phy, trim=c("min","max","mean","depth"), depth=NULL){
+	
+	phy <- reorder(phy)
+    n <- length(phy$tip.label)
+    n.node <- phy$Nnode
+    xx <- numeric(n + n.node)
+    for (i in 1:nrow(phy$edge)) xx[phy$edge[i, 2]] <- xx[phy$edge[i, 1]] + phy$edge.length[i]
+	
+	paths=xx[1:n]
+	trim=switch(match.arg(trim),
+				min = min(paths),
+				max = max(paths),
+				mean = mean(paths),
+				depth = NULL)
+	
+	if(is.null(trim)) {
+		if(!is.null(depth)) trim=depth else stop("'depth' must be supplied if 'trim=depth'")
+	}
+	
+	tol=diff(range(paths))
+	
+	cat(paste("Detected maximum difference in root-to-tip path lengths of ",tol,"\n",sep=""))
+	rsc=function(phy, curdepth, depth) {phy$edge.length=phy$edge.length*(depth/curdepth); phy}
+
+	ww=which(phy$edge[,2]<=n)
+	phy$edge.length[ww]=phy$edge.length[ww]+(trim-paths[phy$edge[ww,2]])
+	if(trim!=depth && !is.null(depth)) {
+		phy=rsc(phy, trim, depth)
+	} 
+	
+	if(any(phy$edge.length<0)) warning("ultrametricized 'phy' has negative branch lengths") 
+
+	return(phy)
+}
+
+
+#general phylogenetic utility for returning first ancestor (as a numeric referent) of the supplied node 
+#author: JM EASTMAN 2010
+
+.get.ancestor.of.node <-
+function(node, phy) {
+	return(phy$edge[which(phy$edge[,2]==node),1])
+}
+
+
+
+
+#general phylogenetic utility for returning all ancestors (listed as given in phy$edge[,2]) of a node 
+#author: JM EASTMAN 2010
+
+.get.ancestors.of.node <-
+function(node, phy) {
+	a=c()
+	if(node==(Ntip(phy)+1->root)) return(NULL)
+	f=.get.ancestor.of.node(node, phy)
+	a=c(a,f)
+	if(f>root) a=c(a, .get.ancestors.of.node(f, phy))
+	return(a)
+}
+
+
+#general phylogenetic utility for returning the first (usually, unless a polytomy exists) two descendants of the supplied node 
+#author: JM EASTMAN 2010
+
+.get.desc.of.node <-
+function(node, phy) {
+	return(phy$edge[which(phy$edge[,1]==node),2])
+}
+
+
+
+#general phylogenetic utility for returning all descendants (listed as given in phy$edge[,2]) of a node (excluding the supplied node) 
+#author: JM EASTMAN 2011
+
+.get.descendants.of.node <- 
+function(node, phy, tips=FALSE){
+	n=Ntip(phy)
+	all=ifelse(tips, FALSE, TRUE)
+	out <- .Call("get_descendants", tree=list(
+											  NODE = as.integer(node),
+											  ROOT = as.integer(n+1),
+											  ALL = as.integer(all),
+											  ENDOFCLADE = as.integer(dim(phy$edge)[1]),
+											  ANC = as.integer(phy$edge[,1]),
+											  DES = as.integer(phy$edge[,2])),
+											  PACKAGE = "geiger")
+	res=out$TIPS
+	if(!length(res)) res=NULL
+	return(res)
+} 
+
+.mrca=function(labels, phy){
+	mm=labels
+	
+	if(all(is.character(labels))){
+		
+		ll=c(phy$tip.label, phy$node.label)
+		mm=match(labels, ll)
+		if(any(is.na(mm))) stop("Some 'labels' not encountered in 'phy'")
+		
+		
+	}	
+	
+	if(!all(is.numeric(mm))) stop("Supply 'labels' as a character or integer vector")
+	
+	aa=unlist(lapply(mm, function(x) .get.ancestors.of.node(x, phy)))
+	tt=table(aa)
+	max(as.integer(names(tt[tt==length(labels)])))
+}
+
+is.phylo=function(x) "phylo"%in%class(x)
+
+
+## FUNCTIONS
+## grabs most exclusive tips from clade definitions (and whose tips can then be reconciled with a taxonomic database -- a lookup table)
+# allows for recursion in clade definitions (clade defined in part using another clade definition)
+# returns trees representing each clade definition
+# 'nested': an important variable -- this is the subset of clades that are defined (recursively) within 'clades'
+phylo.clades=function(clades, phy=NULL, unplaced=TRUE){
+	
+## give 'phy' as a multiPhylo, named list of trees (whose labels appear in the clade defs)
+## clades: 
+#	clades=list(
+#			 Sirenoidea=c("Siren", "Pseudobranchus"), 
+#			 Ambystomatidae=c("Ambystomatidae", "Plethodontidae"), 
+#			 Cryptobranchoidea=c("Hynobiidae", "Cryptobranchus_alleganiensis"),
+#			 CAUDATA=c("Sirenoidea","Salamandroidea","Cryptobranchoidea")
+#	)
+	
+	
+	if(!is.null(phy)){
+		if(!"multiPhylo"%in%class(phy) | is.null(names(phy)->phynm)) stop("Supply 'phy' as a 'multiPhylo' object with names") 
+		tmp=character(length(phy))
+		for(i in 1:length(phy)){
+			cur=phy[[i]]
+			cur$edge.length=NULL
+			tre=write.tree(cur)
+			tmp[i]=gsub(";", "", tre)
+		}
+		phy=tmp
+		names(phy)=phynm
+		
+		for(i in 1:length(clades)){
+			cur=clades[[i]]
+			if(any(cur==names(clades)[i])) stop("Encountered self-referential clade")
+			mm=match(cur, phynm)
+			if(any(!is.na(mm))){
+				ww=which(!is.na(mm))
+				for(j in 1:length(ww)){
+					clades[[i]][ww[j]]=phy[[mm[ww[j]]]]
+				}
+			}
+		}
+	}
+	
+	ll=sapply(clades, length)
+	if(any(ll==1)) stop("Non-splitting lineages found in 'clades'")
+	cc=unique(c(unlist(clades)))
+	tt=cc%in%names(clades)
+	nested=cc[tt]
+	
+## FUNCTION for testing whether a clade is 'nested' within 'clades'	
+	is.nestedclade=function(clade, nested){
+		if(clade%in%nested) return(TRUE) else return(FALSE)
+	}
+	
+	
+## FUNCTION for grabbing the set of nested groups within 'clades'
+	fetch_nestedclades=function(clade, clades, nested){
+		
+		if(is.nestedclade(clade, nested)){
+			desc=clades[[clade]]
+			new=as.list(desc)
+			names(new)=desc
+			tt=sapply(new, is.nestedclade, nested)
+			for(i in 1:length(new)){
+				if(tt[i]) new[[i]]=fetch_nestedclades(new[[i]], clades, nested) else new[[i]]=NA
+			}
+		} else {
+			new=NA
+		}
+		return(new)
+	}
+	
+## FUNCTION for finding nestedness of clades within clades (and their path)
+	paths_through_clades=function(clades, nested){
+		nn=names(clades)
+		res=lapply(nn, function(x) {
+				   dd=clades[[x]]
+				   y=lapply(dd, fetch_nestedclades, clades, nested)
+				   names(y)[1:length(dd)]=dd
+				   y
+				   })
+		names(res)=nn
+		res
+	}
+	
+	unplaced_phy=function(phy, cladepath){
+		if(any(names(cladepath)=="unplaced")){
+			tips=names(cladepath$unplaced)
+			y=.polytomy.phylo(tips)
+			y$edge.length=NULL
+			new=bind.tree(phy, y)
+			new=drop.tip(new, "unplaced")
+			return(new)
+		} else {
+			return(phy)
+		}
+	}
+	
+## FUNCTION for writing a Newick tree from cladepath
+	tree_cladepath=function(cladepath, nested){
+		
+# write newick string
+		print_group=function(cladepath) {
+			xx=sapply(names(cladepath), is.nestedclade, nested)
+			middle=character(length(xx))
+			for(i in 1:length(xx)){
+				if(xx[i]) {
+					new=cladepath[[names(xx)[i]]]
+					middle[i]=print_group(new)
+				} else {
+					middle[i]=names(cladepath)[i]
+				}
+			}
+			paste("(", paste(middle, collapse=", "), ")", sep="")
+		}
+		
+		tmp=paste(print_group(cladepath),";",sep="")
+		phy=read.tree(text=tmp)
+		return(unplaced_phy(phy, cladepath))
+	}
+	
+	cladepaths=paths_through_clades(clades, nested)
+	
+	if(unplaced){
+		for(i in 1:length(cladepaths)){
+			cur=cladepaths[[i]]
+			if(!is.null(unplc<-attributes(clades[[i]])$unplaced)){
+				unplaced_taxa=lapply(unplc, function(x) return(NA))
+				names(unplaced_taxa)=unplc
+				cladepaths[[i]]$unplaced=unplaced_taxa
+			}
+		}
+	}
+	
+	phy=lapply(cladepaths, tree_cladepath, nested)
+	
+	return(phy)
+}
+
+lookup.phylo=function(phy, taxonomy=NULL, clades=NULL){
+## taxonomy expected to have first column at same level as tip labels in phy
+## first row in taxonomy is most exclusive
+## clade_defs are phylogenetic trees of a clade representation
+	
+	if(!is.null(taxonomy)){
+		if(!any(taxonomy[,1]%in%phy$tip.label) & !is.null(rownames(taxonomy))) {
+			taxonomy=as.data.frame(as.matrix(cbind(species=rownames(taxonomy), taxonomy)),stringsAsFactors=FALSE)
+		}
+	}
+	
+	related_tips=function(tips, phy){
+		tips=tips[tips%in%phy$tip.label]
+		if(length(tips)<2) stop("related_tips(): 'tips' to be found in 'phy' are too few")
+		nd=unique(sapply(tips, function(x) match(x, phy$tip.label)))
+		if(length(nd)==1) return(nd)
+		anc=getMRCA(phy, nd)
+		dd=.get.descendants.of.node(anc, phy, tips=TRUE)
+		return(phy$tip.label[dd])
+	}
+	
+	tips_in_group=function(phy, taxonomy=NULL, clade_def){
+		
+		lengths=sapply(clade_def$tip.label, function(grp){
+						if(!is.null(taxonomy)){
+						   ww=which(taxonomy==grp, arr.ind=TRUE)[,"row"]
+						   if(length(ww)>0){
+						   return(TRUE)
+						   } else {
+						   return(FALSE)
+						   } 
+						} else {
+							return(length(phy$tip.label[which(phy$tip.label%in%grp)])>0)
+						}
+		})
+		
+		if(sum(lengths)<2) return(NA)
+		
+		## FIXME: use 'lengths' to determine if 'clade_def' is satisfied (at least two members needed)
+		
+		
+		tmp=sapply(clade_def$tip.label, function(grp){
+				   if(!is.null(taxonomy)){
+					ww=which(taxonomy==grp, arr.ind=TRUE)[,"row"]
+					if(length(ww)>0){
+						return(unique(taxonomy[ww,1]))
+					} else {
+						return(c())
+					} 
+				   } else {
+					return(phy$tip.label[which(phy$tip.label%in%grp)])
+				   }
+		})
+		
+		## most exclusive 'spp' (recognized from tree)
+		spanning_taxa=unique(unlist(tmp))
+		recovered_taxa=unique(related_tips(spanning_taxa, phy))
+		
+		return(recovered_taxa)
+	}
+	
+	orig_phy=phy
+	
+	if(!is.null(taxonomy)){
+		## check ordering of taxonomy
+		oo=order(apply(taxonomy, 2, function(x) length(unique(x))),decreasing=TRUE)
+		if(!all(oo==c(1:ncol(taxonomy)))){
+			warning("Assuming 'taxonomy' is not from most to least exclusive")
+			taxonomy=taxonomy[,ncol(taxonomy):1] #reverse ordering of columns
+		}
+		original_taxonomy=taxonomy
+		
+		## check rank of tree
+		phy$node.label=NULL
+		gtips=sapply(phy$tip.label, function(x) unlist(strsplit(gsub(" ", "_", x), "_"))[1])
+		check=sapply(list(phy$tip.label, gtips), function(x) sum(x%in%taxonomy[,1]))
+		if(max(check)==check[2]) {
+			genuslevel_tree=TRUE
+			phy$tip.label=unname(gtips)
+		} else {
+			genuslevel_tree=FALSE
+		}
+		tips=phy$tip.label
+		
+		## prune taxonomy down to members in the phylogeny
+		taxonomy=taxonomy[taxonomy[,1]%in%tips,]
+		matching_tips=taxonomy[,1]
+		
+		## BUILD taxonomic mapping to each row in 'phy'
+		mm=match(tips, matching_tips)
+		tt=taxonomy[mm,]
+		colnames(tt)=names(taxonomy)
+	} else {
+		tt=c()
+	}
+	
+	if(!is.null(clades)){
+		tips=phy$tip.label
+		clade_defs=phylo.clades(clades)
+#		cat("resolving clades...\n\t")
+		res=lapply(1:length(clade_defs), function(idx) {
+				   def=clade_defs[[idx]]
+#				   cat(paste(names(clade_defs)[idx], "\n\t", sep=""))
+				   tt=try(tips_in_group(phy, taxonomy, def),silent=TRUE)
+				   if(inherits(tt, "try-error")) return(NA) else return(tt)
+				   }) 
+#		cat("\n")
+		names(res)=names(clade_defs)
+		
+		zz=sapply(res, function(x) all(is.na(x)))
+		if(any(zz)){
+			warning(paste("taxa not represented in 'tips':\n\t", paste(names(res)[zz], collapse="\n\t"), sep=""))
+		}
+		res=res[!zz]
+		clade_defs=clade_defs[!zz]
+		
+		## BUILD clade-level mapping to each row in 'phy'
+		gg=matrix("", nrow=Ntip(phy), ncol=length(res))
+		for(i in 1:length(res)){
+			nm=names(clade_defs)[i]
+			cur_tips=res[[i]]
+			zz=tips%in%cur_tips
+			gg[zz,i]=nm
+		}
+		colnames(gg)=names(clade_defs)
+		tt=as.matrix(cbind(tt, gg))
+	} 
+	
+	if(is.null(tt)){
+		if(!is.null(nn<-phy$node.label)){
+			names(nn)=Ntip(phy)+1:length(nn)
+			nn=nn[nn!=""]
+			if(length(nn)){
+				tt=matrix("", nrow=Ntip(phy), ncol=length(nn))
+				dd=.compile_descendants(phy)$tips
+				for(i in 1:length(nn)){
+					tt[phy$tip.label%in%phy$tip.label[dd[[as.integer(names(nn[i]))]]],i]=nn[i]
+				}
+				colnames(tt)=nn
+				
+			} else {
+				return(NULL)
+			}
+		} else {
+			return(NULL)
+		}
+	}
+	phy_mapping=tt
+	rownames(phy_mapping)=orig_phy$tip.label
+	return(as.data.frame(as.matrix(phy_mapping), stringsAsFactors=FALSE)) 	
+}
+
+
+
+## FUNCTIONS ##
+
+subset.phylo=function(x, taxonomy, rank="family", ...){
+## rank (e.g., 'family') and 'genus' must be in columns of 'taxonomy'
+	
+	phy=x
+	if(!rank%in%colnames(taxonomy)){
+		stop(paste(sQuote(rank), " does not appear as a column name in 'taxonomy'", sep=""))
+	}
+	
+	xx=match(phy$tip.label, rownames(taxonomy))
+	
+	new=as.matrix(cbind(tip=phy$tip.label, rank=taxonomy[xx,rank]))
+	drop=apply(new, 1, function(x) if( any(is.na(x)) | any(x=="")) return(TRUE) else return(FALSE))
+	if(any(drop)){
+		warning(paste("Information for some tips is missing from 'taxonomy'; offending tips will be pruned:\n\t", paste(phy$tip.label[drop], collapse="\n\t"), sep=""))
+		phy=drop.tip(phy, phy$tip.label[drop])
+		new=new[!drop,]
+	}
+	
+	tips=phy$tip.label
+	hphy=hashes.phylo(phy, tips=tips)
+	tax=as.data.frame(new, stringsAsFactors=FALSE)
+	stax=split(tax$tip,tax$rank)
+	rank_hashes=sapply(stax, function(ss) .hash.tip(ss, tips=tips))
+	
+	pruned=hphy
+	pruned$tip.label=tax$rank
+
+	if(!all(zz<-rank_hashes%in%hphy$hash)){
+		warning(paste(paste("non-monophyletic at level of ",rank,sep=""),":\n\t", paste(sort(nonmon<-names(rank_hashes)[!zz]), collapse="\n\t"), sep=""))
+		pruned=drop.tip(pruned, nonmon)
+	}
+		
+	rank_phy=unique.phylo(pruned)
+	
+	return(rank_phy)	
+}
+
+
+bind.phylo=function(phy, taxonomy){
+## phy: a 'rank' level phylogeny (tips of 'phy' should be matchable to taxonomy[,rank])
+## taxonomy: a mapping from genus, family, order (columns in that order); rownames are tips to be added to constraint tree
+##		-- 'taxonomy' MUST absolutely be ordered from higher exclusivity to lower (e.g., genus to order)
+## rank: rank at which groups are assumed to be monophyletic (currently for 'family' only)
+## returns a nodelabeled constraint tree based on 'phy' and 'rank'-level constraints
+	
+	
+	
+#	oo=order(apply(taxonomy, 2, function(x) length(unique(x))),decreasing=TRUE)
+#	if(!all(oo==c(1:ncol(taxonomy)))){
+#		warning("Assuming 'taxonomy' is not from most to least exclusive")
+#		taxonomy=taxonomy[,ncol(taxonomy):1]
+#	}
+	taxonomy=as.data.frame(taxonomy, stringsAsFactors=FALSE)
+	rank=colnames(taxonomy)[unique(which(taxonomy==phy$tip.label, arr.ind=TRUE)[,"col"])]
+	if(length(rank)!=1) stop("tips in 'phy' must occur in a single column of 'taxonomy'")
+	
+	tax=taxonomy
+	ridx=which(colnames(tax)==rank)
+	tax=tax[,ridx:ncol(tax)]
+	tips=rownames(tax)
+	
+	original_taxonomy=taxonomy
+	
+	
+	# PRUNE 'rank'-level tree if some taxa unmatched in 'tips'
+	if(any(zz<-!phy$tip.label%in%tax[,rank])){
+		warning(paste("taxa not represented in 'tips':\n\t", paste(phy$tip.label[zz], collapse="\n\t"), sep=""))
+		phy=drop.tip(phy, phy$tip.label[zz])
+	}
+	
+	tmp=unique(c(phy$tip.label, phy$node.label))
+	all_labels=tmp[!is.na(tmp)&tmp!=""]
+	exclude=apply(tax, 1, function(x) !any(x%in%all_labels))
+	missing_tips=rownames(tax)[exclude]
+	if(length(missing_tips)){
+		warning(paste("tips missing data in 'taxonomy' and excluded from constraint tree:\n\t", paste(missing_tips, collapse="\n\t"), sep=""))
+	}
+	tax=tax[!exclude,]
+	
+	# find tips that have data but whose data not at 'rank' level (plug in deeper in tree)
+	at_rank=tax[,rank]%in%phy$tip.label
+	deeper_tips=tax[!at_rank,]
+	if(nrow(deeper_tips)){
+		ww=apply(deeper_tips, 1, function(x) x[[min(which(x%in%all_labels))]])
+		for(i in 1:length(ww)){
+			nn=.nodefind.phylo(phy, ww[i])
+			if(!is.null(nn)){
+				tmp=.polytomy.phylo(names(ww[i]))
+				phy=bind.tree(phy, tmp, where=nn)
+			}
+		}
+		phy=compute.brlen(phy, method="Grafen")
+		warning(paste("tips missing data at 'rank' level in 'taxonomy' but included in constraint tree:\n\t", paste(rownames(deeper_tips), collapse="\n\t"), sep=""))
+	}
+	phy$node.label=NULL
+	tax=original_taxonomy[at_rank,1:ridx]
+	if(any(is.na(tax[,rank]))) stop("Corrupted data encountered when checking taxonomy[,rank]")
+	
+	## CREATE 'rank'-level subtrees
+	mm=min(phy$edge.length)
+	ss=split(tax, tax[,rank])
+	subtrees=lapply(1:length(ss), function(idx) {
+			  curnm=names(ss)[idx]
+			  x=ss[[idx]]
+			  rnm=rownames(x)
+			  y=as.matrix(x)
+			  d=apply(y, 2, function(z) if(all(z=="") | length(unique(z))==1) return(TRUE) else return(FALSE))
+			  if(any(d)) {
+				nm=colnames(y)
+				y=as.matrix(y[,-which(d)])
+				colnames(y)=nm[-which(d)]
+			  }
+			  if(!length(y)){
+				cur=.polytomy.phylo(rnm, mm/2)
+			  } else {
+				cur=phylo.lookup(cbind(y,names(ss)[idx]))$phy
+			  }
+			  cur$root.edge=0
+			  return(list(subtree=cur, age=mm/2, tip=names(ss)[idx]))
+			  
+	})
+	names(subtrees)=names(ss)
+	
+	## PASTE in 'rank'-level subtrees
+	contree=glomogram.phylo(phy, subtrees)
+	contree$edge.length=NULL
+	contree
+}
+
+
+.check.taxonomy=function(taxon, position, taxonomy){
+# determines whether each nested rank is exclusively nested within a single higher taxon 
+	hits=taxonomy[which(taxonomy[,position]==taxon),position-1]
+	if(length(unique(hits))==1) return(unique(hits)) else return(NA)	
+}
+
+
+.fill.taxonomy=function(taxonomy){
+	push.taxon=function(taxonomy, indices, column){
+		for(n in which(indices)){
+			taxonomy[n,column]=paste(taxonomy[n,min((column:ncol(taxonomy))[!is.na(taxonomy[n,column:ncol(taxonomy)])])],paste("R",column,sep=""),sep=".")
+		}
+		return(taxonomy)
+	}
+	
+	for(c in 1:(ncol(taxonomy)-1)){
+		ii=is.na(taxonomy[,c])
+		if(any(ii)) taxonomy=push.taxon(taxonomy, ii, c)
+	}
+	return(taxonomy)	
+}
+
+
+phylo.lookup=function(taxonomy) {
+# GENERAL FUNCTION: convert taxonomic 'lookup' table to phylogeny
+# lookup is data.frame with ranks as columns
+# rowlabels of 'taxonomy' are assumed to be tips of the phylogeny
+# rank corresponds to (numeric) position in rank names (R to L) to use in building taxonomic tree; if null, all ranks are used
+# NOTE: taxonomic groups in 'lookup' MUST be ordered by exclusivity from R to L -- e.g., genera must precede families must precede orders
+	labels=rownames(taxonomy)
+	rank=NULL
+#	oo=order(apply(taxonomy, 2, function(x) length(unique(x))),decreasing=TRUE)
+#	if(!all(oo==c(1:ncol(taxonomy)))){
+#		warning("Assuming 'taxonomy' is not from most to least exclusive")
+#		taxonomy=taxonomy[,ncol(taxonomy):1]
+#	}
+	
+	if(class(taxonomy)=="matrix") taxonomy=data.frame(taxonomy, stringsAsFactors=FALSE)
+	taxonomy[taxonomy==""]=NA
+	
+	# check for 'species' column
+	if(ncol(taxonomy)>1){
+		taxonomy=taxonomy[,ncol(taxonomy):1]
+		check=apply(taxonomy, 2, function(x) {y=all(x==labels); if(is.na(y)) return(FALSE) else return(y)})
+		if(any(check)) taxonomy=as.data.frame(taxonomy[,-which(names(taxonomy)==names(which(check)))])
+	}
+	
+	if(ncol(taxonomy)>1){
+		# check for invariant columns
+		check=apply(taxonomy, 2, function(x) length(unique(x)))
+		if(any(check==1)) taxonomy=as.data.frame(taxonomy[,-which(names(taxonomy)==names(which(check==1)))])
+	}
+	
+	# initialize taxonomy for missing data
+	if(is.null(rank)) rank=1:ncol(taxonomy)
+	
+	# find rows lacking information
+	t=apply(taxonomy,1,function(t)any(is.na(t)))
+	if(any(t)) {
+		missing=labels[t]
+	} else {
+		missing=NULL
+	}
+	
+	# fill in missing information
+	#cat("Filling taxonomy and checking for internal consistency\n")
+	tt=.fill.taxonomy(cbind(taxonomy, labels))
+	taxonomy=data.frame(tt[,1:(ncol(tt)-1)])
+	
+	# prepare dataframe for processing
+	if(class(taxonomy)=="data.frame" | class(taxonomy)=="matrix"){
+		taxonomy=as.matrix(taxonomy)
+		if(ncol(taxonomy)>=max(rank)) {
+			taxonomy=as.matrix(taxonomy[,rank])
+			tt=apply(taxonomy,2,function(x)all(x==labels))
+			if(any(tt)) taxonomy=taxonomy[,-which(tt)]
+			rank=seq(1,ncol(taxonomy))
+			taxonomy=cbind(taxonomy,labels)
+			colnames(taxonomy)=c(paste("R",rank,sep=""),"labels")
+		} else {
+			stop("Supplied taxonomy appears inconsistent with called rank(s).")
+		}
+	} else {
+		stop("Please supply taxonomy as a data.frame.")
+	}
+	
+	### BUILD EDGE MATRIX ###
+	#cat("Constructing tree representation of taxonomy\n")
+	
+	# find unique rank labels
+	uranks=lapply(rank, function(x) unique(taxonomy[,x]))
+	
+	n=nrow(taxonomy)
+	N=length(unlist(uranks))+1
+	
+	# initialize internal and terminal edge matrices
+	int.edge=matrix(NA, nrow=N-1, ncol=2)
+	tip.edge=matrix(NA, nrow=n, ncol=2)
+	
+	
+	## LABEL INTERNAL NODES ##
+	start=n+2
+	start.node=0
+	for(i in 1:length(rank)) {
+		
+	# numerically label each unique rank
+		curints=length(uranks[[i]])
+		end=start+curints-1
+		names(uranks[[i]])=start:end
+		edge.start=start-n-1
+		start=end+1
+		
+	# indexing for edge matrix
+		edge.end=edge.start+curints-1
+		
+		if(i==1) {
+			
+	# first rank is bounded by root (n+1)
+			int.edge[edge.start:edge.end,]=c(rep(n+1,curints),as.numeric(names(uranks[[i]])))
+			
+		} else {
+			
+	# subsequent ranks must be linked to their ancestral node ID
+			monophyletic.ranks=sapply(uranks[[i]], function(x) .check.taxonomy(x, rank[i], taxonomy))
+			
+	# record ancestor-descendant relationships for all internal nodes --> int.edge[ancestor,descendant]
+			if(!any(is.na(monophyletic.ranks))) {
+				start.row<-start.node<-start.node+length(uranks[[i-1]])
+				int.nodes=as.numeric(names(uranks[[i-1]][match(monophyletic.ranks, uranks[[i-1]])]))
+				int.edge[(start.row+1):(start.row+length(uranks[[i]])),]=cbind(int.nodes, as.numeric(names(uranks[[i]])))
+			} else {
+				stop(paste("\n\nNOTE: ensure that 'taxonomy' is supplied with most exclusive taxa (e.g., species) in the leftmost columns\n\nThe following taxa appear non-monophyletic: \n\t"),paste(uranks[[i]][which(is.na(monophyletic.ranks))],collapse="\n\t"))
+			}
+		}
+	}
+	
+	## LABEL TERMINAL NODES ##
+	innermost.rank=uranks[[length(rank)]]
+	innermost.rank.IDs=as.numeric(names(innermost.rank))
+	innernodes=unname(sapply(taxonomy[,max(rank)], function(x) innermost.rank.IDs[which(innermost.rank==x)]))
+	tip.edge=cbind(innernodes, 1:n)
+	
+	# build phylo object
+	edge=rbind(int.edge,tip.edge)
+	phy=list(edge=edge, 
+			 Nnode=N, 
+			 tip.label=taxonomy[,ncol(taxonomy)],
+			 edge.length=rep(1,nrow(edge)),
+			 root.edge=0
+			 )
+	class(phy)="phylo"
+	phy=reorder(collapse.singles(phy))		
+	phy$tip.label=unname(phy$tip.label)
+	return(list(phy=phy, missing=missing))		
+}
+

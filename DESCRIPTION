@@ -1,13 +1,13 @@
 Package: geiger
 Type: Package
 Title: Analysis of evolutionary diversification
-Version: 1.3-1.666
+Version: 1.4-1.666
 Date: 2012-06-22
 Author: Luke Harmon <lukeh@uidaho.edu>, Jason Weir, Chad Brock, Rich
         Glor, Wendell Challenger, Gene Hunt, Rich FitzJohn, Jon Eastman
 Maintainer: Luke Harmon <lukeh@uidaho.edu>
-Depends: ape (>= 1.9-4), MASS, mvtnorm, msm, subplex, deSolve (>= 1.7)
-Suggests: auteur
+Depends: ape (>= 1.9-4), MASS, mvtnorm, msm, subplex, deSolve (>= 1.7), colorspace, digest, Rcpp, coda
+LinkingTo: Rcpp
 Description: Running macroevolutionary simulation and estimating
         parameters related to diversification from comparative
         phylogenetic data.

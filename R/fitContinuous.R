@@ -304,7 +304,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	}
 	
 	# cache object for likelihood computation
-	cache = make.cache.bm(phy, dat, SE, control=list(method="pruning", backend="C"))
+	cache = .make.cache.bm(phy, dat, SE, control=list(method="pruning", backend="C"))
 	cache$ordering=attributes(cache$info$phy)$order
 		
 	FUN=switch(model, 
@@ -355,7 +355,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 		
         out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, nn)), package = "auteur")
         vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
-        loglik <- auteur:::.root.bm.direct(vals, out$lq[-rootidx], root, root.x)
+        loglik <- .root.bm.direct(vals, out$lq[-rootidx], root, root.x)
         if (intermediates) {
             attr(loglik, "intermediates") <- intermediates
             attr(loglik, "vals") <- vals

@@ -375,8 +375,8 @@ mkn.lik=function(
 		
 	# primary cache
 	k<-nlevels(as.factor(dat))
-    control <- check.control.mkn(ct, k)
-    cache <- make.cache.mkn(phy, dat, k, strict=TRUE, control=ct)
+    control <- .check.control.mkn(ct, k)
+    cache <- .make.cache.mkn(phy, dat, k, strict=TRUE, control=ct)
 	cache$ordering=attributes(cache$info$phy)$order
 	
 	# tree transforms
@@ -395,15 +395,15 @@ mkn.lik=function(
 	## KIND OF WORKING
 	ll.mkn=function(cache, control) {
 		k <- cache$info$k
-		f.pars <- make.pars.mkn(k)
+		f.pars <- .make.pars.mkn(k)
 		f.pij <- make.pij.mkn(cache$info, control)
 		idx.tip <- cache$idx.tip
 		n.tip <- cache$n.tip
 		n <- length(cache$len)
 		map <- t(sapply(1:k, function(i) (1:k) + (i - 1) * k))
 		idx.tip <- cbind(c(map[cache$states, ]), rep(seq_len(n.tip), k))
-		children.C <- toC.int(t(cache$children))
-		order.C <- toC.int(cache$order)
+		children.C <- .toC.int(t(cache$children))
+		order.C <- .toC.int(cache$order)
 		
 		.ll.mkn.exp=function(q, pars, intermediates=FALSE, preset = NULL) { # based on diversitree:::make.all.branches.mkn.exp
 			if(is.null(argnames(FUN))) new=FUN() else new=FUN(q)
@@ -433,13 +433,13 @@ mkn.lik=function(
 			ll=function(pars){
 				qmat=f.pars(pars)
 				ans=.ll.mkn.exp(q=NULL, pars=qmat, intermediates=FALSE)
-				rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
+				.rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
 			}
 		} else {
 			ll=function(pars){ # TREE TRANSFORM
 				qmat=f.pars(pars[-1])
 				ans=.ll.mkn.exp(q=pars[1], pars=qmat, intermediates=FALSE)
-				rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
+				.rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
 			}
 			
 		}
