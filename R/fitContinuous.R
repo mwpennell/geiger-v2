@@ -1,8 +1,6 @@
 ## MAIN FUNCTION for OPTIMIZATION
 # to replace geiger:::fitContinuous
 
-
-
 fitContinuous=function(
 	phy, 
 	dat, 
@@ -19,9 +17,26 @@ fitContinuous=function(
 	# bounds: a list with elements specifying constraint(s): e.g., bounds=list(alpha=c(0,1))
 	# control: a list with elements specifying method to compute likelihood
 	
+	# data matching
+	td=treedata(phy, dat)
+	phy=td$phy
+	dat=td$data
+	dd=dim(dat)
+	trts=dd[2]
+	if(trts>1){
+		nm=colnames(dat)
+		res=lapply(1:trts, function(idx){
+			fitContinuous(phy, dat[,idx], SE=SE, model=model, bounds=bounds, control=control)	   
+		})
+		names(res)=nm
+		return(res)
+	} else {
+		dat=dat[,1]
+	}
+
 	
 	# CONTROL OBJECT for optimization
-	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(any(is.na(SE)), 100, 50), FAIL=1e200)
+	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(any(is.na(SE)), 100, 50), FAIL=1e200, hessian=FALSE)
 	if("method"%in%names(control)) control$method=match.arg(control$method, c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"), several.ok=TRUE)
 	ct[names(control)]=control
 	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
@@ -212,7 +227,7 @@ fitContinuous=function(
 		hessian=out[[z]]$hessian
 		CI=.bnd.hessian(hessian, zz, typs)
 		if(!all(is.na(CI))){
-			if(diversitree:::is.constrained(lik)){
+			if(is.constrained(lik)){
 				CI=rbind(lik(CI[1,], pars.only=TRUE), rbind(lik(CI[2,], pars.only=TRUE)))
 			} 
 			dimnames(hessian)=NULL
@@ -289,7 +304,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	}
 	
 	# cache object for likelihood computation
-	cache = diversitree:::make.cache.bm(phy, dat, SE, control=list(method="pruning", backend="C"))
+	cache = make.cache.bm(phy, dat, SE, control=list(method="pruning", backend="C"))
 	cache$ordering=attributes(cache$info$phy)$order
 		
 	FUN=switch(model, 

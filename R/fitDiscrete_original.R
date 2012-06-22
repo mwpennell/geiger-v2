@@ -1,4 +1,4 @@
-`fitDiscrete` <-
+`fitDiscrete_original` <-
 function(phy, data, model=c("ER", "SYM", "ARD"), treeTransform=c("none", "lambda", "kappa", "delta", "linearChange", "exponentialChange", "twoRate"), data.names=NULL, plotlnl=F, qLimits=c(0.0001, 1000), pLimits=c(0.00001, 10))
 {
 	

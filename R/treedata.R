@@ -10,29 +10,38 @@
 # if sort is T, data will have rows in the same order
 # as the taxon names in phy$tip.label
 
-treedata<-function(phy, data, data.names=NULL, sort=F, warnings=T)
+treedata<-function(phy, data, data.names=NULL, sort=FALSE, warnings=TRUE)
 {
 
-	if(is.vector(data)) data<-as.matrix(data)
-	if(is.factor(data)) data<-as.matrix(data)
-	if(is.array(data) & length(dim(data))==1) data<-as.matrix(data)
-
+	if(is.vector(data)) {
+		data<-as.matrix(data)
+	}
+	if(is.factor(data)) {
+		data<-as.matrix(data)
+	}
+	if(is.array(data) & length(dim(data))==1) {
+		data<-as.matrix(data)
+	}
+	
 	if(is.null(data.names)) {
 		if(is.null(rownames(data))) {
-				data.names<-phy$tip.label[1:dim(data)[1]]
-				if(warnings)
-					cat("Warning: no tip labels, order assumed to be the same as in the tree\n")
-			} else
-				data.names<-rownames(data)
+				stop("names for 'data' must be supplied")
+#JME				data.names<-phy$tip.label
+#JME				if(warnings)
+#JME					cat("Warning: no tip labels, order assumed to be the same as in the tree\n")
+		} else {
+			data.names<-rownames(data)
+		}
 	}
 	nc<-name.check(phy, data, data.names)
 	if(is.na(nc[[1]][1]) | nc[[1]][1]!="OK") {
 		if(length(nc[[1]]!=0)) {
 			phy=drop.tip(phy, as.character(nc[[1]]))
 			if(warnings) {
-				cat("Dropped tips from the tree because there were no matching names in the data:\n")
-				print(nc[[1]])
-				cat("\n")
+				warning(paste("The following tips were not found in 'data' and were dropped from 'phy':\n\t",
+						  paste(nc[[1]], collapse="\n\t"), sep=""))
+#JME			print(nc[[1]])
+#JME			cat("\n")
 			}
 		}
 	
@@ -41,9 +50,10 @@ treedata<-function(phy, data, data.names=NULL, sort=F, warnings=T)
 			data=as.matrix(data[is.na(m),])
 			data.names<-data.names[is.na(m)]
 			if(warnings) {
-				cat("Dropped rows from the data because there were no matching tips in the tree:\n")
-				print(nc[[2]])
-				cat("\n")
+				warning(paste("The following tips were not found in 'phy' and were dropped from 'data':\n\t",
+						  paste(nc[[2]], collapse="\n\t"), sep=""))
+#JME			print(nc[[2]])
+#JME			cat("\n")
 			}
 		}
  	}

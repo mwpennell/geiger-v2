@@ -169,7 +169,7 @@ print.transformer=function (x, printlen = 3, ...)
 ## GENERIC
 print.bm=function (x, printlen = 3, ...) 
 {
-    cat("likelihood function for generalized branching diffusion\n")
+    cat("likelihood function for univariate continuous trait evolution\n")
     cat("\targnames:", paste(argnames(x), collapse = ", "))		 
 	cat("\n\n")
 	f=x
@@ -182,7 +182,7 @@ print.bm=function (x, printlen = 3, ...)
 print.mkn=
 function (x, printlen = 3, ...) 
 {
-    cat("likelihood function for Mk(n)\n")
+    cat("likelihood function for univariate discrete trait evolution\n")
     cat("\targnames:", paste(argnames(x), collapse = ", "))		 
 	cat("\n\n")
 	f=x

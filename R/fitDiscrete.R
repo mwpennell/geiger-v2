@@ -17,6 +17,7 @@
 ### EXAMPLES ###
 #require(auteur)
 
+
 gen=FALSE
 if(gen){
 	require(auteur)
@@ -82,31 +83,53 @@ print.constraint.m=function(x, printlen=3, ...){
 ## MAIN FUNCTION for OPTIMIZATION
 # to replace geiger:::fitContinuous
 
-fd=function(	phy, 
-						dat, 
-						model=c("ER","SYM","ARD","meristic"),
-						transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
-						bounds=list(), 
-						control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, root=ROOT.OBS, hessian=FALSE),
-						...
-					  )
+fitDiscrete=function(	
+	phy, 
+	dat, 
+	model=c("ER","SYM","ARD","meristic"),
+	transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
+	bounds=list(), 
+	control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE),
+	...)
 {
+	
+## NOTE: 'model' can be a constraint matrix
 #	
 #		transform="none"
-#		model="SYM"
+#		model="SYM" 
 #		bounds=list()
 #		control=list(hessian=TRUE) 
+	
+	td=treedata(phy, dat)
+	phy=td$phy
+	dat=td$data
+	dd=dim(dat)
+	trts=dd[2]
+	if(trts>1){
+		nm=colnames(dat)
+		res=lapply(1:trts, function(idx){
+				   fd(phy, dat[,idx], model=model, transform=transform, bounds=bounds, control=control, ...)	   
+				   })
+		names(res)=nm
+		return(res)
+	} else {
+		tmp=as.integer(dat[,1])
+		names(tmp)=rownames(dat)
+		dat=tmp
+		if(!all(is.integer(dat))) stop("supply 'dat' as a vector (or matrix) of positive integers")
 
+	}
+	
 	constrain=model
 	model=match.arg(transform, c("none", "EB", "lambda", "kappa", "delta", "white"))
 
 	# CONTROL OBJECT
-	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(model=="none", 50, 100), FAIL=1e200, root=ROOT.OBS)
+	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(model=="none", 50, 100), FAIL=1e200)
 	if("method"%in%names(control)) control$method=match.arg(control$method, c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"), several.ok=TRUE)
 	ct[names(control)]=control
 	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
 	
-	lik=mkn.lik(phy, dat, constrain=constrain, transform=model, control=list(method="exp", root=ct$root), ...)
+	lik=mkn.lik(phy, dat, constrain=constrain, transform=model, control=list(method="exp", root=ROOT.OBS), ...)
 	if(model=="white") return(list(opt=lik))
 	argn=unlist(argnames(lik))
 	
@@ -264,7 +287,7 @@ fd=function(	phy,
 		hessian=out[[z]]$hessian
 		CI=.bnd.hessian(hessian, mm, partp)
 		if(!all(is.na(CI))){
-			if(diversitree:::is.constrained(lik)){
+			if(is.constrained(lik)){
 				CI=rbind(lik(CI[1,], pars.only=TRUE), rbind(lik(CI[2,], pars.only=TRUE)))
 			} 
 			dimnames(hessian)=NULL
@@ -277,7 +300,7 @@ fd=function(	phy,
 	
 	# resolve all transition estimates (if constrained model)
 	trn=!names(mm)%in%c("a", "lambda", "kappa", "delta")
-	if(diversitree:::is.constrained(lik)){
+	if(is.constrained(lik)){
 		constr=TRUE
 		allq=lik(mm, pars.only=TRUE) 
 	} else {
@@ -352,8 +375,8 @@ mkn.lik=function(
 		
 	# primary cache
 	k<-nlevels(as.factor(dat))
-    control <- diversitree:::check.control.mkn(ct, k)
-    cache <- diversitree:::make.cache.mkn(phy, dat, k, strict=TRUE, control=ct)
+    control <- check.control.mkn(ct, k)
+    cache <- make.cache.mkn(phy, dat, k, strict=TRUE, control=ct)
 	cache$ordering=attributes(cache$info$phy)$order
 	
 	# tree transforms
@@ -372,15 +395,15 @@ mkn.lik=function(
 	## KIND OF WORKING
 	ll.mkn=function(cache, control) {
 		k <- cache$info$k
-		f.pars <- diversitree:::make.pars.mkn(k)
-		f.pij <- diversitree:::make.pij.mkn(cache$info, control)
+		f.pars <- make.pars.mkn(k)
+		f.pij <- make.pij.mkn(cache$info, control)
 		idx.tip <- cache$idx.tip
 		n.tip <- cache$n.tip
 		n <- length(cache$len)
 		map <- t(sapply(1:k, function(i) (1:k) + (i - 1) * k))
 		idx.tip <- cbind(c(map[cache$states, ]), rep(seq_len(n.tip), k))
-		children.C <- diversitree:::toC.int(t(cache$children))
-		order.C <- diversitree:::toC.int(cache$order)
+		children.C <- toC.int(t(cache$children))
+		order.C <- toC.int(cache$order)
 		
 		.ll.mkn.exp=function(q, pars, intermediates=FALSE, preset = NULL) { # based on diversitree:::make.all.branches.mkn.exp
 			if(is.null(argnames(FUN))) new=FUN() else new=FUN(q)
@@ -400,7 +423,7 @@ mkn.lik=function(
 			ans <- .C("r_mkn_core", k = as.integer(k), n = length(order.C) - 
 					  1L, order = order.C, children = children.C, pij = pij, 
 					  init = branch.init, base = branch.base, lq = lq, 
-					  NAOK = TRUE, DUP = FALSE, PACKAGE="diversitree")
+					  NAOK = TRUE, DUP = FALSE, PACKAGE="geiger")
 			
 			list(init = ans$init, base = ans$base, lq = ans$lq, vals = ans$init[, cache$root], pij = pij)
 		}
@@ -410,13 +433,13 @@ mkn.lik=function(
 			ll=function(pars){
 				qmat=f.pars(pars)
 				ans=.ll.mkn.exp(q=NULL, pars=qmat, intermediates=FALSE)
-				diversitree:::rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
+				rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
 			}
 		} else {
 			ll=function(pars){ # TREE TRANSFORM
 				qmat=f.pars(pars[-1])
 				ans=.ll.mkn.exp(q=pars[1], pars=qmat, intermediates=FALSE)
-				diversitree:::rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
+				rootfunc.mkn(ans, qmat, ct$root, NULL, intermediates=FALSE)
 			}
 			
 		}

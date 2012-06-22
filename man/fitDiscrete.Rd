@@ -63,17 +63,15 @@ Yang, Z. 2006. Computational Molecular Evolution. Oxford University Press: Oxfor
 data(geospiza)
 attach(geospiza)
 
-gb<-as.factor(geospiza.data[,1]>4.2)
+gb<-round(geospiza.data[,5])
 names(gb)<-rownames(geospiza.data)
+mm=matrix(sample(1:3, 9, 3))
+diag(mm)=NA
 
-fitDiscrete(geospiza.tree, gb)
-fitDiscrete(geospiza.tree, gb, treeTransform="lambda")
-fitDiscrete(geospiza.tree, gb, treeTransform="delta")
-fitDiscrete(geospiza.tree, gb, treeTransform="kappa")
-
-fitDiscrete(geospiza.tree, gb, treeTransform="linearChange")
-fitDiscrete(geospiza.tree, gb, treeTransform="exponentialChange")
-fitDiscrete(geospiza.tree, gb, treeTransform="twoRate")
+fitDiscrete(geospiza.tree, gb, model="ER")
+fitDiscrete(geospiza.tree, gb, model="ARD")
+fitDiscrete(geospiza.tree, gb, model=mm)
+fitDiscrete(geospiza.tree, gb, model=mm, transform="delta")
 
 
 

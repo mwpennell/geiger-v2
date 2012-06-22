@@ -1,3 +1,6 @@
+useDynLib(geiger)
+
+
 export(area.between.curves, birthdeath.tree, phy.anova, phy.manova)
 export(deltaTree, lambdaTree, kappaTree, tworateTree, linearchangeTree, rescaleTree)
 export(exponentialchangeTree, speciationalTree, ouTree)
@@ -13,4 +16,5 @@ export(runMedusa, summaryMedusa)
 export(print.bm, print.mkn)
 export(transform.phylo)
 ## IN PROGRESS
-export(fd)
+export(fitDiscrete)
+export(fitDiscrete_original, fitContinuous_original)
