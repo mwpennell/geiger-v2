@@ -108,6 +108,16 @@ argnames.mkn=function(x, ...){
 	m
 }
 
+.repars=function(pars, expected){
+	if(all(!is.null(nm<-names(pars)))){
+		if(!all(nm%in%expected)) stop(paste("The following 'pars' are unexpected:\n\t", paste(nm[!nm%in%expected], collapse="\n\t", sep=""), sep=""))
+		if(length(unique(nm))!=length(expected)) stop(paste("The following 'pars' are expected:\n\t", paste(expected, collapse="\n\t", sep=""), sep="")) 
+		mm=match(expected, nm)
+		return(pars[mm])
+	} else {
+		return(pars)
+	}
+}
 
 ## EXTENSION of diversitree:::constrain()
 ## create 'standard' constraint likelihood function given a patterned matrix

@@ -142,7 +142,7 @@ fitDiscrete=function(
 	bnds$model=c("EB", "lambda", "kappa", "delta", "trns")
 	
 	parnm=ifelse(argn%in%rownames(bnds), argn, "trns")
-	partp=bnds[parnm, "typ"]
+	typs=bnds[parnm, "typ"]
 	
 	# User bounds
 	if(length(bounds)>0){
@@ -167,17 +167,16 @@ fitDiscrete=function(
 	
 	par=argn[1]
 
+	## likelihood function for optimizer (with modified space)
 	xx=function(p){
-		if(par%in%c("a")){
-			tmp=-lik(c(p[1], exp(p[-1])))
-		} else {
-			tmp=-lik(exp(p))
-		}
+		pars=ifelse(typs=="exp", exp(p), p)
+		tmp=-lik(pars)
 		if(is.infinite(tmp)) {
 			tmp=ct$FAIL
 		}
 		tmp
 	}
+	
 	
 	
 	# boxconstrain from diversitree
@@ -222,7 +221,6 @@ fitDiscrete=function(
 		names(start)=argn
 		min=bnds[parnm,"mn"]
 		max=bnds[parnm,"mx"]
-		typs=bnds[parnm, "typ"]
 		
 		# resolve method	
 		if(length(argn)==1) {
@@ -281,11 +279,11 @@ fitDiscrete=function(
 	
 	## HESSIAN-based CI of par estimates
 	if(ct$hessian){
-		print(mm)
-		print(partp)
-		print(out[[z]]$hessian)
+#		print(mm)
+#		print(partp)
+#		print(out[[z]]$hessian)
 		hessian=out[[z]]$hessian
-		CI=.bnd.hessian(hessian, mm, partp, ct$hessian_P)
+		CI=.bnd.hessian(hessian, mm, typs, ct$hessian_P)
 		if(!all(is.na(CI))){
 			if(is.constrained(lik)){
 				CI=rbind(lik(CI[1,], pars.only=TRUE), rbind(lik(CI[2,], pars.only=TRUE)))
@@ -425,10 +423,12 @@ mkn.lik=function(
 					  init = branch.init, base = branch.base, lq = lq, 
 					  NAOK = TRUE, DUP = FALSE, PACKAGE="geiger")
 			
+			
 			list(init = ans$init, base = ans$base, lq = ans$lq, vals = ans$init[, cache$root], pij = pij)
 		}
 	
 		# build likelihood function
+		attb=c(argnames(FUN), cache$info$argnames)
 		if(is.null(argnames(FUN))){ # NO TRANSFORM
 			ll=function(pars){
 				qmat=f.pars(pars)
@@ -444,27 +444,32 @@ mkn.lik=function(
 			
 		}
 		class(ll) <- c("mkn", "dtlik", "function")
-		attr(ll,"argnames") <- c(argnames(FUN), cache$info$argnames)
+		attr(ll,"argnames") <- attb
 		return(ll)
 	}
 	
-	lik=ll.mkn(cache, control)
+	tmp=ll.mkn(cache, control)
 	
 	## CONSTRAINTS
 	if(!all(constrain=="ARD")){
 		if(is.character(constrain)){
 			cc=match.arg(constrain, c("ER","SYM","ARD","meristic"))
-			lik=constrain.k(lik, model=cc, ...)
+			tmp=constrain.k(tmp, model=cc, ...)
 		} else {
 			if(is.matrix(constrain)){
 				if(ncol(constrain)==max(dat)){
-					lik=constrain.m(lik, m=constrain)
+					tmp=constrain.m(tmp, m=constrain)
 				}
 			} else {
 				stop("'constrain' must be supplied as a dummy matrix representing constraints on transition classes")
 			}
 		}
 	}
+	lik=function(pars, ...){
+		pars=.repars(pars, argnames(tmp))
+		tmp(pars, ...)
+	}
+	attributes(lik)<-attributes(tmp)
 	lik
 }
 

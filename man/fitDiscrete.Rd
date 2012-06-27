@@ -65,7 +65,7 @@ attach(geospiza)
 
 gb<-round(geospiza.data[,5])
 names(gb)<-rownames(geospiza.data)
-mm=matrix(sample(1:3, 9, 3))
+mm=matrix(sample(1:3, 9, replace=TRUE),3)
 diag(mm)=NA
 
 fitDiscrete(geospiza.tree, gb, model="ER")

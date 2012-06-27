@@ -48,7 +48,7 @@ fitContinuous=function(
 	con=list(method="pruning",backend="C")
 	con[names(control)]=control
 	lik=bm.lik(phy,dat,SE,model)
-	argn=unlist(argnames(lik))
+	argn=argnames(lik)
 	
 
 	## CONSTRUCT BOUNDS ##
@@ -58,6 +58,7 @@ fitContinuous=function(
 	bnds$typ=c("exp", "exp", "nat", "nat", "exp", "exp", "exp", "exp")
 	rownames(bnds)=c("sigsq", "alpha", "a", "slope", "lambda", "kappa", "delta", "SE")
 	bnds$model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "SE")
+	typs=bnds[argn, "typ"]
 	
 	# User bounds
 	if(length(bounds)>0){
@@ -82,35 +83,16 @@ fitContinuous=function(
 	par=argn[1]
 
 	
-	## likelihood function for optimizer 
+	## likelihood function for optimizer (with modified space)
 	xx=function(p){
-		if(par=="sigsq") {
-			if("SE"%in%argn){
-				tmp=-lik(exp(p[1]), exp(p[2]))
-			} else {
-				tmp=-lik(exp(p[1]))
-			}
-		} else {
-			if(bnds[par,"typ"]=="nat"){
-				if("SE"%in%argn){
-					tmp=-lik(p[1], exp(p[2]), exp(p[3]))
-				} else {
-					tmp=-lik(p[1], exp(p[2]))
-				}
-			} else {
-				if("SE"%in%argn){
-					tmp=-lik(exp(p[1]), exp(p[2]), exp(p[3]))
-				} else {
-					tmp=-lik(exp(p[1]), exp(p[2]))
-				}
-			}
-		}
+		pars=ifelse(typs=="exp", exp(p), p)
+		tmp=-lik(pars)
 		if(is.infinite(tmp)) {
 			tmp=ct$FAIL
 		}
 		tmp
 	}
-	
+			
 	# boxconstrain from diversitree
 	boxconstrain=function (f, lower, upper, fail.value = FAIL) 
 	{
@@ -166,7 +148,6 @@ fitContinuous=function(
 		names(start)=argn
 		min=bnds[argn,"mn"]
 		max=bnds[argn,"mx"]
-		typs=bnds[argn, "typ"]
 
 		
 		# resolve method	
@@ -371,32 +352,40 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	if(is.null(argnames(FUN))){
 		
 		if(adjSE){
-			lik <- function(sigsq, SE) {
-				ll = ll.bm.direct(q=NULL, sigsq = sigsq, se=SE, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+			attb=c("sigsq", "SE")
+			lik <- function(pars) {
+				pars=.repars(pars, attb)
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
 				return(ll)
 			}
-			attr(lik, "argnames") = list(sigsq="sigsq", SE="SE")
+			attr(lik, "argnames") = attb
 		} else {
-			lik <- function(sigsq) {
-				ll = ll.bm.direct(q=NULL, sigsq = sigsq, se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+			attb="sigsq"
+			lik <- function(pars) {
+				pars=.repars(pars, attb)
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
 				return(ll)
 			}
-			attr(lik, "argnames") = list(sigsq="sigsq")
+			attr(lik, "argnames") = attb
 		}
 		
 	} else {
 		if(adjSE){
-			lik <- function(q, sigsq, SE) {
-				ll = ll.bm.direct(q, sigsq = sigsq, se=SE, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+			attb=c(argnames(FUN), "sigsq", "SE")
+			lik <- function(pars) {
+				pars=.repars(pars, attb)
+				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
 				return(ll)
 			}
-			attr(lik, "argnames") = list(par=argnames(FUN), sigsq="sigsq", SE="SE")			
+			attr(lik, "argnames") = attb			
 		} else {
-			lik <- function(q, sigsq) {
-				ll = ll.bm.direct(q, sigsq = sigsq, se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+			attb=c(argnames(FUN), "sigsq")
+			lik <- function(pars) {
+				pars=.repars(pars, attb)
+				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
 				return(ll)
 			}
-			attr(lik, "argnames") = list(par=argnames(FUN), sigsq="sigsq")			
+			attr(lik, "argnames") = attb			
 		}
 	}
 	
