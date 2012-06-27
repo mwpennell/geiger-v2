@@ -1,47 +1,68 @@
-#require(auteur)
-#require(diversitree)
-#atr=as.integer(unlist(strsplit(toString(packageVersion("auteur")),".",fixed=TRUE))[3])
-#div=as.integer(unlist(strsplit(toString(packageVersion("diversitree")),".",fixed=TRUE))[3])
-#if(atr<507) {
-#	stop("Update 'auteur': contact jonathan.eastman@gmail.com")
-#}
-#if(div<4){
-# MUST BE DIVERSITREE 0.9-4 or greater due to bug fix in make.bm()
-#	stop("Update 'diversitree': download and install from 'https://github.com/richfitz/diversitree'")
-#}
 
-#source("fitDiscrete.R")
-#source("fitContinuous.R")
+## GENERIC
+print.transformer=function (x, printlen = 3, ...) 
+{
+    cat("function for tree transformation\n")
+    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
+	cat("\n\n")
+	f=x
+	attributes(f)=NULL
+	cat("definition:\n")
+	print(f)
+}
 
 
-### EXAMPLES ###
 
-#phy=rescaleTree(ultrametricize.phylo(rtree(2000), "max"),100)
-#dis=as.integer(rTraitDisc(phy, matrix(c(-.1,.1,.1,.1,-.1,.1,.1,.1,-.1), nrow=3), states=c(1,2,3)))
-#names(dis)=phy$tip.label
-#con=rTraitCont(phy)
-#m=matrix(sample(1:3,9, replace=TRUE), nrow=3) 
-#mkn=make.mkn(phy,dis,k=length(unique(dis)))
+## GENERIC
+print.bm=function (x, printlen = 3, ...) 
+{
+    cat("likelihood function for univariate continuous trait evolution\n")
+    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
+	cat("\n\n")
+	f=x
+	attributes(f)=NULL
+	cat("definition:\n")
+	print(f)
+}
 
-#cat("\n\n\n*** 'm', 'phy','dis',and'con' are in memory ***\n")
+## GENERIC
+print.mkn=
+function (x, printlen = 3, ...) 
+{
+    cat("likelihood function for univariate discrete trait evolution\n")
+    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
+	cat("\n\n")
+	f=x
+	attributes(f)=NULL
+	cat("definition:\n")
+	print(f)
+}
 
-###############
+## GENERIC
+argnames.default=function(x, ...){
+	attr(x, "argnames")
+}
 
+## GENERIC
+argnames.mkn=function(x, ...){
+	attr(x, "argnames")
+}
 
-.bnd.hessian=function(m, p, s){
+## HESSIAN COMPUTATION of CONFIDENCE INTERVALS
+.bnd.hessian=function(m, p, s, prob=0.05){
+	prob=min(c(1-prob, prob))
 	dm=unique(dim(m))
 	if(length(dm)!=1) {warning("FAILURE in Hessian CI computation: 'm' must be a square matrix"); return(NA)}
 	if(dm!=length(p) | dm!=length(s)) {warning("FAILURE in Hessian CI computation: 'p' and 's' must be of equal length to the dimensions of 'm'"); return(NA)}
 	if(!all(s%in%c("exp","nat"))) {warning("FAILURE in Hessian CI computation: 's' must indicate the space of 'p': expecting either 'exp' or 'nat' as elements"); return(NA)}
 
-	qq=qnorm(0.975)
+	qq=qnorm(1-(prob/2))
 	dd=try(sqrt(diag(solve(m))),silent=TRUE)
 	if(inherits(dd, "try-error")){
 		warning(paste("ERROR in inversion of Hessian matrix:", gsub(">", "", gsub("<", "", gsub("\n", "", toString(attributes(dd)$condition))))))
 		return(NA)
 	}
 	bb=qq*dd
-#	bb=ifelse(s=="exp", exp(qq)*dd, qq*dd)
 	res=sapply(1:length(s), function(idx) {
 		if(s[idx]=="exp"){
 		   
@@ -88,6 +109,7 @@
 }
 
 
+## EXTENSION of diversitree:::constrain()
 ## create 'standard' constraint likelihood function given a patterned matrix
 constrain.k=function(f, model=c("ER", "SYM", "ARD", "meristic"), ...){
 	e=environment(f)
@@ -104,7 +126,7 @@ constrain.k=function(f, model=c("ER", "SYM", "ARD", "meristic"), ...){
 	return(constrain.m(f, mm))
 }
 
-
+## EXTENSION of diversitree:::constrain()
 ## create constrained likelihood function by supplying matrix
 constrain.m=function(f, m){
 	# if entry is 0, assumed to constrain rate to 0
@@ -152,57 +174,6 @@ constrain.m=function(f, m){
 	v
 }
 
-## GENERIC
-print.transformer=function (x, printlen = 3, ...) 
-{
-    cat("function for tree transformation\n")
-    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
-	cat("\n\n")
-	f=x
-	attributes(f)=NULL
-	cat("definition:\n")
-	print(f)
-}
-
-
-
-## GENERIC
-print.bm=function (x, printlen = 3, ...) 
-{
-    cat("likelihood function for univariate continuous trait evolution\n")
-    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
-	cat("\n\n")
-	f=x
-	attributes(f)=NULL
-	cat("definition:\n")
-	print(f)
-}
-
-## GENERIC
-print.mkn=
-function (x, printlen = 3, ...) 
-{
-    cat("likelihood function for univariate discrete trait evolution\n")
-    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
-	cat("\n\n")
-	f=x
-	attributes(f)=NULL
-	cat("definition:\n")
-	print(f)
-}
-
-
-
-## GENERIC
-argnames.default=function(x, ...){
-	attr(x, "argnames")
-}
-
-## GENERIC
-argnames.mkn=function(x, ...){
-	attr(x, "argnames")
-}
-
 
 # compute path length from root to tip
 .paths.cache=function(cache){
@@ -234,7 +205,7 @@ argnames.mkn=function(x, ...){
 .paths.phylo=function(phy){
 ## from vcv.phylo()
 	n <- length(phy$tip.label)
-	pp <- auteur:::.compile_descendants(phy)$adesc[-c(1:n)]
+	pp <- .compile_descendants(phy)$adesc[-c(1:n)]
 	phy <- reorder(phy, "pruningwise")
 	e1 <- phy$edge[, 1]
 	e2 <- phy$edge[, 2]
@@ -258,12 +229,10 @@ argnames.mkn=function(x, ...){
 }
 
 
-
-
 ## tree transformation
 transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white")){
 	
-	require(auteur)
+#require(auteur)
 	
 	model=match.arg(model, c("OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
 	
@@ -316,8 +285,7 @@ transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "d
 	cache
 }
 
-.heights.cache<-
-function (cache) 
+.heights.cache=function (cache) 
 {
 	cache=.reorder.cache.cladewise(cache)
 	n <- cache$n.tip
@@ -340,27 +308,6 @@ function (cache)
 	
 }
 
-## REPLACE in AUTEUR (move to heights.phylo)
-.heights.phylo=function(phy){
-	phy <- reorder(phy, order="cladewise")
-	n <- length(phy$tip.label)
-	n.node <- phy$Nnode
-	xx <- numeric(n + n.node)
-	for (i in 1:nrow(phy$edge)) xx[phy$edge[i, 2]] <- xx[phy$edge[i, 1]] + phy$edge.length[i]
-	root = ifelse(is.null(phy$root.edge), 0, phy$root.edge)
-	depth = max(xx)
-	tt = depth - xx
-	idx = 1:length(tt)
-	dd = phy$edge.length[idx]
-	mm = match(1:length(tt), c(phy$edge[, 2], Ntip(phy) + 1))
-	dd = c(phy$edge.length, root)[mm]
-	ss = tt + dd
-	res = cbind(ss, tt)
-	rownames(res) = idx
-	colnames(res) = c("start", "end")
-	res = data.frame(res)
-	res	
-}
 
 transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white")){
 	model=match.arg(model, c("OU", "EB", "trend", "lambda", "kappa", "delta", "white"))

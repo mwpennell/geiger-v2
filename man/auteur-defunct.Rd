@@ -12,12 +12,12 @@
 }
 \details{
 	\itemize{
-		\item{\code{calibrate.proposalwidth}}: use \code{\link[auteur]{calibrate.rjmcmc}}
-		\item{\code{pool.rjmcmcsamples}}: use \code{\link[auteur]{summarize.rjmcmc}}
+		\item{\code{calibrate.proposalwidth}}: use \code{\link[geiger]{calibrate.rjmcmc}}
+		\item{\code{pool.rjmcmcsamples}}: use \code{\link[geiger]{summarize.rjmcmc}}
 		\item{\code{tracer}}: use of \code{\link[coda]{plot.mcmc}} and other functions in \pkg{coda} recommended
-		\item{\code{intercalate.samples}}: use \code{auteur:::.intercalate.rjmcmc}
+		\item{\code{intercalate.samples}}: use \code{geiger:::.intercalate.rjmcmc}
 		\item{\code{shifts.plot}}: use \code{plot}
-		\item{code{vmat}}: use \code{auteur:::.vmat}
+		\item{code{vmat}}: use \code{geiger:::.vmat}
 	}
 }
 

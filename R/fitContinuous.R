@@ -7,10 +7,11 @@ fitContinuous=function(
 	SE = NA, 
 	model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"), 
 	bounds=list(), 
-	control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE))
+	control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessian_P=0.05)
+	)
 {
 
-	require(auteur)
+#	require(auteur)
 	
 	# SE: can be vector or single value (numeric, NULL, or NA); vector can include NA
 	# opt: a list with elements 'method', 'niter', 'FAIL'; 'method' may include several optimization methods
@@ -225,7 +226,7 @@ fitContinuous=function(
 	## HESSIAN-based CI of par estimates
 	if(ct$hessian){
 		hessian=out[[z]]$hessian
-		CI=.bnd.hessian(hessian, zz, typs)
+		CI=.bnd.hessian(hessian, zz, typs, ct$hessian_P)
 		if(!all(is.na(CI))){
 			if(is.constrained(lik)){
 				CI=rbind(lik(CI[1,], pars.only=TRUE), rbind(lik(CI[2,], pars.only=TRUE)))

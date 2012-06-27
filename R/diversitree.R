@@ -15,13 +15,6 @@ function(x, ...) {
     ret
 }
 
-`argnames<-.bm` <- function(x, value) {
-	if ( length(value) != 1 )
-    stop("Invalid names length")
-	attr(x, "argnames") <- value
-	x
-}
-
 .default.argnames.mk2 <- function() c("q01", "q10")
 
 .default.argnames.mkn <- function(k) {
@@ -43,21 +36,17 @@ ROOT.MAX   <- 6
 ROOT.ALL   <- ROOT.BOTH
 
 
-.check.states <- function(tree, states, allow.unnamed=FALSE,
-strict=FALSE, strict.vals=NULL) {
+.check.states <- function(phy, dat, strict.vals=NULL) {
+	tree=phy
+	states=dat
+	allow.unnamed=FALSE
+	strict=FALSE
+	
 	if ( is.matrix(states) ) {
 ## Multistate characters (experimental).  This will not work with
 ## clade trees, but they are only interesting for BiSSE, which has
 ## NA values for multistate (even weight).
 		
-## Convert a matrix to a list by row.
-		.matrix.to.list <- function(m) {
-			n <- nrow(m)
-			out <- vector("list", n)
-			for ( i in seq_len(n) )
-			out[[i]] <- m[i,]
-			out
-		}
 		
 		
 		if ( inherits(tree, "clade.tree") )
@@ -77,8 +66,7 @@ strict=FALSE, strict.vals=NULL) {
 		
 		states <- rep(NA, length(tmp))
 		names(states) <- names(tmp)
-		states[i.mono] <- sapply(tmp[i.mono], function(x)
-								 which(x != 0))
+		states[i.mono] <- sapply(tmp[i.mono], function(x) which(x != 0))
 		
 		attr(states, "multistate") <- list(i=i.mult, states=states.mult)
 	}
@@ -89,8 +77,7 @@ strict=FALSE, strict.vals=NULL) {
 				names(states) <- tree$tip.label
 				warning("Assuming states are in tree$tip.label order")
 			} else {
-				stop(sprintf("Invalid states length (expected %d)",
-							 length(tree$tip.label)))
+				stop(sprintf("Invalid states length (expected %d)", length(tree$tip.label)))
 			}
 		} else {
 			stop("The states vector must contain names")
@@ -100,20 +87,18 @@ strict=FALSE, strict.vals=NULL) {
 	if ( !all(tree$tip.label %in% names(states)) )
     stop("Not all species have state information")
 	
-## TODO: When multistate characters are present, this may fail even
-## for cases where it should not.
+	## TODO: When multistate characters are present, this may fail even
+	## for cases where it should not.
 	if ( !is.null(strict.vals) ) {
 		if ( strict ) {
 			if ( !isTRUE(all.equal(sort(strict.vals),
 								   sort(unique(na.omit(states))))) )
 			stop("Because strict state checking requested, all (and only) ",
-				 sprintf("states in %s are allowed",
-						 paste(strict.vals, collapse=", ")))
+				 sprintf("states in %s are allowed", paste(strict.vals, collapse=", ")))
 		} else {
 			extra <- setdiff(sort(unique(na.omit(states))), strict.vals)
 			if ( length(extra) > 0 )
-			stop(sprintf("Unknown states %d not allowed in states vector",
-						 paste(extra, collapse=", ")))
+			stop(sprintf("Unknown states %d not allowed in states vector", paste(extra, collapse=", ")))
 		}
 	}
 	
@@ -124,7 +109,7 @@ strict=FALSE, strict.vals=NULL) {
 		states[union(tree$tip.label, spp.clades)]
 	} else {
 		ret <- states[tree$tip.label]
-## Ugly hack...
+	## Ugly hack...
 		attr(ret, "multistate") <- attr(states, "multistate")
 		ret
 	}
@@ -134,10 +119,9 @@ strict=FALSE, strict.vals=NULL) {
 	states <- .check.states(tree, states)
 	
 	if ( length(states.sd) == 1 )
-    states.sd <- structure(rep(states.sd, length(states)),
-                           names=names(states))
+		states.sd <- structure(rep(states.sd, length(states)), names=names(states))
 	else
-    states.sd <- .check.states(tree, states.sd)
+		states.sd <- .check.states(tree, states.sd)
 	
 	list(states=states, states.sd=states.sd)
 }  
@@ -158,17 +142,16 @@ strict=FALSE, strict.vals=NULL) {
 }
 
 
-.check.tree <- function(tree, ultrametric=TRUE, bifurcating=TRUE,
-node.labels=FALSE) {
+.check.tree <- function(tree, ultrametric=TRUE, bifurcating=TRUE, node.labels=FALSE) {
 	if ( !inherits(tree, "phylo") )
     stop("'tree' must be a valid phylo tree")
 	if ( ultrametric && !is.ultrametric(tree) )
     stop("'tree' must be ultrametric")
 	if ( any(tree$edge.length < 0) )
     stop("Negative branch lengths in tree")
-## ape is.binary.tree() can let a few nasties through - for
-## e.g. each tritomy, an unbranched node and this gets through.
-## This expression is a little stricter, even if a touch slower.
+	## ape is.binary.tree() can let a few nasties through - for
+	## e.g. each tritomy, an unbranched node and this gets through.
+	## This expression is a little stricter, even if a touch slower.
 	if ( bifurcating && (!is.binary.tree(tree) ||
 						 any(tabulate(tree$edge[, 1]) == 1)) )
     stop("'tree must be bifurcating (no polytomies or unbranched nodes)'")
@@ -294,9 +277,8 @@ node.labels=FALSE) {
 
 
 .make.cache <- function(tree) {
-## This works around some ape bugs with class inheritance.
-	if (inherits(tree, "phylo"))
-    class(tree) <- "phylo"
+	## This works around some ape bugs with class inheritance.
+	if (inherits(tree, "phylo")) class(tree) <- "phylo"
 	edge <- tree$edge
 	edge.length <- tree$edge.length
 	idx <- seq_len(max(edge))
@@ -313,9 +295,9 @@ node.labels=FALSE) {
 	order <- .get.ordering(children, is.tip, root)
 	len <- edge.length[match(idx, edge[,2])]
 	
-## This is a bit of a hack, but this is to ensure that we can really
-## compute the depths accurately - this is a problem when there
-## joins (under split models) that occur right around nodes.
+	## This is a bit of a hack, but this is to ensure that we can really
+	## compute the depths accurately - this is a problem when there
+	## joins (under split models) that occur right around nodes.
 	height <- .branching.heights(tree)
 	depth <- max(height) - height
 	depth2 <- .branching.depth(len, children, order, tips)
@@ -323,20 +305,20 @@ node.labels=FALSE) {
 	depth[i] <- depth2[i]
 	
 	if ( is.ultrametric(tree) )
-## It is possible that an ultrametric tree will not quite have the
-## tips around zero.  This ensures it, which is is required for
-## dt.tips.grouped to work at present.
+	## It is possible that an ultrametric tree will not quite have the
+	## tips around zero.  This ensures it, which is is required for
+	## dt.tips.grouped to work at present.
     depth[tips] <- 0
 	
-## TODO: I do not need this ancestor thing for much - drop it here
-## and move it to the asr code that actually uses it (this takes a
-## lot of time, and is only used by the ASR code).
-## The only place that this is used at all is do.asr.marginal(); it
-## would be possible to make this as needed when making an
-## asr.marginal() function.
-	anc <- vector("list", max(order))
-	for ( i in c(rev(order[-length(order)]), tips) )
-    anc[[i]] <- c(parent[i], anc[[parent[i]]])
+	## TODO: I do not need this ancestor thing for much - drop it here
+	## and move it to the asr code that actually uses it (this takes a
+	## lot of time, and is only used by the ASR code).
+	## The only place that this is used at all is do.asr.marginal(); it
+	## would be possible to make this as needed when making an
+	## asr.marginal() function.
+#	anc <- vector("list", max(order))
+#	for ( i in c(rev(order[-length(order)]), tips) )
+#   anc[[i]] <- c(parent[i], anc[[parent[i]]])
 	
 	ans <- list(tip.label=tree$tip.label,
 				node.label=tree$node.label,
@@ -350,7 +332,7 @@ node.labels=FALSE) {
 				tips=tips,
 				height=height,
 				depth=depth,
-				ancestors=anc,
+#				ancestors=anc,
 				edge=edge,
 				edge.length=edge.length)
 	ans
@@ -364,7 +346,7 @@ node.labels=FALSE) {
 	
 	cache <- .make.cache(tree)
 	if ( is.null(states.sd) || all(states.sd == 0) ) {
-		cache$states <- .check.states(tree, states, as.integer=FALSE)
+		cache$states <- .check.states(tree, states)
 		cache$states.sd <- rep(0, cache$n.tip)
 	} else {
 		tmp <- .check.states.quasse(tree, states, states.sd)
@@ -410,7 +392,7 @@ node.labels=FALSE) {
 	
 	tree <- .check.tree(tree)
 	if ( !is.null(states) ) # for multitrait
-    states <- .check.states(tree, states, strict=strict, strict.vals=1:k)
+    states <- .check.states(tree, states, strict.vals=1:k)
 	cache <- .make.cache(tree)
 	if ( method == "mk2" )
     cache$info <- .make.info.mk2(tree)

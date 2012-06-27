@@ -20,7 +20,7 @@
 
 gen=FALSE
 if(gen){
-	require(auteur)
+#	require(auteur)
 	phy=rescaleTree(ultrametricize.phylo(rtree(20), "max"),100)
 	dis=as.integer(rTraitDisc(phy, matrix(c(-.1,.1,.1,.1,-.1,.1,.1,.1,-.1), nrow=3), states=c(1,2,3)))
 	names(dis)=phy$tip.label
@@ -89,7 +89,7 @@ fitDiscrete=function(
 	model=c("ER","SYM","ARD","meristic"),
 	transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
 	bounds=list(), 
-	control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE),
+	control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessian_P=0.05),
 	...)
 {
 	
@@ -285,7 +285,7 @@ fitDiscrete=function(
 		print(partp)
 		print(out[[z]]$hessian)
 		hessian=out[[z]]$hessian
-		CI=.bnd.hessian(hessian, mm, partp)
+		CI=.bnd.hessian(hessian, mm, partp, ct$hessian_P)
 		if(!all(is.na(CI))){
 			if(is.constrained(lik)){
 				CI=rbind(lik(CI[1,], pars.only=TRUE), rbind(lik(CI[2,], pars.only=TRUE)))
@@ -396,7 +396,7 @@ mkn.lik=function(
 	ll.mkn=function(cache, control) {
 		k <- cache$info$k
 		f.pars <- .make.pars.mkn(k)
-		f.pij <- make.pij.mkn(cache$info, control)
+		f.pij <- .make.pij.mkn(cache$info, control)
 		idx.tip <- cache$idx.tip
 		n.tip <- cache$n.tip
 		n <- length(cache$len)

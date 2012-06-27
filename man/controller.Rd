@@ -18,7 +18,7 @@ controller(phy, dat, SE = NULL, type = "bm", ...)
 }
 \details{
 	Default settings for each control parameter are given below.  Note that for the discrete random variables (for which \code{dlnSHIFT} and \code{dlnJUMP}) apply, certain criteria 
-	must be met if the user prefers to supply a different prior density (and the function \code{\link[auteur]{dcount}} is strongly recommended for building a prior density function 
+	must be met if the user prefers to supply a different prior density (and the function \code{\link[geiger]{dcount}} is strongly recommended for building a prior density function 
 	for discrete variables.)
 	 
 	\itemize{

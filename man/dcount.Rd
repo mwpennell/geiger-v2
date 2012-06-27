@@ -15,7 +15,7 @@ dcount(x, FUN, ...)
   \item{\dots}{additional arguments to be passed to \code{FUN}}
 }
 
-\seealso{\code{\link[auteur]{controller}}}
+\seealso{\code{\link[geiger]{controller}}}
 
 \author{JM Eastman}
 

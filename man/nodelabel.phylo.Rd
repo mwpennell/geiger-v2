@@ -67,9 +67,9 @@ plot.phylo(ladderize(bphy,right=FALSE), cex=0.35, show.tip=FALSE, label.offset=2
 nodelabels(bphy$node.label, cex=0.45, col="red", frame="n")
 
 ## CLADES to TREE: phylo.clades()
-salamandroidea=extract.clade(nphy, auteur:::.mrca(c("Ambystomatidae", "Plethodontidae"), nphy))
-cryptobranchoidea=extract.clade(nphy, auteur:::.mrca(c("Cryptobranchidae", "Hynobiidae"), nphy))
-siren=extract.clade(nphy, auteur:::.mrca(c("Siren_lacertina", "Siren_intermedia"), nphy))
+salamandroidea=extract.clade(nphy, geiger:::.mrca(c("Ambystomatidae", "Plethodontidae"), nphy))
+cryptobranchoidea=extract.clade(nphy, geiger:::.mrca(c("Cryptobranchidae", "Hynobiidae"), nphy))
+siren=extract.clade(nphy, geiger:::.mrca(c("Siren_lacertina", "Siren_intermedia"), nphy))
 
 clades=list(
 			 Sirenoidea=c("Siren", "Pseudobranchus"), 
@@ -88,8 +88,8 @@ nodelabels(amph$node.label, cex=0.35, col="red", frame="n")
 
 
 ## GLOMOGRAM
-sirenidae=extract.clade(nphy, auteur:::.mrca(c("Siren_lacertina", "Pseudobranchus_axanthus"), nphy))
-ambystomatidae=extract.clade(nphy, auteur:::.mrca(c("Ambystoma_gracile", "Ambystoma_texanum"), nphy))
+sirenidae=extract.clade(nphy, geiger:::.mrca(c("Siren_lacertina", "Pseudobranchus_axanthus"), nphy))
+ambystomatidae=extract.clade(nphy, geiger:::.mrca(c("Ambystoma_gracile", "Ambystoma_texanum"), nphy))
 trees=list(
 	Cryptobranchoidea=list(subtree=cryptobranchoidea, age=max(branching.times(cryptobranchoidea))),
 	Sirenidae=list(subtree=sirenidae, age=max(branching.times(sirenidae))),

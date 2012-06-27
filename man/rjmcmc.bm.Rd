@@ -11,7 +11,7 @@ rjmcmc.bm(phy, dat, SE=0, ngen = 50000, sample.freq = 100, ...)
   \item{SE}{a named vector of standard errors for each trait value; applied to all trait values if given a single value}
   \item{ngen}{number of sampling generations}
   \item{sample.freq}{frequency with which Markov samples are retained (e.g., \code{sample.freq=10} retains every tenth sample in the chain)}
-  \item{...}{arguments passed to \code{\link[auteur]{controller}}}
+  \item{...}{arguments passed to \code{\link[geiger]{controller}}}
 }
 
 \details{
@@ -21,14 +21,14 @@ Estimates are stored as an MCMC-generations-by-branches matrix (see \bold{Exampl
 In the \bold{Examples} below do \bold{not} expect convergence with such short chains!
 
 Note that default settings (as the user assumes if nothing is specified in \code{...}) provide absolutely no guarantee of the chain achieving convergence.  The user is 
-emphatically encouraged to supply informed arguments for what are the most critical aspects of this MCMC sampler (see \code{\link[auteur]{controller}} for more information on 
+emphatically encouraged to supply informed arguments for what are the most critical aspects of this MCMC sampler (see \code{\link[geiger]{controller}} for more information on 
 permissible modifications to the MCMC sampler). Finding reasonable run parameters will likely require much trial and error.  Run diagnosis and inspection of chain mixing is 
 facilitated by the R-package \pkg{coda} or by the Java application, Tracer (\url{http://tree.bio.ed.ac.uk/software/tracer/}).
 
 }
 \value{
 After a run has completed, acceptance rates for the primary proposal mechanisms are printed to the console, along with 
-settings of control parameters for the run (see \code{\link[auteur]{controller}}).  
+settings of control parameters for the run (see \code{\link[geiger]{controller}}).  
 
 Posterior results are written to several files within a base directory, the contents of which are as follows:
   \item{log file}{a logfile including the following for each Markov chain: the generations at which samples were retained (\code{state}), the \code{min}, \code{max}, and \code{median} rate of the 
@@ -36,7 +36,7 @@ Posterior results are written to several files within a base directory, the cont
   and the likelihood (\code{lnL}) and prior (\code{lnLp}) of the model at sampled generations.}
   
   \item{rda file}{a compressed R object, which stores branchwise estimates of the jump and diffusion processes. In order to be interpretable, the \code{rda} file should be processed by the function 
-  \code{\link[auteur]{summarize.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed.}
+  \code{\link[geiger]{summarize.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed.}
 }
 
 \author{JM Eastman, LJ Harmon, and AL Hipp}
@@ -109,10 +109,10 @@ traitgram=function(phy, hist, alpha=0, cex.node=2, scl=2, ...){
 		
 		end=hist$phenotype[i]
 		etime=hist$time[i]
-		lines(c(stime,etime),c(start,end),col=auteur:::.transparency("gray25",0.75),...)		
+		lines(c(stime,etime),c(start,end),col=geiger:::.transparency("gray25",0.75),...)		
 	}
-	points(hist$time,hist$phenotype,bg=auteur:::.transparency("white",0.75),pch=21,cex=ifelse(hist$descendant<=Ntip(phy), cex.node, cex.node/scl))	
-	points(0,alpha,bg=auteur:::.transparency("white",0.75),pch=21,cex=cex.node/scl)		
+	points(hist$time,hist$phenotype,bg=geiger:::.transparency("white",0.75),pch=21,cex=ifelse(hist$descendant<=Ntip(phy), cex.node, cex.node/scl))	
+	points(0,alpha,bg=geiger:::.transparency("white",0.75),pch=21,cex=cex.node/scl)		
 }
 
 # wrapper for levylite
@@ -129,13 +129,13 @@ jumper=function(phy, alpha=0, sigmasq.brown=0.001, sigmasq.jump=0.1, jumps=jumpt
 scaler=function(phy, scl=64, min=4, ...){
 	while(1) {	
 		# find an internal edge
-		anc=auteur:::.get.desc.of.node(Ntip(phy)+1,phy)
+		anc=geiger:::.get.desc.of.node(Ntip(phy)+1,phy)
 		branches=phy$edge[,2]
-		ss=sapply(anc, function(x) length(auteur:::.get.descendants.of.node(x, phy, tips=FALSE)))
+		ss=sapply(anc, function(x) length(geiger:::.get.descendants.of.node(x, phy, tips=FALSE)))
 		if(all(ss<min)) stop("'min' is too large")
 		branches=branches[branches>Ntip(phy) & branches!=anc]
 		branch=branches[sample(1:length(branches),1)]
-		desc=auteur:::.get.descendants.of.node(branch,phy)
+		desc=geiger:::.get.descendants.of.node(branch,phy)
 		if(length(desc)>=min) break()
 	}
 	rphy=phy
