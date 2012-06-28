@@ -17,7 +17,7 @@ calibrate.rjmcmc(phy, dat, nstep = 10000, widths = 2^(-3:3), model=c("bm"), ...)
   \item{nstep}{number of proposal steps over which to assess proposal widths}
   \item{widths}{if unspecified, a series of proposal widths from 1/8 to 8 will be considered}
   \item{model}{currently only \code{model="bm"} for generalized Brownian motion; invokes \code{\link[geiger]{rjmcmc.bm}}}
-  \item{...}{arguments to be passed to \code{\link[geiger]{controller}} and \code{\link[geiger]{rjmcmc.bm}}}
+  \item{...}{arguments to be passed to \code{\link[geiger]{cache}} and \code{\link[geiger]{rjmcmc.bm}}}
 }
 \details{
 This function may be useful for constraining subsequent runs after an adequate proposal width has been approximated by this function. MCMC samples from this calibration 

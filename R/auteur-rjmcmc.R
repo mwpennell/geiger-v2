@@ -13,14 +13,14 @@
 	})
 }
 
-rjmcmc.bm <- function ( phy, dat, SE=0, ngen=50000, sample.freq=100, ... ) 
+rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, ... ) 
 { 
 	
 	if(sample.freq>ngen) stop("increase 'ngen' or decrease 'sample.freq'")
 	if("multiPhylo"%in%class(phy)) return(.rjmcmc.bm.multi(phy, dat, SE, ngen, sample.freq, ...))
 	
 	# controller objects 
-	tmp=controller(phy, dat, SE, type="bm", ...)
+	tmp=cache(phy, dat, type="bm", SE, ...)
 	ct=tmp$control
 	ct$thin=sample.freq
 	ct$ngen=ngen
@@ -41,14 +41,18 @@ rjmcmc.bm <- function ( phy, dat, SE=0, ngen=50000, sample.freq=100, ... )
 	cur.jumpvar=sp$jumpvar
 	cur.jumprates=cur.jumps*cur.jumpvar
 	cur.scalars=cur.jumprates+cur.rates
-	cur.mod=ct$beta*lik(cur.scalars, cur.root)
+	cur.SE=sp$se
+	if(is.na(cur.SE)) cur.mod=ct$beta*lik(cur.scalars, cur.root) else cur.mod=ct$beta*lik(cur.scalars, cur.root, cur.SE)
 		
 	tickerFreq=ceiling(ngen/30)
 	
 	### begin rjMCMC
     for (i in 1:ngen) {
 		
-		## LEVY IMPLEMENTATION ##
+		## GENERALIZED IMPLEMENTATION ##
+		#		-- multiple rate categories
+		#		-- point process (jumps)
+		#		-- measurement error (IN PROGRESS)
 		
 		# initialize updates
 		new.root=cur.root
@@ -60,6 +64,7 @@ rjmcmc.bm <- function ( phy, dat, SE=0, ngen=50000, sample.freq=100, ... )
 		new.jumpvar=cur.jumpvar
 		new.jumprates=cur.jumprates
 		new.scalars=cur.scalars
+		new.SE=cur.SE
 		
 		while(1) {
 			lnLikelihoodRatio <- lnHastingsRatio <- lnPriorRatio <- 0
@@ -175,13 +180,20 @@ rjmcmc.bm <- function ( phy, dat, SE=0, ngen=50000, sample.freq=100, ... )
 				lnPriorRatio=.dlnratio(cur.root, new.root, ct$dlnROOT)
 				subprop="rootstate"
 				break()
+			} else if(cur.proposal==4) {										## adjust SE
+				nr=.tune.SE(cur.SE, ct)
+				new.SE=nr$values
+				lnHastingsRatio=nr$lnHastingsRatio
+				lnPriorRatio=.dlnratio(cur.SE, new.SE, ct$dlnSE)
+				subprop="SE"
+				break()										
 			}
 		}
 		
 		ct$n.subprop[subprop]=ct$n.subprop[subprop]+1				
 		
 		# compute fit of proposed model
-		new.mod=ct$beta*lik(new.scalars, new.root)
+		if(is.na(new.SE)) new.mod=ct$beta*lik(new.scalars, new.root) else new.mod=ct$beta*lik(new.scalars, new.root, new.SE)
 		r=.proc.lnR(i, subprop, cur.mod, new.mod, lnPriorRatio, lnHastingsRatio, heat=1, control=ct)
 		
 		if (runif(1) <= r$r) {			## adopt proposal ##
@@ -194,6 +206,7 @@ rjmcmc.bm <- function ( phy, dat, SE=0, ngen=50000, sample.freq=100, ... )
 			new.jumpvar->cur.jumpvar
 			new.jumprates->cur.jumprates
 			new.scalars->cur.scalars
+			new.SE->cur.SE
 			
 			ct$n.subaccept[subprop] = ct$n.subaccept[subprop]+1
 			
@@ -209,7 +222,7 @@ rjmcmc.bm <- function ( phy, dat, SE=0, ngen=50000, sample.freq=100, ... )
 			pr=.compute_prior.bm(cur.scalars, cur.jumpvar, cur.nJ, cur.nR, cur.root, ct)
 
 			parms=list(principal=list(shifts=list(delta=cur.delta, shifts=cur.rates), jumps=list(delta=cur.jumps)), gen=i, lnL=cur.mod, 
-					   lnLp=pr, qlnL.p=lnPriorRatio, qlnL.h=lnHastingsRatio, jumpvar=cur.jumpvar, root=cur.root)
+					   lnLp=pr, qlnL.p=lnPriorRatio, qlnL.h=lnHastingsRatio, jumpvar=cur.jumpvar, SE=cur.SE, root=cur.root)
 			.parlog.rjmcmc(init=FALSE, end=FALSE, parameters=parms, control=ct)
 		}
 	}

@@ -274,12 +274,12 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	if(is.null(SE)) SE=NA
 	if(any(is.na(SE))) {
 		if(model=="white"){
-			warning("'SE' and 'sigsq' are confounded in the 'white' model:\n\t'SE' will be ignored")
+			warning("'SE' and 'sigsq' are confounded in the 'white' model:\n\t'SE' will be set to nil")
 			adjSE=FALSE 
 			SE[is.na(SE)]=0
 		} else {
 			adjSE=TRUE 
-			SE[is.na(SE)]=0
+			SE[is.na(SE)]=-666
 		}
 	} else {
 		adjSE=FALSE
@@ -300,7 +300,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			   white=.white.cache(cache)
 			   )
 
-	cache$adjustSE=ifelse(cache$y$y[2,]==0, TRUE, FALSE)
+	cache$adjustSE=ifelse(cache$y$y[2,]==-666, TRUE, FALSE)
 	
     z = length(cache$len)
     rr = numeric(z)

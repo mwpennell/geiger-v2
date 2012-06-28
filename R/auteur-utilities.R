@@ -471,15 +471,22 @@ hashes.rjmcmc=function(obj, phy){
 }
 
 ## RUN CONTROL ##
-controller=function(phy, dat, SE=NULL, type="bm", ...){
-			
-	run=match.arg(type, c("bm"))
+cache=function(phy, dat, type="bm", ...){
+	type=match.arg(type, c("bm"))
+	switch(type, 
+		   bm=.cache.bm(phy, dat, ...)
+	)
+}
+
+.cache.bm=function(phy, dat, SE=NA, ...){
 	
-	if(run=="bm"){
+		
+#	if(run=="bm"){
 		con=list(
-				 method=c("direct", "vcv", "reml"),								# likelihood method: direct - pruning algorithm; vcv - variance-covariance matrix; reml - REML (pic)
+				 method="direct",												# likelihood method: direct - pruning algorithm; vcv - variance-covariance matrix; reml - REML (pic)
 				 rate.lim=list(min=0, max=Inf),									# limits on rates
 				 root.lim=list(min=-10^3, max=10^3),							# limits on root
+				 se.lim=list(min=0, max=Inf),
 				 constrainSHIFT=FALSE,											# limit number of local rates (under *relaxedBM)
 				 constrainJUMP=FALSE,											# limit number of jumps (under jump*) 
 				 dlnSHIFT=NULL,													# shift prior (function; arg 'x'; returns ln(p[x]))
@@ -487,6 +494,7 @@ controller=function(phy, dat, SE=NULL, type="bm", ...){
 				 dlnROOT=NULL,
 				 dlnRATE=function(x) dexp(x, rate=1/(10^3), log=TRUE),			# rate prior  (function; arg 'x'; returns ln(p[x]))
 				 dlnPULS=function(x) dexp(x, rate=1/(10^3), log=TRUE),			# pulse prior  (function; arg 'x'; returns ln(p[x]))
+				 dlnSE=function(x) dexp(x, rate=1/(10^3), log=TRUE),			# se prior	(function; arg 'x'; returns ln(p[x]))
 				 jump.lim=1,													# limit on number of jumps per branch
 				 excludeSHIFT=c(),												# edges to exclude for shifts
 				 excludeJUMP=c(),												# edges to exclude for jumps
@@ -496,7 +504,8 @@ controller=function(phy, dat, SE=NULL, type="bm", ...){
 				 slide.mult=0.25,												# proposal density for 'slide' (sliding window) proposals versus 'mult' (multiplier) proposals
 				 prob.dimension=0.65,											# proposals for dimensionality: involves 'bm.jump', 'mergesplit.shift'
 				 prob.effect=0.30,												# proposals for effects of process: 'slide.mult', 'tune.scale'
-				 prob.root=0.05,												# proposals for effects of process: 'slide.mult', 'tune.scale'
+				 prob.root=0.02,												# proposals for effects of process: 'slide.mult', 'tune.scale'
+				 prob.SE=0.03,													# proposals for effects of process: 'slide.mult', 'tune.scale'
 				 prop.width=1,													# proposal width for sliding window and multiplier proposals
 				 sample.priors=FALSE,											# sample from priors only
 				 simple.start=TRUE,												# start with single rate class and no jumps -- overruled if is.numeric(constrainK) and is.numeric(constrainJ)
@@ -517,7 +526,7 @@ controller=function(phy, dat, SE=NULL, type="bm", ...){
 				cat("\n\nNOTE: settings within the control object can be adjusted through the additional arguments (...) of controller()\n\n") 
 				stop("'phy' and 'dat' must minimally be supplied to this function")
 		}
-	} 
+#	} 
 	
 	## USER control-object
 	xusr=list(...)
@@ -527,9 +536,9 @@ controller=function(phy, dat, SE=NULL, type="bm", ...){
 	if(length(missed)) cat(paste(paste(sQuote(missed),collapse=" "), "not expected in control object", sep=" "))
 		
 	## FINALIZE control-object
-	if(run=="bm"){
+#	if(run=="bm"){
 		# create cache
-		con$method=match.arg(con$method, c("direct", "vcv", "reml"))
+		con$method=match.arg(con$method, c("direct"))
 		tmp=make.bm.relaxed(phy, dat, SE, method=con$method)
 		cache=attributes(tmp)$cache
 		attr(tmp,"cache")=NULL
@@ -565,6 +574,7 @@ controller=function(phy, dat, SE=NULL, type="bm", ...){
 		con$dlnRATE=.check.prior(con$dlnRATE, count=FALSE)
 		con$dlnROOT=.check.prior(con$dlnROOT, count=FALSE)
 		con$dlnPULS=.check.prior(con$dlnPULS, count=FALSE)
+		con$dlnSE=.check.prior(con$dlnSE, count=FALSE)
 		
 		# check exclude vectors
 		if(length(con$excludeSHIFT)){
@@ -598,10 +608,11 @@ controller=function(phy, dat, SE=NULL, type="bm", ...){
 		}
 		
 		# proposal distributions
-		proposals=c(dim=con$prob.dimension, effect=con$prob.effect, root=con$prob.root)
+		if(sum(cache$y$SE)==0) con$prob.SE=0
+		proposals=c(dim=con$prob.dimension, effect=con$prob.effect, root=con$prob.root, se=con$prob.SE)
 		if(con$method=="reml") proposals=proposals[c("dim","effect")]
 		prop.cs=cumsum(proposals*(1/sum(proposals)))		
-		names.subprop<-c("mergesplit","rootstate","ratetune","moveshift","ratescale","movejump","incjump","decjump","jumpvar")
+		names.subprop<-c("mergesplit","rootstate","ratetune","moveshift","ratescale","movejump","incjump","decjump","jumpvar","SE")
 		n.subprop<-n.subaccept<-rep(0,length(names.subprop))
 		names(n.subprop)<-names(n.subaccept)<-names.subprop
 		con$prop.cs=prop.cs
@@ -614,7 +625,7 @@ controller=function(phy, dat, SE=NULL, type="bm", ...){
 			if(!file.exists(parmbase)) dir.create(parmbase)
 			errorlog=paste(parmbase,paste(con$model, con$filebase, con$algo, "errors.log",sep="."),sep="/")
 			runlog=file(paste(parmbase,paste(con$filebase, con$algo, "log",sep="."),sep="/"),open='w+')
-			parms=list(principal=list(shifts=NULL, jumps=NULL), gen=NULL, lnL=NULL, lnLp=NULL, qlnL.p=NULL, qlnL.h=NULL, jumpvar=NULL, root=NULL)
+			parms=list(principal=list(shifts=NULL, jumps=NULL), gen=NULL, lnL=NULL, lnLp=NULL, qlnL.p=NULL, qlnL.h=NULL, jumpvar=NULL, SE=NULL, root=NULL)
 			con$runlog=runlog
 			con$errorlog=errorlog
 			con$parmbase=parmbase		
@@ -628,8 +639,8 @@ controller=function(phy, dat, SE=NULL, type="bm", ...){
 		
 		# starting point
 		start=.startingpt.bm(con, cache)
-	}
-	return(list(control=con, cache=cache, start=.startingpt.bm(con, cache)))
+#	}
+	return(list(control=con, cache=cache, start=start))
 }
 
 # returns function to convert logged output to branchwise estimates (in order for cache$phy$edge)
@@ -762,8 +773,13 @@ function(phy, dat){
 	} else {
 		root=.proposal.slidingwindow(root, control$prop.width, control$root.lim)$v
 	}
+	if(sum(cache$y$SE)==0) {
+		se=NA 
+	} else {
+		se=runif(1)
+		if(!.withinrange(se, control$se.lim$min, control$se.lim$max)) se=runif(1, control$se.lim$min, control$se.lim$max)
+	}
 
-	
 	nd=argnames(control$lik)$rates 
 	tmp=numeric(length(nd))
 	
@@ -809,7 +825,7 @@ function(phy, dat){
 	
 	jv=rate*10
 	
-	return(list(root=root, rates=rr, delta=dd, jumps=jj, jumpvar=jv))
+	return(list(root=root, rates=rr, delta=dd, jumps=jj, jumpvar=jv, se=se))
 }
 
 

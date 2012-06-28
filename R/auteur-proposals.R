@@ -707,9 +707,6 @@ function(rates, control) {
 
 }
 
-
-
-
 ## PROPOSAL MECHANISM ##
 #rjmcmc proposal mechanism for updating a single numeric class from a vector
 #author: JM EASTMAN 2011
@@ -718,6 +715,36 @@ function(values, control) {
 	prop.width=control$prop.width
 	tuner=control$tune.scale
 	lim=control$root.lim
+	
+	ss=values[sample(1:length(values), 1)]
+	ww=which(values==ss)	
+	
+	if(runif(1)<tuner){
+		nn=.proposal.slidingwindow(ss, prop.width, lim)
+	} else {
+		nn=.proposal.multiplier(ss, prop.width, lim)
+	}
+	
+	nv=nn$v
+	lhr=nn$lnHastingsRatio
+	lpr=0
+	
+	values[ww]=nv
+	
+	return(list(values=values, lnHastingsRatio=lhr, lnPriorRatio=lpr))
+}
+
+
+
+
+## PROPOSAL MECHANISM ##
+#rjmcmc proposal mechanism for updating a single numeric class from a vector
+#author: JM EASTMAN 2011
+.tune.SE <-
+function(values, control) {
+	prop.width=control$prop.width
+	tuner=control$tune.scale
+	lim=control$se.lim
 	
 	ss=values[sample(1:length(values), 1)]
 	ww=which(values==ss)	

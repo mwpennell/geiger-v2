@@ -3,7 +3,7 @@
 \title{Bayesian sampling of shifts in trait evolution: relaxed Brownian motion}
 \description{Implements reversible-jump Markov chain Monte Carlo sampling for trait evolutionary models}
 \usage{
-rjmcmc.bm(phy, dat, SE=0, ngen = 50000, sample.freq = 100, ...)
+rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, sample.freq = 100, ...)
 }
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
@@ -11,7 +11,7 @@ rjmcmc.bm(phy, dat, SE=0, ngen = 50000, sample.freq = 100, ...)
   \item{SE}{a named vector of standard errors for each trait value; applied to all trait values if given a single value}
   \item{ngen}{number of sampling generations}
   \item{sample.freq}{frequency with which Markov samples are retained (e.g., \code{sample.freq=10} retains every tenth sample in the chain)}
-  \item{...}{arguments passed to \code{\link[geiger]{controller}}}
+  \item{...}{arguments passed to \code{\link[geiger]{cache}}}
 }
 
 \details{
@@ -21,22 +21,22 @@ Estimates are stored as an MCMC-generations-by-branches matrix (see \bold{Exampl
 In the \bold{Examples} below do \bold{not} expect convergence with such short chains!
 
 Note that default settings (as the user assumes if nothing is specified in \code{...}) provide absolutely no guarantee of the chain achieving convergence.  The user is 
-emphatically encouraged to supply informed arguments for what are the most critical aspects of this MCMC sampler (see \code{\link[geiger]{controller}} for more information on 
+emphatically encouraged to supply informed arguments for what are the most critical aspects of this MCMC sampler (see \code{\link[geiger]{cache}} for more information on 
 permissible modifications to the MCMC sampler). Finding reasonable run parameters will likely require much trial and error.  Run diagnosis and inspection of chain mixing is 
 facilitated by the R-package \pkg{coda} or by the Java application, Tracer (\url{http://tree.bio.ed.ac.uk/software/tracer/}).
 
 }
 \value{
 After a run has completed, acceptance rates for the primary proposal mechanisms are printed to the console, along with 
-settings of control parameters for the run (see \code{\link[geiger]{controller}}).  
+settings of control parameters for the run (see \code{\link[geiger]{cache}}).  
 
 Posterior results are written to several files within a base directory, the contents of which are as follows:
-  \item{log file}{a logfile including the following for each Markov chain: the generations at which samples were retained (\code{state}), the \code{min}, \code{max}, and \code{median} rate of the 
+  \item{log}{a logfile including the following for each Markov chain: the generations at which samples were retained (\code{state}), the \code{min}, \code{max}, and \code{median} rate of the 
   diffusion process across the tree, the number of evolutionary pulses (\code{jumps}) along single branches, the variance associated with the jump process (\code{jumpvar}), the \code{root} state, 
   and the likelihood (\code{lnL}) and prior (\code{lnLp}) of the model at sampled generations.}
   
-  \item{rda file}{a compressed R object, which stores branchwise estimates of the jump and diffusion processes. In order to be interpretable, the \code{rda} file should be processed by the function 
-  \code{\link[geiger]{summarize.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed.}
+  \item{rda}{a compressed R object, which stores branchwise estimates of the jump and diffusion processes. In order to be interpretable, the \code{rda} file should be processed by the function 
+  \code{\link[geiger]{summarize.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed output.}
 }
 
 \author{JM Eastman, LJ Harmon, and AL Hipp}

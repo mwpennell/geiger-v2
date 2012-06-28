@@ -1,4 +1,4 @@
-# optimization for single-rate Brownian model
+# optimization for single-rate Brownian model -- use fitContinuous instead 
 likfx.bm=function(phy, dat, SE=NULL, root=NA, method=c("direct","vcv","reml")){
 	method=match.arg(method, c("direct","vcv","reml"))
 	
@@ -23,7 +23,7 @@ likfx.bm=function(phy, dat, SE=NULL, root=NA, method=c("direct","vcv","reml")){
 }
 
 ## replacing prepare.data.bm
-make.bm.relaxed <- function(phy, dat, SE=NULL, method=c("direct","vcv","reml")){
+make.bm.relaxed <- function(phy, dat, SE=NA, method=c("direct","vcv","reml")){
 	method=match.arg(method, c("direct","vcv","reml"))
 	lik=switch(method,
 			   direct=.make.bm.relaxed.direct(phy, dat, SE),
@@ -130,8 +130,9 @@ function(phy, rates, ic) {
 	z = length(cache$len)
     rr = numeric(z)
     rootidx = as.integer(cache$root)
+	adjvar = as.integer(cache$y$SE)
 	
-    datc = list(len = 
+    datc_init = list(len = 
 				as.numeric(cache$len), 
 				intorder = as.integer(cache$order[-length(cache$order)]), 
 				tiporder = as.integer(cache$y$target), 
@@ -142,7 +143,7 @@ function(phy, rates, ic) {
 				descRight = as.integer(cache$children[, 1]), 
 				descLeft = as.integer(cache$children[, 2]))
 	
-	ll.bm.direct <- function(pars, root = ROOT.MAX, root.x = NA, intermediates = FALSE) {
+	ll.bm.direct <- function(pars, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
         out = .Call("bm_direct", dat = datc, pars = pars, package = "geiger")
         vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
         loglik <- .root.bm.direct(vals, out$lq[-rootidx], root, root.x)
@@ -162,43 +163,38 @@ function(phy, rates, ic) {
 	check.args=function(rates, root){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
-    lik <- function(rates, root) {
-		check.args(rates, root)
-        vv[mm] = rates
-        ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE)
-        return(ll)
-    }
-	attr(lik, "cache") <- cache
-	attr(lik,"argnames")=list(rates=cache$phy$edge[,2], root="root")
+	
+	## LIKELIHOOD FUNCTION
+	if(any(adjvar==1)){ # adjustable SE
+		lik <- function(rates, root, SE) {
+			check.args(rates, root)
+			vv[mm] = rates
+			datc_se=datc_init
+			datc_se$var[which(adjvar==1)]=SE^2
+			ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE, datc_se)
+			return(ll)
+		}
+		attr(lik, "cache") <- cache
+		attr(lik,"argnames")=list(rates=cache$phy$edge[,2], root="root", SE="SE")
+	} else { # unadjustable SE
+		lik <- function(rates, root) {
+			check.args(rates, root)
+			vv[mm] = rates
+			ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE, datc_init)
+			return(ll)
+		}
+		attr(lik, "cache") <- cache
+		attr(lik,"argnames")=list(rates=cache$phy$edge[,2], root="root")
+	}	
+
 	class(lik)=c("rbm","bm","function")
     lik	
-}
-
-.prepare.bm <-
-function(phy, dat, SE=NULL) {
-
-	# check major issues
-	if(all(is.null(names(dat)))) stop("'dat' must have names matchable to tip labels in 'phy'")
-	if(!inherits(phy,"phylo")) stop("Supply 'phy' as a phylo object.")
-	td=treedata(phy, dat, sort = TRUE, warnings=FALSE)
-	if(any(sapply(td, length)==0)) stop("'dat' and 'phy' appear unmatchable.")
-	if(ncol(td$data)>1) stop("Please supply one trait at a time")
-	td$phy=reorder(td$phy,"pruningwise")
-	
-	# cache object
-	cache=.cache.data.bm(td$phy, td$data[,1], SE)
-	SEord=sqrt(cache$y$y[2,td$phy$tip.label])
-	cache$SE=SEord
-	cache$phy=td$phy
-	cache$dat=td$data[,1]
-	cache$nodes=cache$phy$edge[,2]
-	return(cache)
 }
 
 .cache.tree <- function (phy) 
 {
 	ordxx=function (children, is.tip, root) 
-	# from diversitree:::get.ordering
+# from diversitree:::get.ordering
 	{
 		todo <- list(root)
 		i <- root
@@ -233,7 +229,7 @@ function(phy, dat, SE=NULL) {
 	}
 	
     len <- edge.length[mm<-match(idx, edge[, 2])]
-
+	
 	ans <- list(tip.label = phy$tip.label, node.label = phy$node.label, mm=mm,
 				len = len, children = children, order = order, 
 				root = root, n.tip = n.tip, n.node = phy$Nnode, tips = tips, 
@@ -241,32 +237,50 @@ function(phy, dat, SE=NULL) {
     ans
 }
 
+
+.prepare.bm <- function(phy, dat, SE=NA) {
+
+	## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species) 
+	# resolve estimation of SE
+	if(is.null(SE)) SE=NA
+	if(any(is.na(SE))) SE[is.na(SE)]=-666
+	
+	# check major issues
+	if(all(is.null(names(dat)))) stop("'dat' must have names matchable to tip labels in 'phy'")
+	if(!inherits(phy,"phylo")) stop("Supply 'phy' as a phylo object.")
+	td=treedata(phy, dat, sort = TRUE, warnings=FALSE)
+	if(any(sapply(td, length)==0)) stop("'dat' and 'phy' appear unmatchable.")
+	if(ncol(td$data)>1) stop("Please supply one trait at a time")
+	td$phy=reorder(td$phy,"pruningwise")
+	
+	# cache object
+	cache=.cache.data.bm(td$phy, td$data[,1], SE)
+	cache$nodes=cache$phy$edge[,2]
+	return(cache)
+}
+
+
 .cache.data.bm <- function (phy, dat, SE=NULL) 
 {
 	cache=.cache.tree(phy)
 	
-    if (!is.null(SE)) {
-		if(any(SE!=0)) {
-			if(!is.null(names(SE))) {
-				se=rep(0,length(phy$tip.label))
-				names(se)=phy$tip.label
-				ss.match=match(names(SE), names(se))
-				if(any(is.na(ss.match))) warning(paste("tips not found in the dataset:\n\t", paste(names(SE[is.na(ss.match)]), collapse="\n\t"), sep=""))
-				se[match(names(SE[!is.na(ss.match)]),names(se))]=SE[!is.na(ss.match)]
-				SE=se
-			} else if(length(SE)==1){
-				SE=rep(SE,length(phy$tip.label))
-				names(SE)=phy$tip.label
-			} else {
-				stop("SE must be a named vector of measurement error")
-			}	
-		} else {
-			SE=rep(0,length(dat))
-			names(SE)=names(dat)
-		}		
+	# RESOLVE SE
+	# SE should be entirely numeric
+    if (is.null(SE)) stop("'SE' must be a numeric value or vector")
+	adjustSE=FALSE
+	
+	if(length(SE)==1) {
+		SE=rep(SE, Ntip(phy))
+		names(SE)=phy$tip.label
+	}
+	
+	if(!is.null(names(SE))) {
+		xx=setequal(names(SE), phy$tip.label)
+		ss.match=match(names(SE), phy$tip.label)
+		if(!xx) stop(paste("encountered error in constructing 'SE' with the following tips not found in the dataset:\n\t", paste(names(SE[is.na(ss.match)]), collapse="\n\t"), sep=""))
+		SE=SE[ss.match]
 	} else {
-		SE=rep(0,length(dat))
-		names(SE)=names(dat)
+		stop("'SE' must be a named vector of measurement error")
 	}
 	
 	tmp <- .check.states.quasse(phy, dat, SE)
@@ -274,12 +288,16 @@ function(phy, dat, SE=NULL) {
     states.sd <- tmp$states.sd
     cache$ny <- 3
     y <- mapply(function(mean, sd) c(mean, sd * sd, 0), states, states.sd, SIMPLIFY = TRUE)
+
     cache$y <- .dt.tips.ordered(y, cache$tips, cache$len[cache$tips])
+	cache$y$SE <- as.integer((SE==-666)[cache$y$target])
+	
+	cache$SE=SE
+	cache$dat=dat
+	cache$phy=phy
+	
     cache
 }
-
-
-
 
 .proc.lnR=function(gen, subprop, cur.lnL, new.lnL, lnp, lnh, heat=1, control){
 	if(is.infinite(cur.lnL)) stop("Starting point has exceptionally poor likelihood.")
