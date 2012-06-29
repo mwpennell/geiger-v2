@@ -1,3 +1,6 @@
+##FIXME: identify monophyletic lineages in a densely sampled tree (if attempting to congruify a higher-order tree)
+#		-- prune densely-sampled tree to find greatest overlap with the scion tips
+
 
 .build_classification=function(species){
 	.split_lab=function(label){

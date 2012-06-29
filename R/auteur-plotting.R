@@ -72,11 +72,11 @@ auto.layout = TRUE, ask = dev.interactive(), ...)
 		   )
 }
 
-plot.auteurMULTI=function(x, par=c("jumps","shifts"), ...){
+plot.auteurMCMCMC=function(x, par=c("jumps","shifts"), ...){
 	.samples.plot(x, par, ...)
 }
 
-plot.auteurSINGLE=function(x, par=c("jumps","shifts"), ...){
+plot.auteurMCMC=function(x, par=c("jumps","shifts"), ...){
 	.samples.plot(x, par, ...)
 }
 		   

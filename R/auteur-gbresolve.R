@@ -2,9 +2,9 @@ gbresolve=function(x, ...){
 	UseMethod("gbresolve")
 }
 
-gbresolve.default=function(x, update=FALSE, ...){
-	gb=.build.gbtaxdump(update = update)
-	FUN=.fetch_gbhierarchy.above(gb, ...)
+gbresolve.default=function(x, rank="phylum", within="", ...){
+	gb=.build.gbtaxdump(...)
+	FUN=.fetch_gbhierarchy.above(gb, rank=rank, within=within)
 	tmp=lapply(x, FUN)
 	dd=sapply(tmp, function(y) all(is.na(y)))
 	if(any(dd)) {
@@ -16,12 +16,17 @@ gbresolve.default=function(x, update=FALSE, ...){
 	res
 }
 
-exemplar.phylo=function(phy, taxonomy, strict.vals=NULL){
+exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
+	if(is.null(taxonomy)) taxonomy=gbresolve.phylo(phy, ...)$tax
 	tax=taxonomy
+	drp=which(!phy$tip.label%in%rownames(tax))
 	z=.exemplar(tax, strict.vals=strict.vals)
 	ff=cbind(z, rownames(tax))
 	ww=which(phy$tip.label%in%rownames(tax))
 	phy$tip.label[ww]=z[match(phy$tip.label[ww], rownames(tax))]
+	if(length(drp)) {
+		phy=drop.tip(phy, phy$tip.label[drp])
+	}
 	phy
 }
 

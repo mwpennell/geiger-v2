@@ -55,7 +55,7 @@ print.rjmcmc <- function (x, printlen=3, ...)
 	}	
 }
 
-print.rjmcmcMULTI <- function (x, printlen=3, ...) 
+print.rjmcmcmc <- function (x, printlen=3, ...) 
 {
     cat("combined reversible-jump Markov Chain Monte Carlo (MCMC) output:\n\tstart =", start(x), 
         "\n\tend =", end(x), "\n\tthinning interval =", thin(x), "\n\tchains =", attr(x,"nrun"), "\n")
@@ -222,7 +222,7 @@ summarize.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL){
 	attr(mats$shifts,"shifts")<-attr(mats$rates,"shifts")<-NULL
 	
 	mats$log=trace
-	class(mats)=c("auteurSINGLE", class(mats))
+	class(mats)=c("auteurMCMC", class(mats))
 
 	if(!is.null(phy)) mats$phy=hashes.rjmcmc(mats, phy) else mats$phy=hashes.rjmcmc(mats, samples$phy)
 	
@@ -259,7 +259,7 @@ summarize.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL){
 to.coda=function(obj){
 	
 	to.mcmc.list=function(obj){
-		# expect auteurMULTI
+		# expect auteurMCMCMC
 		nrun=attr(obj,"nrun")
 		mcpar=attr(obj, "mcpar")
 		ll=mcpar[2]
@@ -281,24 +281,24 @@ to.coda=function(obj){
 		return(res)
 	}
 	
-	if("auteurMULTI"%in%class(obj)){
+	if("auteurMCMCMC"%in%class(obj)){
 		nn=names(obj)
 		nn=nn[!nn%in%c("phy","trees")]
 		phy=obj$phy
 		trees=obj$trees
 		res=lapply(obj[nn], to.mcmc.list)
 		names(res)=nn
-		class(res)=c("codaMULTI", class(res))
+		class(res)=c("codaMCMCMC", class(res))
 		res$phy=phy
 		res$trees=trees
 		return(res)
 	}
 	
-	if("auteurSINGLE"%in%class(obj)) {
+	if("auteurMCMC"%in%class(obj)) {
 		return(obj)
 	}
 	
-	if("rjmcmcMULTI"%in%class(obj)){
+	if("rjmcmcmc"%in%class(obj)){
 		return(to.mcmc.list(obj))
 	}
 	
@@ -306,9 +306,9 @@ to.coda=function(obj){
 		return(obj)
 	}
 	
-	# ELSE: expect list of 'auteurSINGLE' objects
-	zz=sapply(obj, function(x) "auteurSINGLE"%in%class(x))
-	if(!all(zz)) stop("Supply 'obj' as a list of 'auteurSINGLE' objects -- see to.auteur()")
+	# ELSE: expect list of 'auteurMCMC' objects
+	zz=sapply(obj, function(x) "auteurMCMC"%in%class(x))
+	if(!all(zz)) stop("Supply 'obj' as a list of 'auteurMCMC' objects -- see to.auteur()")
 	warning("'summarize.rjmcmc( , , format=\"coda\")' is recommended for combining multiple runs.")
 	samples=obj
 	nn=unique(unlist(lapply(samples, names)))
@@ -332,7 +332,7 @@ to.coda=function(obj){
 	}
 	names(samples)=nn
 	samples$phy=phy
-	class(samples)=c("codaMULTI", class(samples))
+	class(samples)=c("codaMCMCMC", class(samples))
 	samples
 }
 
@@ -353,20 +353,20 @@ to.auteur=function(obj, phy=NULL, ...){
 		return(res)
 	}
 	
-	if("codaMULTI"%in%class(samples)){
+	if("codaMCMCMC"%in%class(samples)){
 		nn=names(samples)
 		excl=c("phy","trees", "hasher")
 		nn=nn[!nn%in%excl]
 		res=lapply(samples[nn], .intercalate.rjmcmc)
 		names(res)=nn
-		class(res)=c("auteurMULTI", class(res))
+		class(res)=c("auteurMCMCMC", class(res))
 		excl=excl[excl%in%names(samples)]
 		if(length(excl)) res[excl]=samples[excl]
 		if(!is.null(phy)) res$phy=hashes.rjmcmc(res, phy)
 		return(res)
 	}
 	
-	if(any(c("auteurSINGLE","auteurMULTI")%in%class(samples))){
+	if(any(c("auteurMCMC","auteurMCMCMC")%in%class(samples))){
 		if(!is.null(phy)){
 			samples$phy=hashes.rjmcmc(samples, phy)
 			return(samples)
@@ -375,7 +375,7 @@ to.auteur=function(obj, phy=NULL, ...){
 		}
 	}
 	
-	if(any(c("rjmcmcMULTI","rjmcmc")%in%class(samples))){
+	if(any(c("rjmcmcmc","rjmcmc")%in%class(samples))){
 		if(!is.null(phy)) warning("returning unmodified samples ('phy' has no effect in this context)")
 		return(samples)
 	}
@@ -400,7 +400,7 @@ function(obj) {
 			  digest(aa[!y%in%exclude.attr])
 	})
 	
-	# resolve attributes for rjmcmcMULTI object
+	# resolve attributes for rjmcmcmc object
 	if(length(unique(zz))==1){
 		aa=attributes(list.obj[[1]])
 		dim=aa$dim
@@ -424,7 +424,7 @@ function(obj) {
 
 	attributes(out.array)[names(attrb)]=attrb
 	attr(out.array, "nrun")=n
-	class(out.array)=c("rjmcmcMULTI", "mcmc", class(unclass(out.array)))
+	class(out.array)=c("rjmcmcmc", "mcmc", class(unclass(out.array)))
 	return(out.array)
 }
 
@@ -436,7 +436,7 @@ hashes.rjmcmc=function(obj, phy){
 		if(all(phyh%in%hashes)) return(phy) else stop("'phy' cannot be matched to 'obj'.")
 	}
 	
-	if(any(c("rjmcmcMULTI","rjmcmc")%in%class(obj))){ # dealing with single parameter (or log)
+	if(any(c("rjmcmcmc","rjmcmc")%in%class(obj))){ # dealing with single parameter (or log)
 		if(!is.null(attr(obj, "parm"))) {
 			ht=attr(obj,"hashtips")
 			hh=colnames(obj)
@@ -446,7 +446,7 @@ hashes.rjmcmc=function(obj, phy){
 		}
 	}
 	
-	if(!any(c("auteurMULTI","auteurSINGLE")%in%class(obj))) stop("Supply an object of class 'auteurMULTI' or 'auteurSINGLE'")
+	if(!any(c("auteurMCMCMC","auteurMCMC")%in%class(obj))) stop("Supply an object of class 'auteurMCMCMC' or 'auteurMCMC'")
 	nn=names(obj)[sapply(obj, function(x) if(!is.null(attr(x,"parm"))) return(TRUE) else return(FALSE))]
 	par=obj[nn]
 	

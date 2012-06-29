@@ -23,7 +23,7 @@ If it is desired to run analyses for the same trait data across a set of trees (
 }  
 
 \value{
-an object of class \code{rjmcmcSINGLE} or \code{rjmcmcMULTI}}
+an object of class \code{rjmcmc} or \code{rjmcmcmc}}
 
 \author{JM Eastman}
 

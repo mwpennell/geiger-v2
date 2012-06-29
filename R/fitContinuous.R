@@ -260,17 +260,17 @@ fitContinuous=function(
 # likelihood function creation
 bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white")) 
 {
-	## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species) 
-
+## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species) 
+	
 	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
-
-	# resolve binary tree
+	
+# resolve binary tree
 	if(!is.binary.tree(phy)){
 		phy=multi2di(phy)
 	}
 	phy=reorder(phy)
 	
-	# resolve estimation of SE
+# resolve estimation of SE
 	if(is.null(SE)) SE=NA
 	if(any(is.na(SE))) {
 		if(model=="white"){
@@ -285,10 +285,11 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 		adjSE=FALSE
 	}
 	
-	# cache object for likelihood computation
-	cache = .make.cache.bm(phy, dat, SE, control=list(method="pruning", backend="C"))
-	cache$ordering=attributes(cache$info$phy)$order
-		
+# cache object for likelihood computation
+	cache = .cache.data.bm(phy, dat, SE)
+	
+	cache$ordering=attributes(cache$phy)$order
+	
 	FUN=switch(model, 
 			   BM=.null.cache(cache),
 			   OU=.ou.cache(cache),
@@ -299,8 +300,6 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			   delta=.delta.cache(cache),
 			   white=.white.cache(cache)
 			   )
-
-	cache$adjustSE=ifelse(cache$y$y[2,]==-666, TRUE, FALSE)
 	
     z = length(cache$len)
     rr = numeric(z)
@@ -323,7 +322,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			vv=cache$y$y[2,]
 			ff=function(x){
 				if(adjSE){
-					vv[which(cache$adjustSE)]=x^2 
+					vv[which(cache$y$SE==1)]=x^2 
 					return(vv)
 				} else {
 					return(vv)
@@ -348,7 +347,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
     class(ll.bm.direct) <- c("bm", "dtlik", "function")
 	
 	
-	## EXPORT LIKELIHOOD FUNCTION
+## EXPORT LIKELIHOOD FUNCTION
 	if(is.null(argnames(FUN))){
 		
 		if(adjSE){
