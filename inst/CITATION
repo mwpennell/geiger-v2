@@ -1,6 +1,7 @@
-citHeader("To cite auteur in a publication use:")
+citHeader("To cite auteur or geiger in a publication use:")
 
 citEntry(entry="Article",
+	header="auteur",
 	title = "A novel comparative method for identifying shifts in the rate of character evolution on trees",
         author = personList(as.person("JM Eastman"),as.person("ME Alfaro"), as.person("P Joyce"),as.person("AL Hipp"),as.person("LJ Harmon")),
 	journal = "Evolution",
@@ -10,9 +11,8 @@ citEntry(entry="Article",
 
         textVersion = "Eastman Jonathan M, Michael E Alfaro, Paul Joyce, Andrew L Hipp, and Luke J Harmon. 2011. A novel comparative method for identifying shifts in the rate of character evolution on trees. Evolution 65:3578-3589.")
 
-citHeader("To cite geiger in a publication use:")
-
 citEntry(entry="Article",
+	header="geiger",
 	title = "GEIGER: investigating evolutionary radiations",
         author = personList(as.person("LJ Harmon"),as.person("JT Weir"), as.person("CD Brock"),as.person("RE Glor"),as.person("W Challenger")),
 	journal = "Bioinformatics",

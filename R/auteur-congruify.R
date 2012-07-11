@@ -48,7 +48,7 @@
 		}
 	}
 	df=df[df$valid,]
-	return(df)
+	return(df[,-which(names(df)=="valid")])
 }
 
 congruify.phylo=function(stock, scion, taxonomy=NULL, tol=0, method="PATHd8"){

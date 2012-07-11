@@ -1,6 +1,6 @@
 \name{congruify.phylo}
 \alias{congruify.phylo}
-\alias{.nodefind.phylo}
+\alias{nodefind.phylo}
 
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{

@@ -3,8 +3,8 @@
 \alias{lookup.phylo}
 \alias{phylo.lookup}
 \alias{phylo.clades}
-\alias{bind.phylo}
-\alias{glomogram.phylo}
+\alias{bind}
+\alias{glomogram}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Blending information from taxonomies and trees}
@@ -91,9 +91,9 @@ nodelabels(amph$node.label, cex=0.35, col="red", frame="n")
 sirenidae=extract.clade(nphy, geiger:::.mrca(c("Siren_lacertina", "Pseudobranchus_axanthus"), nphy))
 ambystomatidae=extract.clade(nphy, geiger:::.mrca(c("Ambystoma_gracile", "Ambystoma_texanum"), nphy))
 trees=list(
-	Cryptobranchoidea=list(subtree=cryptobranchoidea, age=max(branching.times(cryptobranchoidea))),
-	Sirenidae=list(subtree=sirenidae, age=max(branching.times(sirenidae))),
-	Ambystomatidae=list(subtree=ambystomatidae, age=max(branching.times(ambystomatidae)))
+	Cryptobranchoidea=cryptobranchoidea,
+	Sirenidae=sirenidae,
+	Ambystomatidae=ambystomatidae
 )
 class(trees)="multiPhylo"
 

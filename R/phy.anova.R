@@ -1,9 +1,9 @@
-phy.anova<-function(phy, data, group, data.names=NULL, nsim=1000)
+phy.anova<-function(phy, data, group, nsim=1000)
 {
-	td<-treedata(phy, data, data.names)
+	td<-treedata(phy, data)
 	
 	s<-mean(pic(td$data, td$phy)^2)
-	a<-anova(lm(td$data~group))
+	a<-anova(mod<-lm(td$data~group))
 	f.data<-a[1,4]
 	sims<-sim.char(td$phy, as.matrix(s), nsims=nsim)
 	
@@ -14,18 +14,19 @@ phy.anova<-function(phy, data, group, data.names=NULL, nsim=1000)
 	print(a)
 
 	cat("\n\nPhylogenetic p-value: \t")
-	cat((sum(f.null>f.data)+1)/(nsim+1))
+	cat((sum(f.null>f.data)+1)/(nsim+1),"\n")
+#	return(mod)
 
 		
 }
 
-phy.manova<-function(phy, data, group, data.names=NULL, nsim=1000, test="Wilks")
+phy.manova<-function(phy, data, group, nsim=1000, test="Wilks")
 {	
-	td<-treedata(phy, data, data.names)
+	td<-treedata(phy, data)
 
 	s<-ic.sigma(td$phy, td$data)
 	
-	m<-summary.manova(manova(as.matrix(td$data)~group), test=test)
+	m<-summary.manova(mod<-manova(as.matrix(td$data)~group), test=test)
 	
 	w.data<-m[[4]][1,2]
 	
@@ -39,6 +40,8 @@ phy.manova<-function(phy, data, group, data.names=NULL, nsim=1000, test="Wilks")
 	print(m)
 	
 	cat("\n\nPhylogenetic p-value: \t")
-	cat((sum(w.data>w.null)+1)/(nsim+1))
+	cat((sum(w.data>w.null)+1)/(nsim+1),"\n")
+	
+#	return(mod)
 	
 }

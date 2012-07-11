@@ -103,6 +103,8 @@
 	.unique.phylo(phy)
 }
 
+glomogram=function(phy, subtrees, ...) UseMethod("glomogram")
+
 glomogram.phylo=function(phy, subtrees){
 # subtrees: a named list of subtrees (each can be a 'multiPhylo' object)
 #		-- minimally has 'subtree' and 'age' elements
@@ -120,21 +122,22 @@ glomogram.phylo=function(phy, subtrees){
 #		cat(paste(names(subtrees)[i], "\n", sep=""))
 		
 		cur=subtrees[[i]]
-		curtrees=cur$subtree
-		if(class(curtrees)=="multiPhylo") {
-			curtree=curtrees[[sample(1:length(curtrees), 1)]]
+		
+		if(class(cur)=="multiPhylo") {
+			cur=cur[[sample(1:length(cur), 1)]]
+		} 
+		
+		if(Ntip(cur)==1){
+			phy$tip.label[phy$tip.label==cur$tip]=cur$tip.label
 		} else {
-			curtree=curtrees
-		}
-		if(Ntip(curtree)==1){
-			phy$tip.label[phy$tip.label==cur$tip]=curtree$tip.label
-		} else {
-			if(is.null(cur$tip)) cur$tip=names(subtrees)[i]
-			if(!cur$tip%in%done){
-				done=c(done, cur$tip)
-				phy=.replace.tip.with.subtree(phy, curtree, cur$tip, cur$age)		
+			ht=heights(cur)
+			curage=max(ht)
+			curtip=names(subtrees)[i]
+			if(!curtip%in%done){
+				done=c(done, curtip)
+				phy=.replace.tip.with.subtree(phy, cur, curtip, curage)		
 			} else {
-				warning("duplicate")
+				warning("Duplicate tips encountered: current 'subtree' will be skipped.")
 				next()
 			}
 		}

@@ -5,14 +5,13 @@
 	Fits macroevolutionary models to phylogenetic trees
 }
 \usage{
-fitDiscrete(phy, data, model=c("ER", "SYM", "ARD"), treeTransform=c("none", "lambda", "kappa", "delta", "linearChange", "exponentialChange", "twoRate"), data.names=NULL, plotlnl=F, qLimits=c(0.0001, 1000), pLimits=c(0.00001, 10))
+fitDiscrete(phy, data, model=c("ER", "SYM", "ARD"), treeTransform=c("none", "lambda", "kappa", "delta", "linearChange", "exponentialChange", "twoRate"),  plotlnl=F, qLimits=c(0.0001, 1000), pLimits=c(0.00001, 10))
 }
 \arguments{
   \item{phy}{ object of type phylo }
   \item{data}{ Data vector (one trait) or matrix (multiple traits) }
   \item{model}{ One of ER, SYM, or ARD; see below }
   \item{treeTransform}{ Model for transforming the tree; see below } 
-  \item{data.names}{ Tip names for data vector that match tree species; ignored if data includes names}
   \item{plotlnl}{ Plot likelihood surface?  Works only with models of two parameters or fewer.}
   \item{qLimits}{Vector giving minimum and maximum values for rate parameter q; used ONLY for plotting.}
   \item{pLimits}{Vector giving minimum and maximum values for whichever tree transformation parameter you're using; used ONLY for plotting.}

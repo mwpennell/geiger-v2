@@ -6,15 +6,14 @@
 	Calculates ANOVA or MANOVA, and returns p-value based on Brownian motion simulations
 }
 \usage{
-phy.anova(phy, data, group, data.names=NULL, nsim=1000)
-phy.manova(phy, data, group, data.names=NULL, nsim=1000, test="Wilks")
+phy.anova(phy, data, group, nsim=1000)
+phy.manova(phy, data, group, nsim=1000, test="Wilks")
 
 }
 \arguments{
   \item{phy}{ an object of class 'phylo'}
   \item{data}{ Dependent variable(s) - should be continuous }
   \item{group}{ Independent variable - should be a factor }
-  \item{data.names}{ Taxon names in order, corresponding to x and group; not needed if data has names stored as 'names' or 'rownames'}
   \item{nsim}{ Number of simulations for calculating p-value; default = 1000 }
   \item{test}{ If you're using a MANOVA, the name of the test statistic to be used. 
   				Partial matching is used so the name can be abbreviated. 
@@ -47,12 +46,11 @@ attach(geospiza)
 
 f<-as.factor(c(rep(0, 7), rep(1, 6)))
 
-
 phy.manova(geospiza.tree, geospiza.data, f)
 
-x<-geospiza.data[,1]
+x<-geospiza.data[,"wingL"]
 
-phy.anova(geospiza.tree, x, f, data.names=rownames(geospiza.data)) 
+phy.anova(geospiza.tree, x, f) 
 
 }
 

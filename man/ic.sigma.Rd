@@ -6,12 +6,11 @@
 	n quantitative characters.
 }
 \usage{
-ic.sigma(phy, data, data.names=NULL)
+ic.sigma(phy, data)
 }
 \arguments{
   \item{phy}{Phylogenetic tree in 'phylo' format}
   \item{data}{Data matrix}
-  \item{data.names}{Tip names for data vector that match tree species; ignored if data includes names}
 }
 \details{
 Data for this function should be a matrix of continuously-valued variables.

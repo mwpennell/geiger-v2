@@ -2,25 +2,81 @@ gbresolve=function(x, ...){
 	UseMethod("gbresolve")
 }
 
-gbresolve.default=function(x, rank="phylum", within="", ...){
-	gb=.build.gbtaxdump(...)
+gbresolve.default=function(x, rank="phylum", within="", update=FALSE, split=FALSE){
+	
+	if(split) {
+		tt=unique(tips<-sapply(x, function(y) unlist(strsplit(y, "_"))[1]))
+	} else {
+		tt=unique(tips<-x)
+		names(tips)=tips
+	}
+	
+	gb=.build.gbtaxdump(update)
 	FUN=.fetch_gbhierarchy.above(gb, rank=rank, within=within)
-	tmp=lapply(x, FUN)
+	
+	env=Sys.getenv()
+	if("ignoreMULTICORE"%in%names(env)) {
+		f=lapply
+	} else {
+		if(.check.multicore()) {
+			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
+		} else {
+			f=lapply
+		}
+	}
+	
+	tmp=f(tt, FUN)
+	
 	dd=sapply(tmp, function(y) all(is.na(y)))
 	if(any(dd)) {
+		warning(paste("The following taxa were not encountered in the NCBI taxonomy:\n\t", paste(tt[which(dd)], collapse="\n\t"), sep=""))
 		tmp=tmp[-which(dd)]
-		x=x[-which(dd)]
+		tt=tt[-which(dd)]
 	}
-	res=.compile_taxonomy(tmp)
-	rownames(res)=x
+	
+	if(!length(tmp)) return(NULL)
+	
+	tmp=.compile_taxonomy(tmp)
+	rownames(tmp)=tt
+	
+	res=matrix(tmp[match(tips, rownames(tmp)),], nrow=length(tips))
+	rownames(res)=names(tips)
+	colnames(res)=colnames(tmp)
+	aa=apply(res, 1, function(x) all(is.na(x)))
+	if(any(aa)) res=res[-which(aa),]
 	res
 }
 
-exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
-	if(is.null(taxonomy)) taxonomy=gbresolve.phylo(phy, ...)$tax
+## Assign internal node labels to phy based on genbank taxonomy
+gbresolve.phylo=function(x, rank="phylum", within="", update=FALSE, split=TRUE){
+	
+	phy=x
+	x=x$tip.label
+	res=gbresolve(x, rank=rank, within=within, update=update, split=split)
+	if(is.null(res)) return(res)
+	ll=apply(res, 2, function(x) length(unique(x))==1 & !any(x==""))
+	if(any(ll)){
+		tmp=res[,1:min(which(ll))]
+	} else {
+		tmp=res
+	}
+	
+	phy=nodelabel.phylo(phy, tmp)
+	return(list(phy=phy, tax=res))
+}
+
+exemplar=function(x, ...) UseMethod("exemplar")
+
+exemplar.phylo=function(x, strict.vals=NULL, taxonomy=NULL, ...){
+	phy=x
+# strict.vals: used if 
+	if(is.null(taxonomy)) {
+		tmp=gbresolve.phylo(phy, ...)
+		taxonomy=tmp$tax
+	}
 	tax=taxonomy
 	drp=which(!phy$tip.label%in%rownames(tax))
-	z=.exemplar(tax, strict.vals=strict.vals)
+	z=exemplar(tax, strict.vals=strict.vals)
 	ff=cbind(z, rownames(tax))
 	ww=which(phy$tip.label%in%rownames(tax))
 	phy$tip.label[ww]=z[match(phy$tip.label[ww], rownames(tax))]
@@ -42,12 +98,12 @@ exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
 #Mertensiella_caucasica          "Mertensiella"     "Salamandridae"   -->	Mertensiella      
 #Salamandra_algira               "Salamandra"       "Salamandridae"   -->	Salamandra_algira           
 #Salamandra_atra                 "Salamandra"       "Salamandridae"   -->	Salamandra_atra             
-.exemplar=function(x, strict.vals=NULL){
+exemplar.default=function(x, strict.vals=NULL){
 	
 	tax=x
 	if(!is.matrix(tax) | is.null(rownames(tax)) | is.null(colnames(tax))) stop("supply 'tax' as a matrix with both row and column names")
 	if(!is.null(strict.vals)){
-		if(!all(is.character(strict.vals))) stop("supply 'strict.vals' as a character vector specifying with columns are to be used in 'tax'")
+		if(!all(is.character(strict.vals))) stop("supply 'strict.vals' as a character vector specifying which columns are to be used in 'tax'")
 		nn=sort(match(strict.vals, colnames(tax)))
 		nn=nn[!is.na(nn)]
 		if(length(nn)){
@@ -73,9 +129,6 @@ exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
 ## returns taxonomic information for a 'taxon' up to the 'rank' given
 ## requires fetch_genbank.pl and potentially nodes.dmp and names.dmp (if /tmp/idx is not available)
 	
-	if(!all(names(gb)%in%c("nodes","names"))){
-			stop("Please rebuild NCBI taxdump with .build.gbtaxdump()")
-	}
 	Linnaean=c(
 		       "root",
 			   "superkingdom",
@@ -107,12 +160,7 @@ exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
 			   "forma"
 	)
 	
-	nodes=gb$nodes
-	names=gb$names
-	
-	# COMBINE nodes and names
-	dat=cbind(names, nodes[match(names$id, nodes$id), c("parent_id", "rank")])
-	rownames(dat)=NULL
+	dat=gb	
 	
 	get_tax=function(name){
 		
@@ -252,7 +300,8 @@ exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
 #	base_path=gsub("fetch_genbank.pl", "", pl)
 	nd=paste(path, "nodes.dmp", sep="/")
 	nm=paste(path, "names.dmp", sep="/")
-	return(c(names=nm, nodes=nd, base=path))
+	ncbi=paste(path, "_ncbi.rda", sep="/")
+	return(c(ncbi=ncbi, names=nm, nodes=nd, base=path))
 }
 
 
@@ -261,8 +310,8 @@ exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
 .build.gbtaxdump=function(update=FALSE){
 	
 	gb_path=.path_to_gb.dmp()
-	rda=paste(gb_path[["base"]], "taxdump.rda", sep="/") 
-
+	rda=as.list(gb_path)$ncbi
+	
 	build=update
 	if(!file.exists(rda) | build){
 		build=TRUE
@@ -308,16 +357,21 @@ exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
 			nodes.dmp<-nodes.dmp[,c(1:5,11:13)]
 			names(nodes.dmp)<-c("id","parent_id","rank","embl_code","division_id","GenBank_hidden_flag","hidden_subtree_root_flag","comments")
 
-			gb=list(nodes=nodes.dmp, names=names.dmp)
-			class(gb)=c("taxdump", class(gb))
-			save(gb, file=rda)
+#		gb=list(nodes=nodes.dmp, names=names.dmp)
+#			class(gb)=c("taxdump", class(gb))
+#			save(gb, file=rda)
+			ncbi=cbind(names.dmp, nodes.dmp[match(names.dmp$id, nodes.dmp$id), c("parent_id", "rank")])
+			rownames(ncbi)=NULL
+			attr(ncbi, "date")=Sys.Date()
+			class(ncbi)=c("taxdump", class(ncbi))
+			save(ncbi, file=rda)
+			
 		}
 	}
 	
 
-	gb=get(load(rda))
-		
-	return(gb)
+	ncbi=get(load(rda))
+	return(ncbi)
 
 }
 
@@ -327,15 +381,30 @@ exemplar.phylo=function(phy, taxonomy=NULL, strict.vals=NULL, ...){
 
 
 ## Assign internal node labels to phy based on genbank taxonomy
-gbresolve.phylo=function(x, rank="phylum", within="", ...){
+gbresolve.phylo=function(x, rank="phylum", within="", update=FALSE, split=TRUE){
 	phy=x
 #	require(auteur)
-	tt=unique(tips<-sapply(phy$tip.label, function(x) unlist(strsplit(x, "_"))[1]))
+	if(split) {
+		tt=unique(tips<-sapply(phy$tip.label, function(x) unlist(strsplit(x, "_"))[1]))
+	} else {
+		tt=unique(tips<-phy$tip.label)
+		names(tips)=tips
+	}
 	
-	gb=.build.gbtaxdump(...)
+	gb=.build.gbtaxdump(update)
 	FUN=.fetch_gbhierarchy.above(gb, rank=rank, within=within)
 	
-	tax=lapply(tt, function(x) try(FUN(x), silent=TRUE))
+	env=Sys.getenv()
+	if("ignoreMULTICORE"%in%names(env)) {
+		f=lapply
+	} else {
+		if(.check.multicore()) {
+			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
+		} else {
+			f=lapply
+		}
+	}
+	tax=f(tt, function(x) try(FUN(x), silent=TRUE))
 	dd=sapply(tax, function(x) inherits(x, "try-error") | all(is.na(x)))
 	
 	if(any(dd)){
@@ -361,18 +430,12 @@ gbresolve.phylo=function(x, rank="phylum", within="", ...){
 	
 	phy=nodelabel.phylo(phy, tmp)
 	return(list(phy=phy, tax=res))
-	
 }
 
 print.taxdump=function(x, ...){
-	cat("\nNCBI GenBank taxdump\n")
-	xnm=nrow(x$names)
-    cat("\nnames:", xnm,"\n")
-	print(rbind(x$names[c(1:5),],  matrix(".", nrow=5, ncol=ncol(x$names), dimnames=list(NULL, dimnames(x$names)[[2]])), x$names[c((xnm-4):xnm),]))
-
-	xnd=nrow(x$nodes)
-	cat("\nnodes:", xnd, "\n")	
-	print(rbind(x$nodes[c(1:5),], matrix(".", nrow=5, ncol=ncol(x$nodes), dimnames=list(NULL, dimnames(x$nodes)[[2]])), x$nodes[c((xnd-4):xnd),]))
+	cat(paste("\nNCBI GenBank taxonomy assembled ", attributes(x)$date, "\n ...showing the first several entries...\n\n", sep=""))	
+	print(head(as.data.frame(x)))
+	
 }
 
 .compile_taxonomy=function(tax){
@@ -401,12 +464,12 @@ print.taxdump=function(x, ...){
 	
 	## exclude peculiar assignments (e.g., Proteus [salamander genus] returns prokaryotic labels)
 	## FIX ME: more problem anticipation
-	primary=table(mm[,ncol(mm)])
-	zz=mm[,ncol(mm)]!=names(primary[primary==max(primary)])
-	if(any(zz)) {
-		mm=mm[-which(zz),]
-		dat=dat[-which(zz)]
-	}
+#	primary=table(mm[,ncol(mm)])
+#	zz=mm[,ncol(mm)]!=names(primary[primary==max(primary)])
+#	if(any(zz)) {
+#		mm=mm[-which(zz),]
+#		dat=dat[-which(zz)]
+#	}
 	mm[is.na(mm)]=""
 	rownames(mm)=names(dat)
 	colnames(mm)=hier

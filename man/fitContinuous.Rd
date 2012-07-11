@@ -83,7 +83,7 @@ Possible models are as follows:
 	
 	}
 }
-\references{Blomberg SP, T Garland, and AR Ives. 2003. Testing for phylogenetic signal in comparative data: behavioral traits are more labile. Evolution 57:717–745.
+\references{Blomberg SP, T Garland, and AR Ives. 2003. Testing for phylogenetic signal in comparative data: behavioral traits are more labile. Evolution 57:717-745.
 
 			Butler MA and AA King, 2004. Phylogenetic comparative analysis: a modeling approach for adaptive evolution. American Naturalist 164:683-695.
 			
@@ -102,7 +102,7 @@ attach(geospiza)
 
 tmp=treedata(geospiza.tree, geospiza.data)
 phy=tmp$phy
-dat=as.matrix(tmp$data)
+dat=tmp$data
  
 #---- STORE RESULTS 
 brownFit <-  fitContinuous(phy, dat[,"wingL"])

@@ -1,6 +1,7 @@
 `disp.calc` <-
-function(data, disp="avg.sq")
-{
+function(data, disp=c("avg.sq", "avg.manhattan", "num.states")){
+	disp=match.arg(disp, c("avg.sq", "avg.manhattan", "num.states"))
+	
 	if(disp=="avg.sq") {
 		d<-dist(data, method="euclidean")^2
 		r<-mean(d)
@@ -18,13 +19,51 @@ function(data, disp="avg.sq")
 	return(r)
 }
 
+`ic.sigma` <-
+function(phy, data)
+{
+	td<-treedata(phy, data, sort=TRUE)
+	
+	f<-function(x) pic(x, td$phy)
+	ic<-apply(td$data, 2, function(x) {
+				names(x)=rownames(td$data)
+				f(x)
+	})
+	r<-crossprod(ic, ic)/nrow(ic)
+	return(r)
+}
+
+
+
+`tip.disparity` <-
+function(phy, data,  disp=c("avg.sq", "avg.manhattan", "num.states")){
+	disp=match.arg(disp, c("avg.sq", "avg.manhattan", "num.states"))
+	
+	if (class(phy) != "phylo")
+	stop("object \"phy\" is not of class \"phylo\"");
+	
+	td<-treedata(phy, data)
+	
+	
+	nb.tip <- length(td$phy$tip.label)
+    nb.node <- td$phy$Nnode
+    result<-numeric();
+    
+    for(i in 1:nb.node) {
+    	l<-node.leaves(td$phy, nb.tip+i);
+    	d<-td$data[match(l, row.names(data)),];
+    	result[i]<-disp.calc(d, disp);
+    }
+    return(result);	  	
+}
 
 
 `dtt` <-
-function(phy, data, data.names=NULL, disp="avg.sq")
-{
+function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states")){
+	disp=match.arg(disp, c("avg.sq", "avg.manhattan", "num.states"))
+
 	phy$node.label<-NULL
-	td<-treedata(phy, data, data.names)
+	td<-treedata(phy, data)
 	phy2<-td$phy
 	phy<-new2old.phylo(td$phy)
 	
@@ -81,9 +120,10 @@ function(phy, data, data.names=NULL, disp="avg.sq")
 	return(result);	
 }
 
-dtt.full<-function(phy, data, data.names=NULL, disp="avg.sq", nsims=1000, mdi.range=c(0,1))
-{
-	td<-treedata(phy, data, data.names)
+dtt.full<-function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states"), nsims=1000, mdi.range=c(0,1)){
+	disp=match.arg(disp, c("avg.sq", "avg.manhattan", "num.states"))
+
+	td<-treedata(phy, data)
 
 	dtt.data<-dtt(td$phy, td$data, disp=disp)
 	ltt<-sort(branching.times(td$phy), decreasing=TRUE)

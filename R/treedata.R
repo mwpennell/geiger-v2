@@ -10,9 +10,11 @@
 # if sort is T, data will have rows in the same order
 # as the taxon names in phy$tip.label
 
-treedata<-function(phy, data, data.names=NULL, sort=FALSE, warnings=TRUE)
+treedata<-function(phy, data, sort=FALSE, warnings=TRUE)
 {
 
+	dm=length(dim(data))
+	
 	if(is.vector(data)) {
 		data<-as.matrix(data)
 	}
@@ -23,7 +25,7 @@ treedata<-function(phy, data, data.names=NULL, sort=FALSE, warnings=TRUE)
 		data<-as.matrix(data)
 	}
 	
-	if(is.null(data.names)) {
+#	if(is.null(data.names)) {
 		if(is.null(rownames(data))) {
 				stop("names for 'data' must be supplied")
 #JME				data.names<-phy$tip.label
@@ -32,8 +34,8 @@ treedata<-function(phy, data, data.names=NULL, sort=FALSE, warnings=TRUE)
 		} else {
 			data.names<-rownames(data)
 		}
-	}
-	nc<-name.check(phy, data, data.names)
+#	}
+	nc<-name.check(phy, data)
 	if(is.na(nc[[1]][1]) | nc[[1]][1]!="OK") {
 		if(length(nc[[1]]!=0)) {
 			phy=drop.tip(phy, as.character(nc[[1]]))
@@ -65,6 +67,9 @@ treedata<-function(phy, data, data.names=NULL, sort=FALSE, warnings=TRUE)
 
     	index <- match(phy$tip.label, rownames(data))
    		data <- as.matrix(data[index,])
+	} 
+	if(dm==2){
+		data <- as.matrix(data)
 	}
 	
 	phy$node.label=NULL

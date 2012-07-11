@@ -1,3 +1,6 @@
+## GENERIC 
+transform=function(x, ...) UseMethod("transform")
+
 
 ## GENERIC
 print.transformer=function (x, printlen = 3, ...) 
@@ -239,28 +242,7 @@ constrain.m=function(f, m){
 }
 
 
-## tree transformation
-transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white")){
-	
-#require(auteur)
-	
-	model=match.arg(model, c("OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
-	
-	if(!"phylo"%in%class(phy)) stop("supply 'phy' as a 'phylo' object")
-	
-	FUN=switch(model, 
-			   OU=.ou.phylo(phy),
-			   EB=.eb.phylo(phy),
-			   trend=.trend.phylo(phy),
-			   lambda=.lambda.phylo(phy),
-			   kappa=.kappa.phylo(phy),
-			   delta=.delta.phylo(phy),
-			   white=.white.phylo(phy)
-			   )
-	class(FUN)=c("transformer", "function")
-	return(FUN)
-	
-}
+
 
 .reorder.cache.pruningwise=function(cache){
 	if(cache$ordering!="pruningwise") {
@@ -318,8 +300,11 @@ transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "d
 	
 }
 
-
-transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white")){
+## tree transformation
+transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white")){
+	
+	phy=x
+	
 	model=match.arg(model, c("OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
 	
 	if(!"phylo"%in%class(phy)) stop("supply 'phy' as a 'phylo' object")
@@ -333,10 +318,10 @@ transform.phylo=function(phy, model=c("OU", "EB", "trend", "lambda", "kappa", "d
 			   delta=.delta.phylo(phy),
 			   white=.white.phylo(phy)
 			   )
-	
+	class(FUN)=c("transformer", "function")
 	return(FUN)
+	
 }
-
 
 
 # tree transformation

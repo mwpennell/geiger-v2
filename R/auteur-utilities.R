@@ -193,7 +193,7 @@ summarize.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL){
 	logf$ppos=logf[,"lnL"]+logf[,"lnLp"]
 	logf=logf[,!colnames(logf)%in%c("lnLp", "qlnL.p", "qlnL.h")]
 	if(length(thinned<-unique(tmp))!=1) stop("Encountered uninterpretable log file.")
-	trace=mcmc(data=logf[,-which(names(logf)=="state")], start=min(st), end=max(st), thin=thinned)
+	trace=.coda(data=logf[,-which(names(logf)=="state")], start=min(st), end=max(st), thin=thinned)
 	class(trace)=c("rjmcmc", class(trace), class(unclass(trace)))
 	mcpar=attr(trace,"mcpar")
 		
@@ -228,6 +228,50 @@ summarize.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL){
 	
 	return(mats)
 }
+
+.coda=function (data = NA, start = 1, end = numeric(0), thin = 1) ## from coda:::mcmc
+{
+    if (is.matrix(data)) {
+        niter <- nrow(data)
+        nvar <- ncol(data)
+    }
+    else if (is.data.frame(data)) {
+ 	    if (!all(dd<-apply(data, 2, function(x) all(is.na(x))))) {
+ 	    	data=data[,which(!dd)]
+#          stop("Data frame contains non-numeric values")
+		}
+        data <- as.matrix(data)
+        niter <- nrow(data)
+        nvar <- ncol(data)
+    }
+    else {
+        niter <- length(data)
+        nvar <- 1
+    }
+    thin <- round(thin)
+    if (length(start) > 1) 
+	stop("Invalid start")
+    if (length(end) > 1) 
+	stop("Invalid end")
+    if (length(thin) != 1) 
+	stop("Invalid thin")
+    if (missing(end)) 
+	end <- start + (niter - 1) * thin
+    else if (missing(start)) 
+	start <- end - (niter - 1) * thin
+    nobs <- floor((end - start)/thin + 1)
+    if (niter < nobs) 
+	stop("Start, end and thin incompatible with data")
+    else {
+        end <- start + thin * (nobs - 1)
+        if (nobs < niter) 
+		data <- data[1:nobs, , drop = FALSE]
+    }
+    attr(data, "mcpar") <- c(start, end, thin)
+    attr(data, "class") <- "mcmc"
+    data
+}
+
 
 .proc.prior.bm=function(dprior, rates, log){
 # dprior: a list of prior density functions
@@ -486,12 +530,12 @@ cache=function(phy, dat, type="bm", ...){
 				 method="direct",												# likelihood method: direct - pruning algorithm; vcv - variance-covariance matrix; reml - REML (pic)
 				 rate.lim=list(min=0, max=Inf),									# limits on rates
 				 root.lim=list(min=-10^3, max=10^3),							# limits on root
-				 se.lim=list(min=0, max=Inf),
+				 se.lim=list(min=0, max=Inf),									# limits on SE
 				 constrainSHIFT=FALSE,											# limit number of local rates (under *relaxedBM)
 				 constrainJUMP=FALSE,											# limit number of jumps (under jump*) 
 				 dlnSHIFT=NULL,													# shift prior (function; arg 'x'; returns ln(p[x]))
 				 dlnJUMP=NULL,													# jump prior  (function; arg 'x'; returns ln(p[x]))
-				 dlnROOT=NULL,
+				 dlnROOT=NULL,													# root prior (function; arg 'x'; returns ln(p[x]))
 				 dlnRATE=function(x) dexp(x, rate=1/(10^3), log=TRUE),			# rate prior  (function; arg 'x'; returns ln(p[x]))
 				 dlnPULS=function(x) dexp(x, rate=1/(10^3), log=TRUE),			# pulse prior  (function; arg 'x'; returns ln(p[x]))
 				 dlnSE=function(x) dexp(x, rate=1/(10^3), log=TRUE),			# se prior	(function; arg 'x'; returns ln(p[x]))

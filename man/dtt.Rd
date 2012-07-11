@@ -9,14 +9,13 @@
 }
 \usage{
 disp.calc(data, disp = "avg.sq")
-dtt(phy, data, data.names=NULL, disp = "avg.sq")
-dtt.full(phy, data, data.names=NULL, disp="avg.sq", nsims=1000, mdi.range=c(0,1))
+dtt(phy, data, disp = "avg.sq")
+dtt.full(phy, data, disp="avg.sq", nsims=1000, mdi.range=c(0,1))
 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{data}{Data matrix - either actual or simulated}
-  \item{data.names}{Tip names for data vector that match tree species; ignored if data includes names}
   \item{phy}{Phylogenetic tree in 'phylo' format}
   \item{disp}{Disparity measure: see below for currently implemented options.}
   \item{nsims}{Number of simulations used to calculate null dtt plot}

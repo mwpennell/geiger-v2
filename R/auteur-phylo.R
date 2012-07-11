@@ -736,6 +736,7 @@ subset.phylo=function(x, taxonomy, rank="family", ...){
 	return(rank_phy)	
 }
 
+bind=function(phy, taxonomy, ...) UseMethod("bind")
 
 bind.phylo=function(phy, taxonomy){
 ## phy: a 'rank' level phylogeny (tips of 'phy' should be matchable to taxonomy[,rank])
@@ -797,6 +798,12 @@ bind.phylo=function(phy, taxonomy){
 	tax=original_taxonomy[at_rank,1:ridx]
 	if(any(is.na(tax[,rank]))) stop("Corrupted data encountered when checking taxonomy[,rank]")
 	
+	rsc=function(phy, age=1) {
+		ee=phy$edge.length
+		ag=max(heights(phy))
+		phy$edge.length=ee*(age/ag)
+		phy
+	}
 	## CREATE 'rank'-level subtrees
 	mm=min(phy$edge.length)
 	ss=split(tax, tax[,rank])
@@ -817,7 +824,8 @@ bind.phylo=function(phy, taxonomy){
 				cur=phylo.lookup(cbind(y,names(ss)[idx]))$phy
 			  }
 			  cur$root.edge=0
-			  return(list(subtree=cur, age=mm/2, tip=names(ss)[idx]))
+			  cur=rsc(cur, mm/2)
+			  return(cur)
 			  
 	})
 	names(subtrees)=names(ss)
