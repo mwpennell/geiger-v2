@@ -32,11 +32,11 @@ congruify.phylo(stock, scion, taxonomy = NULL, tol = 0, method="PATHd8")
 \examples{
 sal=get(data(urodela))
 res=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, method=NA)
-print(res[[1]]$calibrations)
+print(res$calibrations)
 plot.phylo(ladderize(sal$phy,right=FALSE), cex=0.35, type="fan", label.offset=2.5)
 plot.phylo(ladderize(sal$fam,right=FALSE), cex=0.5, type="fan", label.offset=2.5, no.margin=FALSE)
 
-cat("\n\n\n*** If 'PATHd8' is installed ***, execute the following:\n\tres=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, method=\"PATHd8\")\n\tprint(res)\n\tplot(res[[1]]$phy, cex=0.35, type=\"fan\", label.offset=2.5)\n\n\tprint(max(branching.times(res[[1]]$phy)))\n\tprint(max(branching.times(sal$fam)))\n\tprint(max(branching.times(sal$phy)))\n\n\n")
+cat("\n\n\n*** If 'PATHd8' is installed ***, execute the following:\n\tres=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, method=\"PATHd8\")\n\tprint(res)\n\tplot(res$phy, cex=0.35, type=\"fan\", label.offset=2.5)\n\n\tprint(max(branching.times(res$phy)))\n\tprint(max(branching.times(sal$fam)))\n\tprint(max(branching.times(sal$phy)))\n\n\n")
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

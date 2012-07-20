@@ -11,7 +11,7 @@ Blending information from taxonomies and trees}
 \description{
 Working with systematic reference tables and phylogenies}
 \usage{
-nodelabel.phylo(phy, taxonomy)
+nodelabel.phylo(phy, taxonomy, strict=TRUE)
 phylo.lookup(taxonomy)
 lookup.phylo(phy, taxonomy = NULL, clades = NULL)
 phylo.clades(clades, phy=NULL, unplaced=TRUE)
@@ -26,8 +26,14 @@ glomogram.phylo(phy, subtrees)
   \item{clades}{a named list of clade definitions (i.e., spanning taxa; see \bold{Examples}); spanning taxa may invoke other definitions found within the \code{clades} list}
   \item{unplaced}{whether to use 'unplaced' taxa if given as an element in \code{clades}} 
   \item{subtrees}{a list of trees to be grafted into \code{phy}; each \code{subtrees} element has two sub-elements: \code{subtree} and \code{age} (see \bold{Examples})}
+  \item{strict}{whether to enforce strict labeling of nodes or allow liberal estimates of the best location of a given node label}
 }
 
+\details{
+	\code{nodelabel.phylo} provides a function (as part of the \code{phylo} object returned) to resolve the hash key and node identifier for a label found in \code{taxonomy}. 
+	This function is the \code{FUN} element of the returned object. If the taxonomic label cannot be properly placed in the tree (i.e., no subtree is found that is absolutely 
+	consistent with the supplied \code{taxonomy}, the nearest matching node(s) will be returned when invoking \code{FUN}).     
+}
 \author{JM Eastman}
 
 \examples{
@@ -99,8 +105,9 @@ class(trees)="multiPhylo"
 
 fam=sal$fam
 ftax=unique(sal$tax[,c("family", "suborder")])
-rownames(ftax)=ftax[,"family"]
+rownames(ftax)=unname(ftax[,"family"])
 fam=nodelabel.phylo(fam, ftax)
+fam$FUN("Salamandroidea")
 
 res=glomogram.phylo(fam, trees)
 dev.new()

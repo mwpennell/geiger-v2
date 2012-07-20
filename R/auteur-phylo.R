@@ -185,7 +185,7 @@ function(node,phy) {
 }
 
 
-nodelabel.phylo=function(phy, taxonomy){
+nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 # all phy$tip.label must be in taxonomy
 # taxonomy: exclusivity highest on left, lowest on right (species, genus, family, etc., as columns)
 # columns in 'taxonomy' should ONLY be taxonomic ranks
@@ -262,6 +262,74 @@ nodelabel.phylo=function(phy, taxonomy){
 	}
 	
 	phy$node.label=nodelabels
+	
+	edges=NULL
+	
+	FUN=function(taxon){
+		nm=rownames(dat)
+		dat=as.matrix(dat, ncol=ncol(dat))
+		rownames(dat)=nm
+		if(!taxon%in%dat) {
+			warning(paste(sQuote(taxon), "not encountered in 'taxonomy'", sep=" "))
+			return(NULL)
+		}
+		expected=rownames(which(dat==taxon, arr.ind=TRUE))
+		bin=as.integer(tips%in%expected)
+		if(is.null(edges)) edges=edges.phylo(phy, tips=tips)
+		rownames(edges)=1:nrow(edges)
+		N=Ntip(phy)
+		dist=apply(edges[-c(1:N),], 1, function(x) sum(abs(x-bin)))
+		nearest=as.integer(names(dist)[which(dist==min(dist))])
+		hs=character(length(nearest))
+		for(i in 1:length(nearest))hs[i]=.hash.tip(edges[nearest[i],], tips)
+		res=lapply(nearest, function(x) {
+				   tt=colnames(edges)[which(edges[x,]==1)]
+				   unexpected=sort(setdiff(tt, expected)) ## in tree but unexpected
+				   missing=sort(setdiff(expected, tt)) ## expected but not in tree
+				   tmp=list(unexpected=unexpected, missing=missing)
+				   hs=.hash.tip(edges[x,], tips)
+				   attr(tmp, "node")=x
+				   attr(tmp, "hash")=hs
+				   attr(tmp, "expected")=sort(expected)
+				   return(tmp)
+				   })
+		res
+	}
+	
+	# missed labels
+	mm=match(hashes_labels, hashes_tree)
+	if(any(is.na(mm))){
+		mss=hashes_labels[is.na(mm)]
+		phy$missed=names(tmp[order(names(mss))->ord])
+		if(!strict){
+			N=Ntip(phy)
+			env=environment(FUN)
+			env$edges=edges.phylo(phy, tips=tips)
+			near_tmp=lapply(rev(names(mss)), function(x) {
+						FUN(x) 
+			})
+			near=lapply(near_tmp, function(tmp){
+						if(is.null(tmp)) return(c())
+						if(length(tmp)==1) {
+							nd=attributes(tmp[[1]])$node
+							names(nd)=paste("\"", x, "\"", sep="")
+							if(phy$node.label[nd-N]=="") return(nd) else return(c())
+						} else {
+							return(c())
+						}
+			})
+			near=unlist(near)
+			dd=duplicated(near)
+			if(any(dd)) near=near[-dd]
+			phy$node.label[near-N]=names(near)
+			names(near_tmp)=rev(names(mss))
+			near_tmp=near_tmp[order(names(near_tmp))]
+			phy$missed=near_tmp
+			
+		}
+	}
+	
+	phy$FUN=FUN
 	phy
 }
 

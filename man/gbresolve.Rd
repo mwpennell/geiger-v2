@@ -19,12 +19,11 @@ Working with NCBI taxonomy}
 \author{JM Eastman}
 
 \examples{
-## NOT RUN
 gbresolve("Ambystoma_laterale")
 sal=get(data(urodela))
 x=gbresolve(sal$phy)
 plot(x$phy, show.node=TRUE, type="f", show.tip=FALSE, cex=0.3)
-## END NOT RUN
+gbcontain("caudata", rank="genus")
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

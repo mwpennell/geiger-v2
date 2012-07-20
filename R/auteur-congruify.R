@@ -123,8 +123,12 @@ congruify.phylo=function(stock, scion, taxonomy=NULL, tol=0, method="PATHd8"){
 	
 	## PROCESSING ##
 	classification=taxonomy
-
-	if(class(stock)=="phylo") stock=list(stock)
+	unfurl=FALSE
+	
+	if(class(stock)=="phylo") {
+		stock=list(stock)
+		unfurl=TRUE
+	}
 	if(is.null(classification)) {
 		classification=as.data.frame(unique(as.matrix(.build_classification(scion$tip.label)),MARGIN=2))
 	}
@@ -145,6 +149,8 @@ congruify.phylo=function(stock, scion, taxonomy=NULL, tol=0, method="PATHd8"){
 			  phy=stock[[i]]
 			  smooth_scion(phy, scion, scion_desc, taxa, spp, tol=tol, method=method)
 	})
+	
+	if(unfurl) results=results[[1]]
 	return(results)
 }
 
@@ -229,8 +235,8 @@ write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(sm
 		taxon=cal$MRCA
 		desc=c(cal$taxonA, cal$taxonB)
 		
-		txt1=paste("min =", taxon, cal$MinAge, sep=" ")
-		txt2=paste("max =", taxon, cal$MaxAge, sep=" ")
+		txt1=ifelse(!is.na(cal$MinAge), paste("min =", taxon, cal$MinAge, sep=" "), "")
+		txt2=ifelse(!is.na(cal$MaxAge), paste("max =", taxon, cal$MaxAge, sep=" "), "")
 		txt=paste(txt1,txt2,sep="\n")
 		
 		constraints[i]=txt

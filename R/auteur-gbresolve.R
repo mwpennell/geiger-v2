@@ -1,3 +1,72 @@
+Linnaean=c(
+	"root",
+	"superkingdom",
+	"kingdom",
+	"superphylum",
+	"phylum",
+	"subphylum",
+	"superclass",
+	"class",
+	"subclass",
+	"infraclass",
+	"superorder",
+	"order",
+	"suborder",
+	"parvorder",
+	"infraorder",
+	"superfamily",
+	"family",
+	"subfamily",
+	"tribe",
+	"subtribe",
+	"genus",
+	"subgenus",
+#			   "species group",
+#		       "species subgroup",
+	"species",
+	"subspecies",
+	"varietas",
+	"forma"
+)
+
+gbcontain=function(x, rank="species", ...){
+	type="scientific name"
+	rank=match.arg(rank, Linnaean)
+	lidx=which(Linnaean==rank)
+	if(length(x)>1) stop("Supply 'x' as a single taxon")
+	gb=.build.gbtaxdump(...)
+	
+	if(is.character(x)) {
+		ww=which(tolower(gb[,"node"])==tolower(x))
+	} else if(is.integer(x)){
+		ww=which(gb[,"id"]==x)
+
+	}
+	
+	
+	ss=gb[,"type"]%in%type
+	FUN=function(id){
+		keep=c()
+		wx=which(gb[,"parent_id"]==id & ss) 
+		if(length(wx)){
+			keep=c(keep, gb[wx[drop<-which(gb[wx,"rank"]==rank)],"node"])
+			if(length(drop)) wx=wx[-drop]
+			if(length(wx)) keep=c(keep, unlist(lapply(gb[wx,"id"], FUN)))
+		}
+		return(keep)
+		
+	}
+	
+	if(length(ww)==1){
+		id=gb[ww,"id"]
+		return(FUN(id))	
+	} else if(!length(ww)){
+		return(NULL)
+	} else {
+		stop(paste("Try one of the following:\n\t", paste(gb[ww,"node"], collapse="\n\t"), sep=""))
+	}
+}
+
 gbresolve=function(x, ...){
 	UseMethod("gbresolve")
 }
@@ -36,8 +105,8 @@ gbresolve.default=function(x, rank="phylum", within="", update=FALSE, split=FALS
 	
 	if(!length(tmp)) return(NULL)
 	
+	names(tmp)=tt
 	tmp=.compile_taxonomy(tmp)
-	rownames(tmp)=tt
 	
 	res=matrix(tmp[match(tips, rownames(tmp)),], nrow=length(tips))
 	rownames(res)=names(tips)
@@ -128,38 +197,6 @@ exemplar.default=function(x, strict.vals=NULL){
 	
 ## returns taxonomic information for a 'taxon' up to the 'rank' given
 ## requires fetch_genbank.pl and potentially nodes.dmp and names.dmp (if /tmp/idx is not available)
-	
-	Linnaean=c(
-		       "root",
-			   "superkingdom",
-			   "kingdom",
-			   "superphylum",
-			   "phylum",
-			   "subphylum",
-			   "superclass",
-			   "class",
-			   "subclass",
-			   "infraclass",
-			   "superorder",
-			   "order",
-			   "suborder",
-			   "parvorder",
-			   "infraorder",
-			   "superfamily",
-			   "family",
-			   "subfamily",
-			   "tribe",
-			   "subtribe",
-			   "genus",
-			   "subgenus",
-#			   "species group",
-#		       "species subgroup",
-			   "species",
-			   "subspecies",
-			   "varietas",
-			   "forma"
-	)
-	
 	dat=gb	
 	
 	get_tax=function(name){
@@ -293,6 +330,7 @@ exemplar.default=function(x, strict.vals=NULL){
 	
 	return(get_tax)
 }
+
 
 .path_to_gb.dmp=function(package="geiger"){
 	path=paste(system.file(package=package), "data", sep="/")
@@ -439,12 +477,8 @@ print.taxdump=function(x, ...){
 }
 
 .compile_taxonomy=function(tax){
-	all=c("forma", "superkingdom", "kingdom", 
-		  "superphylum", "phylum", "subphylum", "superclass", "class", 
-		  "subclass", "infraclass", "superorder", "order", "suborder", 
-		  "parvorder", "infraorder", "superfamily", "family", "subfamily", 
-		  "tribe", "subtribe", "genus", "subgenus", "species", 
-		  "subspecies", "varietas")
+	all=Linnaean	
+	
 	tmp=sapply(tax, names)
 	drop=sapply(tmp, function(x) all(is.null(x)))
 	dat=tax
