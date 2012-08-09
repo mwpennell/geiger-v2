@@ -3,8 +3,8 @@
 \alias{lookup.phylo}
 \alias{phylo.lookup}
 \alias{phylo.clades}
-\alias{bind}
-\alias{glomogram}
+\alias{bind.phylo}
+\alias{glomogram.phylo}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Blending information from taxonomies and trees}
@@ -41,12 +41,10 @@ sal=get(data(urodela))
 print(head(sal$tax))
 
 ## TREE from TABLE: phylo.lookup()
-tax=sal$tax[,c("subfamily", "family", "suborder")]
-tmp=phylo.lookup(tax)
-tphy=nodelabel.phylo(tmp$phy, tax)
-plot.phylo(ladderize(tphy,right=FALSE), cex=0.15, type="fan", show.tip=FALSE, no.margin=TRUE, edge.color="gray", edge.width=0.5)
-
-nodelabels(tphy$node.label, cex=0.45, col="red", frame="n")
+tax=cbind(sal$tax[,c("subfamily", "family", "suborder")], order="Caudata")
+tphy=phylo.lookup(tax)
+print(tphy)
+head(tphy$node.label)
 
 ## TABLE from TREE: lookup.phylo()
 tax=sal$tax[,c("genus", "family")]

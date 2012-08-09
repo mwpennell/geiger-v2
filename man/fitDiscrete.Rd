@@ -5,17 +5,18 @@
 	Fits macroevolutionary models to phylogenetic trees
 }
 \usage{
-fitDiscrete(phy, data, model=c("ER", "SYM", "ARD"), treeTransform=c("none", "lambda", "kappa", "delta", "linearChange", "exponentialChange", "twoRate"),  plotlnl=F, qLimits=c(0.0001, 1000), pLimits=c(0.00001, 10))
+fitDiscrete(phy, dat, model = c("ER", "SYM", "ARD", "meristic"),
+                 transform = c("none", "EB", "lambda", "kappa","delta", "white"), 
+				 bounds = list(), control = list(method = c("SANN", "L-BFGS-B"), 
+				 niter = 100, FAIL = 1e+200, hessian = FALSE, hessian_P = 0.05), ...)
 }
 \arguments{
-  \item{phy}{ object of type phylo }
-  \item{data}{ Data vector (one trait) or matrix (multiple traits) }
-  \item{model}{ One of ER, SYM, or ARD; see below }
-  \item{treeTransform}{ Model for transforming the tree; see below } 
-  \item{plotlnl}{ Plot likelihood surface?  Works only with models of two parameters or fewer.}
-  \item{qLimits}{Vector giving minimum and maximum values for rate parameter q; used ONLY for plotting.}
-  \item{pLimits}{Vector giving minimum and maximum values for whichever tree transformation parameter you're using; used ONLY for plotting.}
-
+  \item{phy}{ a phylogenetic tree of class phylo}
+  \item{dat}{ data vector for a single trait, with names matching tips in \code{phy}}
+  \item{model}{ model to fit to comparative data (see \bold{Details}) }
+  \item{bounds}{ range to constrain parameter estimates (see \bold{Details})  }
+  \item{control}{ settings used for optimization of the model likelihood}
+  \item{...}{if \code{model="meristic"}, \code{...} can dictate whether the matrix is asymmetric (\code{symmetric=FALSE})}
 }
 \details{
   This function fits various likelihood models for discrete character evolution.   Likelihood is maximized 

@@ -48,7 +48,7 @@ fitContinuous=function(
 	con=list(method="pruning",backend="C")
 	con[names(control)]=control
 	lik=bm.lik(phy,dat,SE,model)
-	argn=argnames(lik)
+	argn=argn(lik)
 	
 
 	## CONSTRUCT BOUNDS ##
@@ -316,7 +316,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	
     ll.bm.direct = function(q, sigsq, se, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
 		
-		if(is.null(argnames(FUN))) new=FUN() else new=FUN(q)
+		if(is.null(argn(FUN))) new=FUN() else new=FUN(q)
 		datc$len=as.numeric(new$len)
 		.xxSE=function(cache){
 			vv=cache$y$y[2,]
@@ -348,7 +348,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	
 	
 ## EXPORT LIKELIHOOD FUNCTION
-	if(is.null(argnames(FUN))){
+	if(is.null(argn(FUN))){
 		
 		if(adjSE){
 			attb=c("sigsq", "SE")
@@ -357,7 +357,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
 				return(ll)
 			}
-			attr(lik, "argnames") = attb
+			attr(lik, "argn") = attb
 		} else {
 			attb="sigsq"
 			lik <- function(pars) {
@@ -365,26 +365,26 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
 				return(ll)
 			}
-			attr(lik, "argnames") = attb
+			attr(lik, "argn") = attb
 		}
 		
 	} else {
 		if(adjSE){
-			attb=c(argnames(FUN), "sigsq", "SE")
+			attb=c(argn(FUN), "sigsq", "SE")
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
 				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
 				return(ll)
 			}
-			attr(lik, "argnames") = attb			
+			attr(lik, "argn") = attb			
 		} else {
-			attb=c(argnames(FUN), "sigsq")
+			attb=c(argn(FUN), "sigsq")
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
 				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
 				return(ll)
 			}
-			attr(lik, "argnames") = attb			
+			attr(lik, "argn") = attb			
 		}
 	}
 	

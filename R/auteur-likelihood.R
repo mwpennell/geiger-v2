@@ -83,12 +83,12 @@ function(phy, rates, ic) {
 .make.bm.relaxed.vcv <- function(phy, dat, SE=NULL){
 	cache=.prepare.bm(phy, dat, SE)
 	
-	check.args=function(rates, root){
+	check.argn=function(rates, root){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
 	
 	lik <- function(rates, root){
-		check.args(rates, root)
+		check.argn(rates, root)
 		tt=.scale.brlen(cache$phy, rates)
 		vcv=.vmat(tt)
 		SE=SE[match(colnames(vcv),names(cache$SE))]
@@ -96,7 +96,7 @@ function(phy, rates, ic) {
 		.bm.lik.fn(root, cache$dat, vcv, cache$SE)
 	}
 	attr(lik,"cache")=cache
-	attr(lik,"argnames")=list(rates=cache$phy$edge[,2], root="root")
+	attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root")
 	class(lik)=c("rbm","bm","function")
 	lik
 }
@@ -107,19 +107,19 @@ function(phy, rates, ic) {
 	ic=pic(dat, phy, scaled=FALSE)
 	cache$ic=ic
 	
-	check.args=function(rates, root){
+	check.argn=function(rates, root){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1)) stop("Supply 'rates' as a vector of rate scalars for each branch.")
 	}
 	
 	lik <- function(rates, root=NA){
-		check.args(rates, root)
+		check.argn(rates, root)
 		mm=match(cache$phy$tip.label, names(cache$SE))
 		tt=cache$phy$edge[,2]<=cache$n.tip
 		rates[tt]=rates[tt]+cache$SE[mm]^2
 		.bm.reml.fn(cache$phy, rates, cache$ic)
 	}
 	attr(lik,"cache")=cache
-	attr(lik,"argnames")=list(rates=cache$phy$edge[,2], root=NA)
+	attr(lik,"argn")=list(rates=cache$phy$edge[,2], root=NA)
 	class(lik)=c("rbm","bm","function")
 	lik
 }
@@ -160,14 +160,14 @@ function(phy, rates, ic) {
     ord = 1:(N + n)
 	vv = numeric(length(ord))
     mm = match(cache$phy$edge[, 2], ord)	
-	check.args=function(rates, root){
+	check.argn=function(rates, root){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
 	
 	## LIKELIHOOD FUNCTION
 	if(any(adjvar==1)){ # adjustable SE
 		lik <- function(rates, root, SE) {
-			check.args(rates, root)
+			check.argn(rates, root)
 			vv[mm] = rates
 			datc_se=datc_init
 			datc_se$var[which(adjvar==1)]=SE^2
@@ -175,16 +175,16 @@ function(phy, rates, ic) {
 			return(ll)
 		}
 		attr(lik, "cache") <- cache
-		attr(lik,"argnames")=list(rates=cache$phy$edge[,2], root="root", SE="SE")
+		attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root", SE="SE")
 	} else { # unadjustable SE
 		lik <- function(rates, root) {
-			check.args(rates, root)
+			check.argn(rates, root)
 			vv[mm] = rates
 			ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE, datc_init)
 			return(ll)
 		}
 		attr(lik, "cache") <- cache
-		attr(lik,"argnames")=list(rates=cache$phy$edge[,2], root="root")
+		attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root")
 	}	
 
 	class(lik)=c("rbm","bm","function")

@@ -1,22 +1,15 @@
-print.rbm<-function (x, ...) 
-{
-    cat("\nBrownian Motion likelihood function (1D relaxed):\n\n")
-	attributes(x)=NULL
-    print(unclass(x))
-}
-
 print.rbm=function (x, printlen = 3, ...) 
 {
-    cat("likelihood function for relaxed-rates branching diffusion\n")
-	aa=names(argnames(x))
-    cat("\targnames:", paste(aa, collapse = ", "))		 
+    cat("likelihood function for relaxed-rates univariate continuous trait evolution\n")
+	aa=names(argn(x))
+    cat("\targument names:", paste(aa, collapse = ", "))		 
 	cat("\n\n")
 	f=x
 	attributes(f)=NULL
 	cat("definition:\n")
 	print(f)
 	
-	cat("\n\nNOTE: 'rates' vector should be given in order given by the function 'argnames()'")
+	cat("\n\nNOTE: 'rates' vector should be given in order given by the function 'argn()'")
 }
 
 

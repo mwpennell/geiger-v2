@@ -27,7 +27,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, ... )
 	cache=tmp$cache
 	sp=tmp$start
 	lik=ct$lik
-	nd=argnames(lik)$rates
+	nd=argn(lik)$rates
 	max_j=max(attr(attr(ct$dlnJUMP,"density"),"count"))
 	jumpsedgewise=.jumps.edgewise(cache$phy)
 	

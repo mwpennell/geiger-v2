@@ -1,19 +1,20 @@
-\name{gbresolve}
-\alias{gbresolve}
+\name{gbresolve.phylo}
+\alias{gbresolve.phylo}
 \title{
 NCBI taxonomy }
 \description{
 Working with NCBI taxonomy}
 \usage{
-	gbresolve(x, rank="phylum", within="", update=FALSE)
+	gbresolve.phylo(x, rank="phylum", within="", split=TRUE, ...)
 }
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{a phylogenetic tree of class 'phylo' or character string (taxonomic label)}
   \item{rank}{if non-NULL, a character vector specifying the columns of \code{taxonomy} to be used in relabeling}
-  \item{within}{a ('matrix') linkage table between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
-  \item{update}{Boolean (default is \code{FALSE}); whether to rebuild a local copy of the NCBI taxonomy database} 
+  \item{within}{a character string representing a lineage within which to resolve the tips in 'x'}
+  \item{split}{Boolean (default is \code{TRUE}); whether to use the first epithet encountered in tips labels of 'x'} 
+  \item{...}{additional arguments to be passed to \code{load_taxdump}}
 }
 
 \author{JM Eastman}

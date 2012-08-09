@@ -36,7 +36,7 @@ Posterior results are written to several files within a base directory, the cont
   and the likelihood (\code{lnL}) and prior (\code{lnLp}) of the model at sampled generations.}
   
   \item{rda}{a compressed R object, which stores branchwise estimates of the jump and diffusion processes. In order to be interpretable, the \code{rda} file should be processed by the function 
-  \code{\link[geiger]{summarize.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed output.}
+  \code{\link[geiger]{load.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed output.}
 }
 
 \author{JM Eastman, LJ Harmon, and AL Hipp}
@@ -172,7 +172,7 @@ traitgram(phy, hist, alpha=0)
 ## RUN ANALYSIS
 rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, sample.freq=500, filebase=r, simple.start=TRUE, constrainSHIFT=0, constrainJUMP=FALSE, excludeJUMP=NULL, excludeSHIFT=NULL)
 outdir=paste("jump-BM", r, sep=".")
-ps=summarize.rjmcmc(outdir)
+ps=load.rjmcmc(outdir)
 dev.new()
 plot(x=ps, par="shifts", burnin=0.25, legend=TRUE, show.tip=FALSE)
 
@@ -196,7 +196,7 @@ dat=rTraitCont(scl)
 ## RUN ANALYSIS
 rjmcmc.bm(phy, dat, prop.width=1.5, ngen=20000, sample.freq=500, filebase=r, simple.start=TRUE, constrainSHIFT=FALSE, constrainJUMP=0, excludeJUMP=NULL, excludeSHIFT=NULL)
 outdir=paste("relaxedBM", r, sep=".")
-ps=summarize.rjmcmc(outdir)
+ps=load.rjmcmc(outdir)
 dev.new()
 plot(x=ps, par="shifts", burnin=0.25, legend=TRUE, show.tip=FALSE)
 

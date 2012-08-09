@@ -103,7 +103,6 @@
 	.unique.phylo(phy)
 }
 
-glomogram=function(phy, subtrees, ...) UseMethod("glomogram")
 
 glomogram.phylo=function(phy, subtrees){
 # subtrees: a named list of subtrees (each can be a 'multiPhylo' object)

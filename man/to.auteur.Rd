@@ -14,7 +14,7 @@ to.coda(obj)
   \item{obj}{for \code{to.auteur} -- an object of class \code{codaMCMCMC}, \code{mcmc.list}, or an object exported to an \code{rda} file by \pkg{auteur};
   for \code{to.coda} -- an object of class \code{auteurMCMCMC} or a list of objects individually of class \code{auteurMCMC}}
   \item{phy}{a phylogenetic tree of class 'phylo' against which to compile results; if NULL, the tree stored within the \code{rda} file is used}
-  \item{...}{arguments (\code{burnin} and \code{thin}) to be passed to \code{\link[geiger]{summarize.rjmcmc}}}
+  \item{...}{arguments (\code{burnin} and \code{thin}) to be passed to \code{\link[geiger]{load.rjmcmc}}}
 
 }
 \details{
@@ -27,6 +27,6 @@ For \code{to.auteur}, an object of class \code{auteurMCMCMC} (given multiple run
 for \code{to.coda}, an object of class \code{codaMCMCMC} is returned.
 }
 
-\seealso{\code{\link[auteur]{summarize.rjmcmc}}}
+\seealso{\code{\link[geiger]{load.rjmcmc}}}
 
 \author{JM Eastman}

@@ -90,7 +90,7 @@ unique.phylo=function(x, incomparables=FALSE, ...){
 		todo=names(tt[tt>1])
 #		cat("checking monophyly of groups...\n")
 		mon=sapply(todo, function(t) {
-				   cat(paste("\n\t",t, sep=""))
+#				   cat(paste("\n\t",t, sep=""))
 				   .exemplar.monophyly(t, phy)
 				   })
 #		cat("\n")
@@ -198,6 +198,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 #	drp=apply(tt, 1, function(x) all(x==""))
 #	if(any(drp)) taxonomy=taxonomy[-which(drp),]
 	
+	
 	taxonomy=cbind(rownames=rownames(taxonomy),taxonomy)
 	rank="rownames"
 	
@@ -235,13 +236,21 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 	}
 	names(hashes_labels)=labels
 	hashes_labels=hashes_labels[!is.na(hashes_labels)]
-#	if(any(hashes_labels=="")) hashes_labels=hashes_labels[-which(hashes_labels=="")]
+	
+	# redundancies for labels
 	tmp=table(hashes_labels)
 	if(any(tmp[tmp>1]->redund)){
+		root=.hash.tip(tips, tips)
 		for(r in names(redund)){
-			rdx=which(hashes_labels==r)
-			warning(paste("redundant labels encountered:\n\t", paste(names(hashes_labels[rdx]), collapse="\n\t"), sep=""))
-			hashes_labels=hashes_labels[-rdx[!rdx==max(rdx)]]
+			if(r==root){
+				rdx=which(hashes_labels==r)
+				warning(paste("redundant labels encountered at root:\n\t", paste(names(hashes_labels[rdx]), collapse="\n\t"), sep=""))
+				hashes_labels=hashes_labels[-rdx[!rdx==min(rdx)]]
+			} else {
+				rdx=which(hashes_labels==r)
+				warning(paste("redundant labels encountered:\n\t", paste(names(hashes_labels[rdx]), collapse="\n\t"), sep=""))
+				hashes_labels=hashes_labels[-rdx[!rdx==max(rdx)]]
+			}
 		}
 	}
 	
@@ -270,7 +279,14 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 		dat=as.matrix(dat, ncol=ncol(dat))
 		rownames(dat)=nm
 		if(!taxon%in%dat) {
-			warning(paste(sQuote(taxon), "not encountered in 'taxonomy'", sep=" "))
+			try=agrep(taxon, unique(unlist(dat)), value=TRUE)
+			if(length(try)){
+				warning(paste(sQuote(taxon), " not encountered in 'taxonomy'\n\nIntended search may have been:\n\t", paste(try, collapse="\n\t", sep=""), sep=""))
+			} else {
+				warning(paste(sQuote(taxon), " not encountered in 'taxonomy'", sep=""))
+
+			}
+			
 			return(NULL)
 		}
 		expected=rownames(which(dat==taxon, arr.ind=TRUE))
@@ -300,15 +316,33 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 	mm=match(hashes_labels, hashes_tree)
 	if(any(is.na(mm))){
 		mss=hashes_labels[is.na(mm)]
-		phy$missed=names(tmp[order(names(mss))->ord])
 		if(!strict){
 			N=Ntip(phy)
 			env=environment(FUN)
 			env$edges=edges.phylo(phy, tips=tips)
-			near_tmp=lapply(rev(names(mss)), function(x) {
-						FUN(x) 
-			})
-			near=lapply(near_tmp, function(tmp){
+			
+			ee=Sys.getenv()
+			if("ignoreMULTICORE"%in%names(ee)) {
+				f=lapply
+			} else {
+				if(.check.multicore()) {
+#					f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
+					f=lapply # mclapply copies env$edges for each node (which is too large for most trees)
+				} else {
+					f=lapply
+				}
+			}
+			
+			ll=list()
+			nm=rev(names(mss))
+			for(x in 1:length(nm)){
+				ll[[x]]=FUN(nm[x])
+			}
+			near_tmp=ll
+			names(near_tmp)=nm
+			near=lapply(1:length(near_tmp), function(idx){
+						tmp=near_tmp[[idx]]
+						x=nm[idx]
 						if(is.null(tmp)) return(c())
 						if(length(tmp)==1) {
 							nd=attributes(tmp[[1]])$node
@@ -320,15 +354,20 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 			})
 			near=unlist(near)
 			dd=duplicated(near)
-			if(any(dd)) near=near[-dd]
+			true_missed=nm[!nm%in%gsub("\"","",names(near))]
+			if(any(dd)) near=near[-which(dd)]
 			phy$node.label[near-N]=names(near)
-			names(near_tmp)=rev(names(mss))
-			near_tmp=near_tmp[order(names(near_tmp))]
-			phy$missed=near_tmp
-			
 		}
 	}
 	
+	nn=gsub("\"", "", unique(phy$node.label[phy$node.label!=""]))
+	hl=names(hashes_labels)
+	ms=sort(hl[!hl%in%nn])
+	phy$missed=ms
+	if(length(ms)){
+		warning(paste("labels missing from 'phy':\n\t", paste(ms, collapse="\n\t"), sep=""))
+	}
+
 	phy$FUN=FUN
 	phy
 }
@@ -804,8 +843,6 @@ subset.phylo=function(x, taxonomy, rank="family", ...){
 	return(rank_phy)	
 }
 
-bind=function(phy, taxonomy, ...) UseMethod("bind")
-
 bind.phylo=function(phy, taxonomy){
 ## phy: a 'rank' level phylogeny (tips of 'phy' should be matchable to taxonomy[,rank])
 ## taxonomy: a mapping from genus, family, order (columns in that order); rownames are tips to be added to constraint tree
@@ -889,7 +926,8 @@ bind.phylo=function(phy, taxonomy){
 			  if(!length(y)){
 				cur=.polytomy.phylo(rnm, mm/2)
 			  } else {
-				cur=phylo.lookup(cbind(y,names(ss)[idx]))$phy
+				cur=phylo.lookup(cbind(y,names(ss)[idx]))
+				cur=compute.brlen(cur)
 			  }
 			  cur$root.edge=0
 			  cur=rsc(cur, mm/2)
@@ -900,7 +938,7 @@ bind.phylo=function(phy, taxonomy){
 	
 	## PASTE in 'rank'-level subtrees
 	contree=glomogram.phylo(phy, subtrees)
-	contree$edge.length=NULL
+	contree=compute.brlen(contree)
 	contree
 }
 
@@ -928,7 +966,7 @@ bind.phylo=function(phy, taxonomy){
 }
 
 
-phylo.lookup=function(taxonomy) {
+.phylo.lookupDEFUNCT=function(taxonomy) {
 # GENERAL FUNCTION: convert taxonomic 'lookup' table to phylogeny
 # lookup is data.frame with ranks as columns
 # rowlabels of 'taxonomy' are assumed to be tips of the phylogeny
@@ -1059,5 +1097,84 @@ phylo.lookup=function(taxonomy) {
 	phy=reorder(collapse.singles(phy))		
 	phy$tip.label=unname(phy$tip.label)
 	return(list(phy=phy, missing=missing))		
+}
+
+phylo.lookup=function(taxonomy) {
+# GENERAL FUNCTION: convert taxonomic 'lookup' table to phylogeny
+# lookup is data.frame with ranks as columns
+# rowlabels of 'taxonomy' are assumed to be tips of the phylogeny
+# rank corresponds to (numeric) position in rank names (R to L) to use in building taxonomic tree; if null, all ranks are used
+# NOTE: taxonomic groups in 'lookup' MUST be ordered by exclusivity from R to L -- e.g., genera must precede families must precede orders
+	labels=rownames(taxonomy)
+	tax=cbind(as.matrix(taxonomy, ncol=ncol(taxonomy)),"root")
+	rownames(tax)=labels
+	occurrences=table(tax)
+	occurrences=occurrences[names(occurrences)!="" & occurrences>1]
+	
+	env=Sys.getenv()
+	if("ignoreMULTICORE"%in%names(env)) {
+		f=lapply
+	} else {
+		if(.check.multicore()) {
+			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
+		} else {
+			f=lapply
+		}
+	}
+	
+	clds=f(names(occurrences), function(x) {
+		tmp=which(tax==x, arr.ind=TRUE)
+		xcol=max(tmp[,"col"])
+		dat=as.matrix(tax[xrow<-tmp[,"row"],1:xcol], ncol=xcol)
+		tab=occurrences[names(occurrences)!=x]
+		unique(sapply(1:nrow(dat), function(idx){
+			cur=dat[idx,]
+			   if(any(cur%in%names(tab)->xx)){
+					ht=tab[names(tab)%in%cur]
+					return(names(ht)[max(which(ht==max(ht)))])
+			   } else {
+					return(rownames(dat)[idx])
+			   }
+		}))
+	})
+	names(clds)=names(occurrences)
+	ll=sapply(clds, length)==1
+	if(any(ll)) {
+		equiv=unlist(clds[which(ll)])
+
+		zz=function(nm){
+			if(nm%in%names(equiv)){
+				nm=unname(equiv[match(nm, names(equiv))])
+				zz(nm)
+			} else {
+				return(nm)
+			}
+		}
+		
+		clds=f(clds, function(x){
+			   tmp=match(x, equiv)
+			   if(any(!is.na(tmp)->ww)){
+					x=c(x[-which(ww)], clds[[zz(x[ww])]])
+			   }
+			   x
+		})
+		eq=unname(equiv)
+		drp=unique(c(eq, sapply(eq, zz)))
+		clds=clds[!names(clds)%in%drp]
+		
+	}
+	
+	tmp=phylo.clades(clds)
+	phy=tmp$root
+	tt=table(phy$tip.label)
+	if(any(tt>1)){
+		warning(paste("The following tips occur multiply, suggesting non-monophyly of subtending groups:\n\t", paste(names(tt[tt>1]), collapse="\n\t"), sep=""))
+		warning("Offending tips removed from labeled phylogeny")
+		phy=drop.tip(phy, names(tt[tt>1]))
+	}
+	phy=nodelabel.phylo(phy, tax[,-ncol(tax)], strict=TRUE)
+	if(length(phy$missed)>0) warning(paste("Offending groups are likely as follows:\n\t", paste(phy$missed, collapse="\n\t"), sep=""))
+	phy$root.edge=0
+	phy		
 }
 

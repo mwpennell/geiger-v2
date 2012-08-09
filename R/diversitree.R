@@ -1,30 +1,30 @@
 
 ## FUNCTIONS from diversitree 0.9-4: commit ec08b1d2bd from 06-22-2012 @ 'https://github.com/richfitz/diversitree'
-argnames <- function(x, ...)
-UseMethod("argnames")
+argn <- function(x, ...)
+UseMethod("argn")
 
-`argnames<-` <- function(x, value)
-UseMethod("argnames<-")
+`argn<-` <- function(x, value)
+UseMethod("argn<-")
 
-argnames.bm <-
+argn.bm <-
 function(x, ...) {
-	ret <- attr(x, "argnames")
+	ret <- attr(x, "argn")
 	if ( is.null(ret) )
     "beta" # Harmon
 	else
     ret
 }
 
-.default.argnames.mk2 <- function() c("q01", "q10")
+.default.argn.mk2 <- function() c("q01", "q10")
 
-.default.argnames.mkn <- function(k) {
+.default.argn.mkn <- function(k) {
 	base <- ceiling(log10(k + .5))
 	fmt <- sprintf("q%%0%dd%%0%dd", base, base)
 	sprintf(fmt, rep(1:k, each=k-1),
 			unlist(lapply(1:k, function(i) (1:k)[-i])))
 }
 
-.default.argnames.bm <- function() "sigsq"
+.default.argn.bm <- function() "sigsq"
 
 
 ROOT.FLAT  <- 1
@@ -367,7 +367,7 @@ ROOT.ALL   <- ROOT.BOTH
 		 name.pretty="Brownian motion",
 ## Parameters:
 		 np=1L,
-		 argnames=.default.argnames.bm(),
+		 argn=.default.argn.bm(),
 ## Variables:
 		 ny=3L,
 		 k=NA,
@@ -411,7 +411,7 @@ ROOT.ALL   <- ROOT.BOTH
 	info <- make.info.mkn(2, phy)
 	info$name <- "mk2"
 	info$name.pretty <- "Mk2"
-	info$argnames <- .default.argnames.mk2()
+	info$argn <- .default.argn.mk2()
 	info
 }
 
@@ -422,7 +422,7 @@ ROOT.ALL   <- ROOT.BOTH
 		 name.pretty="Mk(n)",
 	## Parameters:
 		 np=as.integer(k * k),
-		 argnames=.default.argnames.mkn(k),
+		 argn=.default.argn.mkn(k),
 	## Variables:
 		 ny=as.integer(k), # TODO/NEW: only for ode version...
 		 k=as.integer(k),
@@ -650,7 +650,7 @@ is.constrained <- function(x) inherits(x, "constrained")
 ## the "paired" parameters here to avoid using eval where
 ## unnecessary.  However, this makes the function substantially uglier
 ## for a very minor speedup.
-constrain <- function(f, ..., formulae=NULL, names=argnames(f), extra=NULL) {
+constrain <- function(f, ..., formulae=NULL, names=argn(f), extra=NULL) {
 	if ( is.constrained(f) ) {
 		formulae <- c(attr(f, "formulae"), formulae)
 		f <- attr(f, "func")
@@ -712,7 +712,7 @@ constrain <- function(f, ..., formulae=NULL, names=argnames(f), extra=NULL) {
 	}
 	
 	class(g) <- c("constrained", class(f))
-	attr(g, "argnames") <- final
+	attr(g, "argn") <- final
 	attr(g, "formulae") <- formulae
 	attr(g, "extra") <- extra
 	attr(g, "func") <- f

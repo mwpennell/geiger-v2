@@ -6,7 +6,7 @@ transform=function(x, ...) UseMethod("transform")
 print.transformer=function (x, printlen = 3, ...) 
 {
     cat("function for tree transformation\n")
-    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
+    cat("\targument names:", paste(argn(x), collapse = ", "))		 
 	cat("\n\n")
 	f=x
 	attributes(f)=NULL
@@ -20,7 +20,7 @@ print.transformer=function (x, printlen = 3, ...)
 print.bm=function (x, printlen = 3, ...) 
 {
     cat("likelihood function for univariate continuous trait evolution\n")
-    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
+    cat("\targument names:", paste(argn(x), collapse = ", "))		 
 	cat("\n\n")
 	f=x
 	attributes(f)=NULL
@@ -33,7 +33,7 @@ print.mkn=
 function (x, printlen = 3, ...) 
 {
     cat("likelihood function for univariate discrete trait evolution\n")
-    cat("\targnames:", paste(argnames(x), collapse = ", "))		 
+    cat("\targument names:", paste(argn(x), collapse = ", "))		 
 	cat("\n\n")
 	f=x
 	attributes(f)=NULL
@@ -42,13 +42,13 @@ function (x, printlen = 3, ...)
 }
 
 ## GENERIC
-argnames.default=function(x, ...){
-	attr(x, "argnames")
+argn.default=function(x, ...){
+	attr(x, "argn")
 }
 
 ## GENERIC
-argnames.mkn=function(x, ...){
-	attr(x, "argnames")
+argn.mkn=function(x, ...){
+	attr(x, "argn")
 }
 
 ## HESSIAN COMPUTATION of CONFIDENCE INTERVALS
@@ -384,7 +384,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		}
 		cache
 	}
-	attr(z,"argnames")="lambda"
+	attr(z,"argn")="lambda"
 	return(z)
 }
 
@@ -408,7 +408,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		}
 		phy
 	}
-	attr(z,"argnames")="lambda"
+	attr(z,"argn")="lambda"
 	return(z)
 }
 
@@ -435,7 +435,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		}
 		cache
 	}
-	attr(z,"argnames")="delta"
+	attr(z,"argn")="delta"
 	return(z)
 }
 
@@ -460,7 +460,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		}
 		phy
 	}
-	attr(z,"argnames")="delta"
+	attr(z,"argn")="delta"
 	return(z)
 }
 
@@ -488,7 +488,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		cache$len=cache$len*bl
 		cache
 	}
-	attr(z,"argnames")="slope"
+	attr(z,"argn")="slope"
 	return(z)
 }
 
@@ -514,7 +514,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		phy$edge.length=phy$edge.length*bl[phy$edge[,2]]
 		phy
 	}
-	attr(z,"argnames")="slope"
+	attr(z,"argn")="slope"
 	return(z)
 }
 
@@ -534,7 +534,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		cache$len=bl
 		cache
 	}
-	attr(z,"argnames")="alpha"
+	attr(z,"argn")="alpha"
 	return(z)
 }
 
@@ -552,7 +552,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		phy$edge.length=bl[phy$edge[,2]]
 		phy
 	}
-	attr(z,"argnames")="alpha"
+	attr(z,"argn")="alpha"
 	return(z)
 }
 
@@ -574,7 +574,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		cache$len=bl
 		cache
 	}
-	attr(z,"argnames")="a"
+	attr(z,"argn")="a"
 	return(z)
 }
 
@@ -595,7 +595,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		phy$edge.length=bl[phy$edge[,2]]
 		phy
 	}
-	attr(z,"argnames")="a"
+	attr(z,"argn")="a"
 	return(z)
 }
 
@@ -610,7 +610,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		cache$len=cache$len^kappa
 		cache
 	}
-	attr(z,"argnames")="kappa"
+	attr(z,"argn")="kappa"
 	return(z)
 }
 
@@ -623,7 +623,7 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 		phy$edge.length=phy$edge.length^kappa
 		phy
 	}
-	attr(z,"argnames")="kappa"
+	attr(z,"argn")="kappa"
 	return(z)
 }
 

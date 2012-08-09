@@ -131,7 +131,7 @@ fitDiscrete=function(
 	
 	lik=mkn.lik(phy, dat, constrain=constrain, transform=model, control=list(method="exp", root=ROOT.OBS), ...)
 	if(model=="white") return(list(opt=lik))
-	argn=unlist(argnames(lik))
+	argn=unlist(argn(lik))
 	
 	## CONSTRUCT BOUNDS ##
 	mn=c(-5, -500, -500, -5, -500)
@@ -303,7 +303,7 @@ fitDiscrete=function(
 		allq=lik(mm, pars.only=TRUE) 
 	} else {
 		constr=FALSE
-		allq=mm[argnames(lik)]
+		allq=mm[argn(lik)]
 	}
 	allq=allq[!names(allq)%in%names(mm)[!trn]]
 
@@ -404,7 +404,7 @@ mkn.lik=function(
 		order.C <- .toC.int(cache$order)
 		
 		.ll.mkn.exp=function(q, pars, intermediates=FALSE, preset = NULL) { # based on diversitree:::make.all.branches.mkn.exp
-			if(is.null(argnames(FUN))) new=FUN() else new=FUN(q)
+			if(is.null(argn(FUN))) new=FUN() else new=FUN(q)
 			
 			len.uniq <- sort(unique(new$len))
 			len.idx <- match(new$len, len.uniq)
@@ -428,8 +428,8 @@ mkn.lik=function(
 		}
 	
 		# build likelihood function
-		attb=c(argnames(FUN), cache$info$argnames)
-		if(is.null(argnames(FUN))){ # NO TRANSFORM
+		attb=c(argn(FUN), cache$info$argn)
+		if(is.null(argn(FUN))){ # NO TRANSFORM
 			ll=function(pars){
 				qmat=f.pars(pars)
 				ans=.ll.mkn.exp(q=NULL, pars=qmat, intermediates=FALSE)
@@ -444,7 +444,7 @@ mkn.lik=function(
 			
 		}
 		class(ll) <- c("mkn", "dtlik", "function")
-		attr(ll,"argnames") <- attb
+		attr(ll,"argn") <- attb
 		return(ll)
 	}
 	
@@ -466,7 +466,7 @@ mkn.lik=function(
 		}
 	}
 	lik=function(pars, ...){
-		pars=.repars(pars, argnames(tmp))
+		pars=.repars(pars, argn(tmp))
 		tmp(pars, ...)
 	}
 	attributes(lik)<-attributes(tmp)

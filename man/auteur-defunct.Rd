@@ -13,7 +13,7 @@
 \details{
 	\itemize{
 		\item{\code{calibrate.proposalwidth}}: use \code{\link[geiger]{calibrate.rjmcmc}}
-		\item{\code{pool.rjmcmcsamples}}: use \code{\link[geiger]{summarize.rjmcmc}}
+		\item{\code{pool.rjmcmcsamples}}: use \code{\link[geiger]{load.rjmcmc}}
 		\item{\code{tracer}}: use of \code{\link[coda]{plot.mcmc}} and other functions in \pkg{coda} recommended
 		\item{\code{intercalate.samples}}: use \code{geiger:::.intercalate.rjmcmc}
 		\item{\code{shifts.plot}}: use \code{plot}

@@ -1,10 +1,10 @@
-\name{summarize.rjmcmc}
-\alias{summarize.rjmcmc}
+\name{load.rjmcmc}
+\alias{load.rjmcmc}
 \title{processing posterior samples from single or multiple MCMC runs}
 \description{Generates a pooled sample of posterior estimates from any number of independent MCMC runs}
 \usage{
 
-	summarize.rjmcmc(x, phy = NULL, burnin = NULL, thin = NULL)
+	load.rjmcmc(x, phy = NULL, burnin = NULL, thin = NULL)
 }
 
 \arguments{
@@ -43,7 +43,7 @@ trees=list(a=a,b=b, c=a)
 class(trees)="multiPhylo"
 rjmcmc.bm(trees, dat, constrainJUMP=0)
 
-res=summarize.rjmcmc(paste("relaxedBM", names(trees), sep="."), phy=a)
+res=load.rjmcmc(paste("relaxedBM", names(trees), sep="."), phy=a)
 plot(res, par="shifts", show.tip=FALSE, edge.width=2.5)
 
 }

@@ -5,7 +5,9 @@
 	Fits macroevolutionary models to phylogenetic trees
 }
 \usage{
-fitContinuous(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"), bounds=list(), control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200))
+fitContinuous(phy, dat, SE = NA, model = c("BM", "OU", "EB","trend", "lambda", "kappa", "delta", "white"), 
+				bounds= list(), control = list(method = c("SANN","L-BFGS-B"), 
+				niter = 100, FAIL = 1e+200, hessian = FALSE, hessian_P = 0.05))
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
@@ -114,7 +116,7 @@ print(brownFit)
 
 #---- COMPUTE LIKELIHOOD
 flik=brownFit$lik
-print(argnames(flik))
+print(argn(flik))
 print(flik(c(sigsq=0.01, SE=0)))
 print(flik(c(sigsq=0.02, SE=0.1)))
 

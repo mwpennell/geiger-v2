@@ -8,9 +8,9 @@
 	phenotypic data.
 }
 \usage{
-disp.calc(data, disp = "avg.sq")
-dtt(phy, data, disp = "avg.sq")
-dtt.full(phy, data, disp="avg.sq", nsims=1000, mdi.range=c(0,1))
+disp.calc(data, disp = c("avg.sq", "avg.manhattan", "num.states"))
+dtt(phy, data, disp = c("avg.sq", "avg.manhattan", "num.states"))
+dtt.full(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states"), nsims=1000, mdi.range=c(0,1))
 
 }
 %- maybe also 'usage' for other objects documented here.

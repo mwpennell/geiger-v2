@@ -5,7 +5,7 @@
 Calculates disparity for every clade in a tree
 }
 \usage{
-tip.disparity(phy, data, disp = "avg.sq")
+tip.disparity(phy, data, disp = c("avg.sq", "avg.manhattan", "num.states"))
 }
 \arguments{
   \item{phy}{ object of type 'phylo' }
