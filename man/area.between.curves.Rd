@@ -26,10 +26,9 @@ area.between.curves(x, f1, f2, xrange = c(0,1))
 \author{Luke J. Harmon}
 \examples{
 
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-gg<-dtt.full(geospiza.tree, geospiza.data)
+gg<-dtt.full(geo$phy, geo$dat)
 
 # Full area, as in dtt.full function
 area.between.curves(gg$times, apply(gg$dtt.sims,1,mean), gg$dtt.data)

@@ -76,7 +76,8 @@ print.mcmc.list <- function(x, printlen=3, ...)
 }
 
 load=function(x, ...){
-	type=ifelse(file.info(x)$isdir, "dir", "rda")
+	tmp=all(sapply(x, function(y) file.info(y)$isdir==TRUE))
+	type=ifelse(tmp, "dir", "rda")
 	if(type=="dir"){
 		return(load.rjmcmc(x, ...))
 	} else {

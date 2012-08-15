@@ -49,10 +49,10 @@ data(geospiza)
 attach(geospiza)
 
 # Assuming no extinction
-rate.estimate(phy=geospiza.tree, missing=1)
+rate.estimate(phy=geo$phy, missing=1)
 
 # Assuming high extinction
-rate.estimate(phy=geospiza.tree, epsilon=0.9, missing=1)
+rate.estimate(phy=geo$phy, epsilon=0.9, missing=1)
 
 
 }

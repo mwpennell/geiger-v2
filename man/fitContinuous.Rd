@@ -1,13 +1,13 @@
 \name{fitContinuous}
 \alias{fitContinuous}
-\title{ Model fitting for continuous data }
+\title{ model fitting for continuous comparative data }
 \description{
-	Fits macroevolutionary models to phylogenetic trees
+	fitting macroevolutionary models to phylogenetic trees
 }
 \usage{
 fitContinuous(phy, dat, SE = NA, model = c("BM", "OU", "EB","trend", "lambda", "kappa", "delta", "white"), 
-				bounds= list(), control = list(method = c("SANN","L-BFGS-B"), 
-				niter = 100, FAIL = 1e+200, hessian = FALSE, hessian_P = 0.05))
+	bounds= list(), control = list(method = c("SANN","L-BFGS-B"), 
+	niter = 100, FAIL = 1e+200, hessian = FALSE, hessianCI = 0.95))
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
@@ -21,13 +21,13 @@ fitContinuous(phy, dat, SE = NA, model = c("BM", "OU", "EB","trend", "lambda", "
 This function fits various likelihood models for continuous character evolution. The function 
 returns parameter estimates and the likelihood for univariate datasets. 
 
-The model likelihood is maximized using methods available 
-in \code{\link[stats]{optim}} as well as \code{\link[subplex]{subplex}}. Optimization methods to be used 
-within \code{optim} can be specified through the \code{control} object. A number of random starting points 
+The model likelihood is maximized using methods available in \code{\link[stats]{optim}} as well as \code{\link[subplex]{subplex}}. 
+Optimization methods to be used within \code{optim} can be specified through the \code{control} object. A number of random starting points 
 are used in optimization and are given through the \code{niter} element within the \code{control} object 
 (e.g., \code{control$niter}). The \code{FAIL} value within the \code{control} object should be a large value 
 that will be considerably far from -lnL of the maximum model likelihood. In most cases, the default setting 
-for \code{control$FAIL} will be appropriate.   
+for \code{control$FAIL} will be appropriate. The Hessian may be used to compute confidence intervals 
+(\code{hessianCI}) for the parameter estimates if the \code{hessian} element in \code{control} is TRUE.
 
 Bounds for the relevant parameters of the fitted model may be given through the \code{bounds} argument. Bounds 
 may be necessary (particularly under the \code{OU} model) if the likelihood surface is characterized by a long, 
@@ -78,8 +78,9 @@ Possible models are as follows:
 			equal to zero are not to be trusted  
 		}
 		\item{\bold{opt} }{is a list of the primary results: estimates of the parameters, the maximum-likelihood estimate (\code{lnL}) of the model, the 
-			optimization method used to compute the MLE, the number of model parameters (\code{k}, including one parameter for the root state), the AIC (\code{aic}) 
-			and sample-size corrected AIC (\code{aicc}). The number of observations for AIC computation is taken to be the number of trait values observed
+			optimization method used to compute the MLE, the number of model parameters (\code{k}, including one parameter for the root state), the AIC (\code{aic}), 
+			sample-size corrected AIC (\code{aicc}). The number of observations for AIC computation is taken to be the number of trait values observed. 
+			If the Hessian is used, confidence intervals on the parameter estimates (\code{CI}) and the Hessian matrix (\code{hessian}) are also returned 
 		}
 	
 	
@@ -99,10 +100,9 @@ Possible models are as follows:
 \author{Luke J. Harmon and Wendell Challenger}
 \examples{
 
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-tmp=treedata(geospiza.tree, geospiza.data)
+tmp=treedata(geo$phy, geo$dat)
 phy=tmp$phy
 dat=tmp$data
  
@@ -173,9 +173,7 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 
 	res_aicc=rbind(aic, aic.se, daic, daic.se)
 	rownames(res_aicc)=c("AICc","AICc_SE","dAICc", "dAICc_SE")
-	
-	
-	
+
 	return(res_aicc)
 }
 

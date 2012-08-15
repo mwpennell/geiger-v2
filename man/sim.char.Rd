@@ -34,16 +34,15 @@ sim.char(phy, model.matrix, nsims = 1, model = "brownian", root.state = 1)
 }
 \author{ Luke J, Harmon }
 \examples{
-data(geospiza)
-attach(geospiza) 
+geo=get(data(geospiza))
 
 
-s<-ic.sigma(geospiza.tree, geospiza.data)
-sims<-sim.char(geospiza.tree, s, 100)
+s<-ic.sigma(geo$phy, geo$dat)
+sims<-sim.char(geo$phy, s, 100)
 
 # Discrete character evolution
 q<-list(rbind(c(-.5, .5), c(.5, -.5)))
-sims<-sim.char(geospiza.tree, q, model="discrete", n=100)
+sims<-sim.char(geo$phy, q, model="discrete", n=100)
   
 }
 

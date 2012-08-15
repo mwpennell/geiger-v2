@@ -89,7 +89,7 @@ fitDiscrete=function(
 	model=c("ER","SYM","ARD","meristic"),
 	transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
 	bounds=list(), 
-	control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessian_P=0.05),
+	control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessianCI=0.95),
 	...)
 {
 	
@@ -124,10 +124,14 @@ fitDiscrete=function(
 	model=match.arg(transform, c("none", "EB", "lambda", "kappa", "delta", "white"))
 
 	# CONTROL OBJECT
-	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(model=="none", 50, 100), FAIL=1e200)
+	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(model=="none", 50, 100), FAIL=1e200, hessian=FALSE, hessianCI=0.95)
+	if(any(!names(control)%in%names(ct)->tmp)) warning("Unexpected 'control' parameters:\n\t", paste(names(control)[tmp], collapse="\n\t"), sep="")
+	control=control[which(!tmp)]
 	if("method"%in%names(control)) control$method=match.arg(control$method, c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"), several.ok=TRUE)
 	ct[names(control)]=control
 	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
+	ct$hessian_P=1-ct$hessianCI
+
 	
 	lik=mkn.lik(phy, dat, constrain=constrain, transform=model, control=list(method="exp", root=ROOT.OBS), ...)
 	if(model=="white") return(list(opt=lik))
@@ -147,8 +151,11 @@ fitDiscrete=function(
 	# User bounds
 	if(length(bounds)>0){
 		mm=match(names(bounds), rownames(bnds))
-		if(any(is.na(mm)->zz)) mm[zz]=match(names(bounds)[zz], bnds$model)
-		if(all(!is.na(mm))){
+		if(any(is.na(mm))){
+			warning("Unexpected 'bounds' parameters:\n\t", paste(names(bounds)[is.na(mm)], collapse="\n\t"), sep="")
+		}
+		mm=mm[!is.na(mm)]
+		if(length(mm)){
 			for(i in 1:length(mm)){
 				ww=mm[i]
 				tmp=sort(bounds[[i]])
@@ -160,9 +167,7 @@ fitDiscrete=function(
 				}
 				bnds[ww,c("mn","mx")]=bnd
 			}
-		} else {
-			stop(paste("'bounds' not expected:\n\t", paste(names(bounds)[is.na(mm)], sep="", collapse="\n\t"), sep=""))
-		}
+		} 
 	}
 	
 	par=argn[1]

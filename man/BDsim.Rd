@@ -1,9 +1,9 @@
 \name{BDsim}
 \alias{BDsim}
-\title{Birth-death population simulator}
+\title{birth-death population simulator}
 \description{
-	Simulates species richness (or population growth) under a uniform, time-homogeneous 
-	birth-death process.	
+	simulating species richness (or population growth) under a uniform, time-homogeneous 
+	birth-death process	
 }
 \usage{
 BDsim(nStart, b, d, times) 
@@ -15,9 +15,9 @@ BDsim(nStart, b, d, times)
   \item{times}{Vector of times where extant species are counted}
 }
 \details{
-	This function simulates species diversification under a uniform birth-death process.  This differs 
+	This function simulates species diversification under a uniform birth-death process. This differs 
 	from birthdeath.tree in that only the number of species, and not their phylogenetic affinities, are
-	stored.  This function relates to GEIGER's rate.estimate (and associated functions), which are also non-phylogenetic.
+	stored. This function relates to GEIGER's rate.estimate (and associated functions), which are also non-phylogenetic.
 }
 \value{
 	Population size at each time in TIMES

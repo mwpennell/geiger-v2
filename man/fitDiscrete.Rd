@@ -1,80 +1,108 @@
 \name{fitDiscrete}
 \alias{fitDiscrete}
-\title{ Model fitting for discrete comparative data }
+\title{ model fitting for discrete comparative data }
 \description{
-	Fits macroevolutionary models to phylogenetic trees
+	fitting macroevolutionary models to phylogenetic trees
 }
 \usage{
-fitDiscrete(phy, dat, model = c("ER", "SYM", "ARD", "meristic"),
-                 transform = c("none", "EB", "lambda", "kappa","delta", "white"), 
-				 bounds = list(), control = list(method = c("SANN", "L-BFGS-B"), 
-				 niter = 100, FAIL = 1e+200, hessian = FALSE, hessian_P = 0.05), ...)
+fitDiscrete(phy, dat, model = c("ER", "SYM", "ARD", "meristic"), 
+	transform = c("none", "EB", "lambda", "kappa", "delta", "white"), 
+	bounds = list(), control = list(method = c("SANN", "L-BFGS-B"), 
+	niter = 100, FAIL = 1e+200, hessian = FALSE, hessianCI = 0.95), ...)
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
   \item{dat}{ data vector for a single trait, with names matching tips in \code{phy}}
-  \item{model}{ model to fit to comparative data (see \bold{Details}) }
+  \item{model}{ an Mkn model to fit to comparative data (see \bold{Details}) }
+  \item{transform}{ an evolutionary model used to transform the tree (see \bold{Details}) }
   \item{bounds}{ range to constrain parameter estimates (see \bold{Details})  }
   \item{control}{ settings used for optimization of the model likelihood}
   \item{...}{if \code{model="meristic"}, \code{...} can dictate whether the matrix is asymmetric (\code{symmetric=FALSE})}
 }
 \details{
-  This function fits various likelihood models for discrete character evolution.   Likelihood is maximized 
-  using the r function nlm. All of the models are 
-  continuous-time Markov models of trait evolution (see Yang 2006 for a good general discussion of this 
-  type of model).  The function can handle traits with any number of character states, under a range of models. 
-  The character model is specified by the "model" argument:
-  ER: Equal-rates (Mk) model; all transitions occur at equal rates. 
-  SYM: Symmetric transitions are equal; that is, 0->1 occurs at the same rate as 1->0, which may 
-  differ from the transition rate between states 1 and 2. For a 2 state character, this model is equivalent 
-  to ER  
-  ARD: All rates different model; each rate is a separate parameter. 
-  
-  The function returns a rate matrix, Q, giving the transition rates among the characters.  The diagonals of this matrix are zero; 
-  this is only because the rows of the matrix sum to zero.
-  
-  The treeTransform argument allows you to test models where rates vary across the tree.  Options are:
- none: Rates are constant through time 
- lambda: Pagel's lambda; multiplies all internal branches of the tree by lambda, leaving tip branches as their original length.
- kappa: Pagel's kappa; raises all branch lengths to the power kappa.  As kappa approaches zero, the model becomes speciational.
- delta: Pagel's delta; raises all node depths to the power delta. If delta is less than one, evolution in concentrated early in the tree; delta > 1 concentrates evolution towards the tips.
- exponentialChange: A model where the rate of evolution changes exponentially through time.
-						The difference between this option and linearChange is that rates grow or decay exponentially rather than linearly.
-						The equation is r(t) = ro * exp(a * t), where ro is the inital rate and a is the rate of rate change.
- linearChange: A model where the rate of evolution changes linearly through time.
-						Rates change linearly: r(t) = ro + a * t, where ro is the inital rate and a is the slope determined using endRate. 
-						If endRate is greater than 1, evolution gradually speeds up; if endrate is less than 1, evolution gradually slows down. If endRate = 1, the model is a constant-
-						rate model.
+This function fits various likelihood models for discrete character evolution. The function 
+returns parameter estimates and the likelihood for univariate datasets. 
 
- twoRate: A model that effectively changes the rate of evolution at some point in time to endRate. 
- 						If endRate is greater than 1, evolution speeds up, all branches towards the tips are made longer,  
-						if endrate is less than 1, branches towards the tips are made shorter. If endRate = 1, the model is a constant-
-						rate model.
+The model likelihood is maximized using methods available in \code{\link[stats]{optim}} as well as \code{\link[subplex]{subplex}}. 
+Optimization methods to be used within \code{optim} can be specified through the \code{control} object. A number of random starting points 
+are used in optimization and are given through the \code{niter} element within the \code{control} object 
+(e.g., \code{control$niter}). The \code{FAIL} value within the \code{control} object should be a large value 
+that will be considerably far from -lnL of the maximum model likelihood. In most cases, the default setting 
+for \code{control$FAIL} will be appropriate. The Hessian may be used to compute confidence intervals 
+(\code{hessian_CI}) for the parameter estimates if the \code{hessian} element in \code{control} is TRUE.
+
+All of the models are continuous-time Markov models of trait evolution (see Yang 2006 for a good general discussion of this type of model).  
+The function can handle traits with any number of character states, under a range of models. The character model is specified by the \code{model} argument:
+
+\itemize{
+	\item{\bold{ER} }{is an \code{equal-rates} model of where a single parameter governs all transition rates}
+	\item{\bold{SYM} }{is a \code{symmetric} model where forward and reverse transitions share the same parameter}
+	\item{\bold{ARD} }{is an \code{all-rates-different} model where each rate is a unique parameter}  
+	\item{\bold{meristic} }{is a model wherein transitions occur in a stepwise fashion (e.g., 1->2->3->2) without skipping intermediate steps; this requires a sensible coding of the character 
+		states as consecutive integers are assumed to be neighboring states}
+	\item{\bold{matrix} }{is a user supplied model (given as a dummy matrix representing transition classes between states); elements that are zero assume that rates are zero (see \bold{Examples})}
 }
+
+
+The \code{transform} argument allows one to test models where rates vary across the tree.  Bounds for the relevant parameters of the tree \code{transform} 
+may be given through the \code{bounds} argument. Several bounds can be given at a time. Default bounds under the different models are given below. 
+Options for \code{transform} are as follows:
+
+\itemize{
+	\item{\bold{none} }{is a model of rate constancy through time}
+	\item{\bold{EB} }{is the Early-burst model (Harmon et al. 2010) and also called the \code{ACDC} model (accelerating-decelerating; Blomberg et al. 2003). Set by the \code{a} rate parameter, \code{EB} 
+		fits a model where the rate of evolution increases or decreases exponentially through time, under the model r[t] = r[0] * exp(a * t), where \code{r[0]} is the 
+		initial rate, \code{a} is the rate change parameter, and \code{t} is time. Default bounds are \code{a = c(min = -5, max = 0.1)}}
+	\item{\bold{lambda} }{is one of the Pagel (1999) models that fits the extent to which the phylogeny predicts covariance among trait values for species. The model effectively transforms the tree: 
+		values of \code{lambda} near 0 cause the phylogeny to become more star-like, and a \code{lambda} value of 1 recovers the \code{none} model. Default 
+		bounds are \code{lambda = c(min = 0, max = 1)}}
+	\item{\bold{kappa} }{is a punctuational (speciational) model of trait evolution (Pagel 1999), where character divergence is related to the number of speciation events between two species. Note that if 
+		there are speciation events in the given phylogeny (due to extinction or incomplete sampling), interpretation under the \code{kappa} model may be difficult. Considered as a tree 
+		transformation, the model raises all branch lengths to an estimated power (\code{kappa}). Default bounds are \code{kappa = c(min = 0, max = 1)}}
+	\item{\bold{delta} }{is a time-dependent model of trait evolution (Pagel 1999).  The \code{delta} model is similar to \code{ACDC} insofar as the \code{delta} model fits the relative contributions of 
+		early versus late evolution in the tree to the covariance of species trait values.  Where \code{delta} is greater than 1, recent evolution has been relatively fast; if \code{delta} is less 
+		than 1, recent evolution has been comparatively slow. Intrepreted as a tree transformation, the model raises all node depths to an estimated power (\code{delta}). Default bounds are \code{delta = c(min = 0, max = 3)}}
+	\item{\bold{white} }{is a \code{white}-noise (non-phylogenetic) model, which converts the tree into a star phylogeny}
+}
+}
+
 \value{
- 	Returns maximum likelihood value for q and selected parameters, along with the likelihood score.
-	Sometimes, parameters are confounded!
+	\code{fitDiscrete} returns a list with the following four elements: 
+	
+	\itemize{
+		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model. 
+			For instance, if estimating an untransformed \code{ER} model, there would be a single argument (the transition rate) necessary for the \code{lik} function. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing 
+			the likelihood under different parameter values 
+		}
+		\item{\bold{bnd} }{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
+		}
+		\item{\bold{res} }{is a matrix of results from optimization. Rownames of the \code{res} matrix are the optimization methods 
+			(see \code{\link[stats]{optim}} and \code{\link[subplex]{subplex}}). The columns in the \code{res} matrix are the estimated 
+			parameter values, the estimated model likelihood, and an indication of optimization convergence. Values of convergence not 
+			equal to zero are not to be trusted  
+		}
+		\item{\bold{opt} }{is a list of the primary results: estimates of the parameters, the maximum-likelihood estimate (\code{lnL}) of the model, the 
+			optimization method used to compute the MLE, the number of model parameters (\code{k}, including one parameter for the root state), the AIC (\code{aic}), 
+			sample-size corrected AIC (\code{aicc}). The number of observations for AIC computation is taken to be the number of trait values observed. 
+			If the Hessian is used, confidence intervals on the parameter estimates (\code{CI}) and the Hessian matrix (\code{hessian}) are also returned 
+		}
+	}
 }
 \references{ 
 Yang, Z. 2006. Computational Molecular Evolution. Oxford University Press: Oxford.
 }
 \author{ Luke J. Harmon and R. E. Glor }
 \examples{
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-gb<-round(geospiza.data[,5])
+gb<-round(geo$dat[,5])
 names(gb)<-rownames(geospiza.data)
-mm=matrix(sample(1:3, 9, replace=TRUE),3)
-diag(mm)=NA
+mm=rbind(c(NA, 0, 0), c(1, NA, 2), c(0, 2, NA))
 
-fitDiscrete(geospiza.tree, gb, model="ER")
-fitDiscrete(geospiza.tree, gb, model="ARD")
-fitDiscrete(geospiza.tree, gb, model=mm)
-fitDiscrete(geospiza.tree, gb, model=mm, transform="delta")
-
-
-
+fitDiscrete(geo$phy, gb, model="ER")
+fitDiscrete(geo$phy, gb, model="ARD")
+fitDiscrete(geo$phy, gb, model=mm)
+fitDiscrete(geo$phy, gb, model=mm, transform="delta")
 
 }
 \keyword{ arith }

@@ -1,8 +1,8 @@
 \name{birthdeath.tree}
 \alias{birthdeath.tree}
-\title{Birth-death tree simulator}
+\title{birth-death tree simulator}
 \description{
-	Simulates phylogenetic trees under a uniform birth-death process.
+	simulating phylogenetic trees under a uniform birth-death process
 }
 \usage{
 birthdeath.tree(b, d, time.stop = 0, taxa.stop = 0, seed = 0, print.seed=FALSE, return.all.extinct=TRUE)

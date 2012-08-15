@@ -1,4 +1,5 @@
-\name{deltaTree}
+\name{transform}
+\alias{transform}
 \alias{deltaTree}
 \alias{lambdaTree}
 \alias{kappaTree}
@@ -95,24 +96,23 @@ rescaleTree(phy, totalDepth)
 \examples{
 
 
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-deltaTree(geospiza.tree, 0.5)->g2
+deltaTree(geo$phy, 0.5)->g2
 plot(g2)
-lambdaTree(geospiza.tree, 0.5)->g3
+lambdaTree(geo$phy, 0.5)->g3
 plot(g3)
-kappaTree(geospiza.tree, 0.5)->g3b
+kappaTree(geo$phy, 0.5)->g3b
 plot(g3b)
-tworateTree(geospiza.tree, 0.5, 0.5)->g4
+tworateTree(geo$phy, 0.5, 0.5)->g4
 plot(g4)
-linearchangeTree(geospiza.tree, 0.1)->g5
+linearchangeTree(geo$phy, 0.1)->g5
 plot(g5)
-exponentialchangeTree(geospiza.tree, 0.1)->g5
+exponentialchangeTree(geo$phy, 0.1)->g5
 plot(g5)
-speciationalTree(geospiza.tree)->g6
+speciationalTree(geo$phy)->g6
 plot(g6)
-rescaleTree(geospiza.tree, 100)->g7
+rescaleTree(geo$phy, 100)->g7
 plot(g7)
 
 

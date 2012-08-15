@@ -40,17 +40,14 @@ by computer simulation. Syst. Biol. 42(3):265-292.}
 \seealso{ anova, summary.manova, ic.sigma }
 \examples{
 
-data(geospiza)
-attach(geospiza)
-
-
+geo=get(data(geospiza))
 f<-as.factor(c(rep(0, 7), rep(1, 6)))
 
-phy.manova(geospiza.tree, geospiza.data, f)
+phy.manova(geo$phy, geo$dat, f)
 
-x<-geospiza.data[,"wingL"]
+x<-geo$dat[,"wingL"]
 
-phy.anova(geospiza.tree, x, f) 
+phy.anova(geo$phy, x, f) 
 
 }
 

@@ -39,7 +39,6 @@
 \alias{getBD}
 \alias{getDiversificationModel}
 \alias{getFullSplitModel}
-\alias{glomogram.phylo}
 \alias{hash.node}
 \alias{hashes.phylo}
 \alias{hashes.rjmcmc}
@@ -54,6 +53,7 @@
 \alias{kendallmoran.rate}
 \alias{likfx.bm}
 \alias{Linnaean}
+\alias{load}
 \alias{load_taxdump}
 \alias{make.bm.relaxed}
 \alias{mkn.lik}
@@ -81,7 +81,6 @@
 \alias{splitEdgeMatrixGeiger}
 \alias{subset.phylo}
 \alias{trace.plot}
-\alias{transform}
 \alias{ultrametricize.phylo}
 \alias{unique.multiPhylo}
 \alias{unique.phylo}

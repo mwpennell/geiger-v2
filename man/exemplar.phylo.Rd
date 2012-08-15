@@ -10,7 +10,7 @@ exemplar.phylo(phy, strict.vals=NULL, taxonomy=NULL, ...)
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{phy}{a phylogenetic tree of class 'phylo' ('multiPhylo' in \code{phylo.clades})}
+  \item{phy}{a phylogenetic tree of class 'phylo'}
   \item{strict.vals}{if non-NULL, a character vector specifying the columns of \code{taxonomy} to be used in relabeling}
   \item{taxonomy}{a ('matrix') linkage table between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
   \item{...}{additional arguments to be passed to \code{\link[geiger]{gbresolve}} (if \code{taxonomy} is NULL)} 

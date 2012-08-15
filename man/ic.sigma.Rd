@@ -27,10 +27,9 @@ Data for this function should be a matrix of continuously-valued variables.
 \author{ Luke J. Harmon }
 \examples{
 
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-ic.sigma(geospiza.tree, geospiza.data)
+ic.sigma(geo$phy, geo$dat)
 
 }
 

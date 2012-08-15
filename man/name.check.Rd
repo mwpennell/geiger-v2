@@ -24,10 +24,9 @@ name.check(phy, data)
 \author{ Luke J. Harmon }
 \examples{
 
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-name.check(geospiza.tree, geospiza.data)
+name.check(geo$phy, geo$dat)
 
 }
 

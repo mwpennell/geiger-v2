@@ -279,7 +279,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 		dat=as.matrix(dat, ncol=ncol(dat))
 		rownames(dat)=nm
 		if(!taxon%in%dat) {
-			try=agrep(taxon, unique(unlist(dat)), value=TRUE)
+			try=agrep(taxon, unique(c(dat)), value=TRUE)
 			if(length(try)){
 				warning(paste(sQuote(taxon), " not encountered in 'taxonomy'\n\nIntended search may have been:\n\t", paste(try, collapse="\n\t", sep=""), sep=""))
 			} else {
@@ -290,7 +290,19 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 			return(NULL)
 		}
 		expected=rownames(which(dat==taxon, arr.ind=TRUE))
+		if(length(expected)==1){ # single tip
+			x=which(phy$tip.label==expected)
+			hs=.hash.tip(expected, tips)
+			res=list(unexpected=c(), missing=c())
+			attr(res, "node")=x
+			attr(res, "hash")=hs
+			attr(res, "expected")=sort(expected)
+			return(res)
+			
+		}
+		
 		bin=as.integer(tips%in%expected)
+		
 		if(is.null(edges)) edges=edges.phylo(phy, tips=tips)
 		rownames(edges)=1:nrow(edges)
 		N=Ntip(phy)

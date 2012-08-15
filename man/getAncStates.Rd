@@ -32,11 +32,10 @@ ace
 }
 \examples{
 
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-tt<-drop.tip(geospiza.tree, "olivacea")
-getAncStates(geospiza.data[,1], tt)
+tt<-drop.tip(geo$phy, "olivacea")
+getAncStates(geo$dat[,1], tt)
  
 
 }

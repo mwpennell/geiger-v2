@@ -51,7 +51,7 @@
 	return(df[,-which(names(df)=="valid")])
 }
 
-congruify.phylo=function(stock, scion, taxonomy=NULL, tol=0, method="PATHd8"){
+congruify.phylo=function(stock, scion, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8")){
 #	stock: a time-calibrated phylogeny with tip-labels that can be treated as an exemplar for clades in 'scion'
 #		-- e.g., tip.label in 'stock' might be "Pinus" while in 'scion' we might have "Pinus_cembra"
 #		-- tips in 'stock' can be contained in 'scion' (FIXME: is this true?)
@@ -61,7 +61,7 @@ congruify.phylo=function(stock, scion, taxonomy=NULL, tol=0, method="PATHd8"){
 #		-- rownames of taxonomy must be tips in megaphylogeny
 	
 	## functions
-	method=match.arg(toString(method), c("NA", "PATHd8"))
+	method=match.arg(unname(sapply(scale, toString)), c("NA", "PATHd8"))
 	
 	hashes.mapping <- function (phy, taxa, mapping){
 	## GENERAL FUNCTION: find hash tag for every edge in tree (using phy$tip.label or predefined set of 'taxa')

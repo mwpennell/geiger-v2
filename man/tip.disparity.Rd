@@ -19,10 +19,9 @@ tip.disparity(phy, data, disp = c("avg.sq", "avg.manhattan", "num.states"))
 \author{ Luke J. Harmon }
 \examples{
 
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-tip.disparity(geospiza.tree, geospiza.data)
+tip.disparity(geo$phy, geo$dat)
 
 }
 

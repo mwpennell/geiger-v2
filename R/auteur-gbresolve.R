@@ -36,7 +36,7 @@ Linnaean=c(
 #	base_path=gsub("fetch_genbank.pl", "", pl)
 	nd=paste(path, "nodes.dmp", sep="/")
 	nm=paste(path, "names.dmp", sep="/")
-	ncbi=paste(path, "_ncbi.rda", sep="/")
+	ncbi=paste(path, "ncbi.rda", sep="/")
 	return(c(ncbi=ncbi, names=nm, nodes=nd, base=path))
 }
 
@@ -196,7 +196,7 @@ gbcontain=function(x, rank="species", within="", ...){
 	}
 }
 
-gbresolve=function(x, ...){
+gbresolve=function(x, rank="phylum", within="", split=FALSE, ...){
 	UseMethod("gbresolve")
 }
 
@@ -477,14 +477,6 @@ exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
 	
 	return(get_tax)
 }
-
-
-
-
-
-#require(auteur)
-#data(urodela)
-#phy=urodela$phy
 
 
 ## Assign internal node labels to phy based on genbank taxonomy

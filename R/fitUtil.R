@@ -301,7 +301,7 @@ constrain.m=function(f, m){
 }
 
 ## tree transformation
-transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white")){
+transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white"), ...){
 	
 	phy=x
 	

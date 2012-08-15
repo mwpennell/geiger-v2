@@ -1,57 +1,52 @@
 \name{dtt}
 \alias{dtt}
-\alias{disp.calc}
+\alias{disparity}
 \alias{dtt.full}
-\title{Disparity-through-time}
+\title{disparity-through-time}
 \description{
-	Functions for calculating and plotting disparity-through-time for a phylogenetic tree and 
-	phenotypic data.
+	calculating and plotting disparity-through-time for a phylogenetic tree and 
+	phenotypic data
 }
 \usage{
-disp.calc(data, disp = c("avg.sq", "avg.manhattan", "num.states"))
-dtt(phy, data, disp = c("avg.sq", "avg.manhattan", "num.states"))
-dtt.full(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states"), nsims=1000, mdi.range=c(0,1))
+disparity(data, disp = c("avg.sq", "avg.manhattan", "num.states"))
+dtt(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states"), nsims=1000, mdi.range=c(0,1), plot=TRUE)
 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{data}{Data matrix - either actual or simulated}
-  \item{phy}{Phylogenetic tree in 'phylo' format}
-  \item{disp}{Disparity measure: see below for currently implemented options.}
-  \item{nsims}{Number of simulations used to calculate null dtt plot}
-  \item{mdi.range}{Time range over which to calculate MDI statistic (area between curves).  Time is 
-  					relative to the total tree length of 1; default is the whole tree from 0 (root) to 1 (tips)}
+  \item{phy}{a phylogenetic tree of class 'phylo'}
+  \item{data}{a named vector or matrix of continuous trait values, associated with species in \code{phy}}
+  \item{disp}{disparity measure (see \bold{Details})}
+  \item{nsims}{number of simulations used to calculate null dtt plot (see \bold{Details})}
+  \item{mdi.range}{time range over which to calculate MDI statistic (see \code{\link[geiger]{area.between.curves}})}
+  \item{plot}{whether to plot disparities through time}
 }
 \details{
-		The most complete function, dtt.plot, carries out the entire disparity-through-time procedure 
-		described in Harmon et al. 2003.  Other functions are for various parts of this, as follows:
-		disp.calc: Calculate morphological disparity for a set of species.
-		Disparity measure can be one of the following:
-		avg.sq: Average squared euclidean distance among all pairs of points.  This is a good 
-					choice if all of the axes are in the same units, or PC axes.
-		avg.manhattan: Average Manhattan distance among all pairs of points.  This is a good 
-					choice if the axes are all in different units, like colors and lengths.
-		nb.states: Number of unique character states; this is the only option for discrete 
-					character data, for now.
+		The most complete implementation of \code{dtt} (where \code{nsims} is greater than 0) carries out the entire disparity-through-time (DTT) procedure 
+		described in Harmon et al. 2003. The function \code{disparity} simply computes the morphological disparity for a set of species.
+		For either function, the disparity measure can be one of the following:
+		\itemize{
+			\item{avg.sq}{average squared euclidean distance among all pairs of points; this is a good 
+					choice if all of the axes are in the same units, or PC axes}
+			\item{avg.manhattan}{average Manhattan distance among all pairs of points; this is a good 
+					choice if the axes are all in different units, like colors and lengths}
+			\item{nb.states}{number of unique character states; this is currently the only option for discrete 
+					character data}
+		}
 		
-		dtt: Evaluates disparity-through-time for either a single data set or multiple 
-				data sets (for example, from simulations).
-		dtt.full: Calculates dtt for the actual data, runs simulations using univariate or multivariate
-				Brownian motion, calculates dtt for all simulations and finds the mean, and plots dtt for 
-				both data and simulations on the output device.
-
+		Note that for \code{mdi.range}, time is relative to a total tree length of 1. The default \code{mdi.range} is the whole tree from 0 (root) to 1 (tips). 
 }
 \value{
-	disp.calc: Disparity of the supplied data
-	dtt: Average disparity for clades whose stem crosses each time interval in the tree.
-	dtt.full: A list with the following items:
-	dtt.data: DTT for the data
-	dtt.sims: DTT for each simulated data set
-	times: Times for each value in the dtt plot; this is just the branching times of the phylogeny
-	MDI: Value of the MDI statistic, which is the area between the DTT plot for the 
-					data and the mean of the simulations
-`	Plot: Creates a DTT plot	
+	The function \code{disparity} returns the disparity of the supplied \code{data}.
 	
+	The function \code{dtt} returns elements from the list below:
+	\itemize{
+		\item{dtt}{average disparity for clades whose stem crosses each time interval in the tree}
+		\item{dtt_sims}{disparities at time intervals for each simulated dataset}
+		\item{times}{times for each value in disparity-through-time calculation; these are just the branching times of the phylogeny}
+		\item{MDI}{value of the MDI statistic, which is the area between the DTT for the data and the mean of the simulations}
+	}	
+	If results are plotted, the mean DTT from the simulated datasets appears in dashed line and the empirical DTT in solid line.  
 }
 \references{Foote, M. 1997. The evolution of morphological diversity. Annual Review of Ecology and 
 			Systematics 28:129-152.
@@ -60,12 +55,10 @@ dtt.full(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states"), nsims=1000,
 \author{ Luke J. Harmon }
 \examples{
 
-data(geospiza)
-attach(geospiza)
+geo=get(data(geospiza))
 
-disp.calc(geospiza.data)
-disp.data<-dtt(geospiza.tree, geospiza.data)
-full.output<-dtt.full(geospiza.tree, geospiza.data)
+disparity(geo$dat)
+disp.data<-dtt(geo$phy, geo$dat, nsims=200, plot=TRUE)
 
 }
 

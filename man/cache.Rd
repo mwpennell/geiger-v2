@@ -1,7 +1,7 @@
 \name{cache}
 \alias{cache}
 \title{
-Run and parameter control for reversible-jump Markov chain Monte Carlo sampling}
+tailor reversible-jump Markov chain Monte Carlo sampling}
 \description{
 Run and parameter control for reversible-jump Markov chain Monte Carlo sampling}
 \usage{
@@ -11,7 +11,7 @@ cache(phy, dat, type = "bm", ...)
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
   \item{dat}{a named vector of continuous trait values, associated with each species in \code{phy}}
-  \item{type}{currently the only supported option is \code{bm}}
+  \item{type}{currently the only supported option is the general \code{bm} model}
   \item{...}{arguments passed internally to control other settings (see \bold{Details})}
 
 }
