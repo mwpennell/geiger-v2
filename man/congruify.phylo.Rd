@@ -3,9 +3,9 @@
 
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Ultrametricization of trees from a supplied timetree}
+ultrametricization of trees from a supplied timetree}
 \description{
-Generates a table of secondary calibrations}
+automagically generating secondary calibrations}
 \usage{
 congruify.phylo(stock, scion, taxonomy = NULL, tol = 0, scale=c(NA, "PATHd8"))
 }
@@ -36,7 +36,9 @@ print(res$calibrations)
 plot.phylo(ladderize(sal$phy,right=FALSE), cex=0.35, type="fan", label.offset=2.5)
 plot.phylo(ladderize(sal$fam,right=FALSE), cex=0.5, type="fan", label.offset=2.5, no.margin=FALSE)
 
-cat("\n\n\n*** If 'PATHd8' is installed ***, execute the following:\n\tres=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, scale=\"PATHd8\")\n\tprint(res)\n\tplot(res$phy, cex=0.35, type=\"fan\", label.offset=2.5)\n\n\tprint(max(branching.times(res$phy)))\n\tprint(max(branching.times(sal$fam)))\n\tprint(max(branching.times(sal$phy)))\n\n\n")
+cat("\n\n\n*** If 'PATHd8' is installed ***, execute the following:\n\tres=congruify.phylo(sal$fam, sal$phy, sal$tax, 
+	tol=0, scale=\"PATHd8\")\n\tprint(res)\n\tplot(res$phy, cex=0.35, type=\"fan\", label.offset=2.5)\n\n\t
+	print(max(branching.times(res$phy)))\n\tprint(max(branching.times(sal$fam)))\n\tprint(max(branching.times(sal$phy)))\n\n\n")
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

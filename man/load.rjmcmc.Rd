@@ -1,10 +1,10 @@
 \name{load.rjmcmc}
 \alias{load.rjmcmc}
-\title{processing posterior samples from single or multiple MCMC runs}
-\description{Generates a pooled sample of posterior estimates from any number of independent MCMC runs}
+\title{posterior samples from single or multiple MCMC runs}
+\description{generating a pooled and thinned sample of posterior estimates from any number of independent MCMC runs}
 \usage{
 
-	load.rjmcmc(x, phy = NULL, burnin = NULL, thin = NULL)
+	\method{load}{rjmcmc}(x, phy = NULL, burnin = NULL, thin = NULL, \dots)
 }
 
 \arguments{
@@ -12,14 +12,16 @@
   \item{phy}{a phylogenetic tree of class 'phylo' for which to compile results; if NULL, the tree stored within each generated \code{rda} file is used}
   \item{burnin}{the proportion of each chain to be removed as burnin}
   \item{thin}{an integer specifying the thinning interval for chains}
+  \item{...}{arguments to be passed to other functions (has no effect in the present context)}
 }
 
 \details{
-This function provides a means to compile results from at least a single MCMC run.  It is intended to facilitate pooling of multiple independent runs. In cases where MCMC chains were sampled
-using a set of (different) trees, the argument \code{phy} can be used to summarize compiled results against a single summary tree. Branchwise samples are stored with unique edge identifiers (character strings) 
-that are more reliable than the use of numeric node labels (see \code{\link[digest]{digest}} for the function used to generate unique edge labels). 
+This function provides a means to compile results from at least a single MCMC run, and is especially useful in pooling of multiple independent runs. In cases where MCMC chains were sampled
+using a set of (different) trees, the argument \code{phy} can be used to summarize compiled results against a single summary tree. Branchwise samples are stored with unique edge identifiers 
+(character strings) that are more reliable than the use of numeric node-identifiers (see \code{\link[digest]{digest}} for the function used to generate these unique edge labels). 
 
-If it is desired to run analyses for the same trait data across a set of trees (see \bold{Examples}), it is strongly recommended that the set of trees be sent to \code{rjmcmc.bm} as a \code{multiPhylo} object (see \code{\link[ape]{read.tree}}).
+If it is desired to run analyses for the same trait data across a set of trees (see \bold{Examples}), it is strongly recommended that the set of trees be sent to \code{rjmcmc.bm} as a \code{multiPhylo} 
+object (see \code{\link[ape]{read.tree}}).
 }  
 
 \value{

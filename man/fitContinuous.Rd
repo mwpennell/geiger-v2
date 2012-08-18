@@ -5,7 +5,8 @@
 	fitting macroevolutionary models to phylogenetic trees
 }
 \usage{
-fitContinuous(phy, dat, SE = NA, model = c("BM", "OU", "EB","trend", "lambda", "kappa", "delta", "white"), 
+fitContinuous(phy, dat, SE = NA, 
+	model = c("BM","OU","EB","trend","lambda","kappa","delta","white"), 
 	bounds= list(), control = list(method = c("SANN","L-BFGS-B"), 
 	niter = 100, FAIL = 1e+200, hessian = FALSE, hessianCI = 0.95))
 }
@@ -64,7 +65,6 @@ Possible models are as follows:
 \value{
 	\code{fitContinuous} returns a list with the following four elements: 
 	
-	\itemize{
 		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model. 
 			For instance, if estimating a Brownian-motion model with unknown standard error, the arguments to the \code{lik} function would be \code{sigsq} and \code{SE} 
 			(see \bold{Examples}). The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing 
@@ -82,19 +82,17 @@ Possible models are as follows:
 			sample-size corrected AIC (\code{aicc}). The number of observations for AIC computation is taken to be the number of trait values observed. 
 			If the Hessian is used, confidence intervals on the parameter estimates (\code{CI}) and the Hessian matrix (\code{hessian}) are also returned 
 		}
-	
-	
-	}
 }
-\references{Blomberg SP, T Garland, and AR Ives. 2003. Testing for phylogenetic signal in comparative data: behavioral traits are more labile. Evolution 57:717-745.
+\references{
+Blomberg SP, T Garland, and AR Ives. 2003. Testing for phylogenetic signal in comparative data: behavioral traits are more labile. \emph{Evolution} 57:717-745.
 
-			Butler MA and AA King, 2004. Phylogenetic comparative analysis: a modeling approach for adaptive evolution. American Naturalist 164:683-695.
+Butler MA and AA King, 2004. Phylogenetic comparative analysis: a modeling approach for adaptive evolution. \emph{American Naturalist} 164:683-695.
 			
-			Felsenstein J. 1973. Maximum likelihood estimation of evolutionary trees from continuous characters. American Journal of Human Genetics 25:471-492.
+Felsenstein J. 1973. Maximum likelihood estimation of evolutionary trees from continuous characters. \emph{American Journal of Human Genetics} 25:471-492.
 			
-			Harmon LJ et al. 2010. Early bursts of body size and shape evolution are rare in comparative data. Evolution 64:2385-2396. 
+Harmon LJ et al. 2010. Early bursts of body size and shape evolution are rare in comparative data. \emph{Evolution} 64:2385-2396. 
 			
-			Pagel M. 1999. Inferring the historical patterns of biological evolution. Nature 401:877-884
+Pagel M. 1999. Inferring the historical patterns of biological evolution. \emph{Nature} 401:877-884
 }
 
 \author{Luke J. Harmon and Wendell Challenger}

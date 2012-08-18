@@ -166,7 +166,7 @@ function(phy, rates, ic) {
 	
 	## LIKELIHOOD FUNCTION
 	if(any(adjvar==1)){ # adjustable SE
-		lik <- function(rates, root, SE) {
+		likSE <- function(rates, root, SE) {
 			check.argn(rates, root)
 			vv[mm] = rates
 			datc_se=datc_init
@@ -174,8 +174,10 @@ function(phy, rates, ic) {
 			ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE, datc_se)
 			return(ll)
 		}
-		attr(lik, "cache") <- cache
-		attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root", SE="SE")
+		attr(likSE, "cache") <- cache
+		attr(likSE,"argn")=list(rates=cache$phy$edge[,2], root="root", SE="SE")
+		class(likSE)=c("rbm","bm","function")
+		return(likSE)
 	} else { # unadjustable SE
 		lik <- function(rates, root) {
 			check.argn(rates, root)
@@ -185,10 +187,9 @@ function(phy, rates, ic) {
 		}
 		attr(lik, "cache") <- cache
 		attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root")
+		class(lik)=c("rbm","bm","function")
+		return(lik)
 	}	
-
-	class(lik)=c("rbm","bm","function")
-    lik	
 }
 
 .cache.tree <- function (phy) 

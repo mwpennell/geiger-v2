@@ -90,16 +90,7 @@ function(phy, tips=NULL){
 	
 	
 	NULL_TIPS=.md5(integer(length(tips)))
-	env=Sys.getenv()
-	if("ignoreMULTICORE"%in%names(env)) {
-		f=lapply
-	} else {
-		if(.check.multicore()) {
-			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
-		} else {
-			f=lapply
-		}
-	}
+	f=.get.multicore()
 	
 	# store hash keys for trees in order 1:(Node(phy)+Ntip(phy))
 	tmp=f(trees, function(phy){

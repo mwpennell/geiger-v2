@@ -1,9 +1,9 @@
 \name{exemplar.phylo}
 \alias{exemplar.phylo}
 \title{
-Blending information from taxonomies and trees }
+blending information from taxonomies and trees }
 \description{
-Working with systematic reference tables and phylogenies}
+working with systematic reference tables and phylogenies}
 \usage{
 exemplar.phylo(phy, strict.vals=NULL, taxonomy=NULL, ...)
 }
@@ -19,7 +19,7 @@ exemplar.phylo(phy, strict.vals=NULL, taxonomy=NULL, ...)
 \author{JM Eastman}
 
 \examples{
-sal=get(data(urodela))
+sal=get(data(caudata))
 print(head(sal$tax))
 
 nphy=exemplar.phylo(sal$phy, strict.vals=NULL, sal$tax)

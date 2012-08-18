@@ -5,7 +5,7 @@
 initialize proposal width
 }
 \description{
-Estimating a reasonable proposal width to initiate sampling for Markov sampling
+estimating a reasonable proposal width to initiate sampling for Markov sampling
 }
 \usage{
 calibrate.rjmcmc(phy, dat, nstep = 10000, widths = 2^(-3:3), model=c("bm"), ...)

@@ -603,11 +603,11 @@ bg = "lightgreen", horiz = FALSE, width = NULL, height = NULL,
 }
 
 
-acegram=function(phy, dat, cex.node=2, cex.tip=2, labs=TRUE, ...){
+.acegram=function(phy, dat, cex.node=2, cex.tip=2, labs=TRUE, ...){
 	root=Ntip(phy)+1
 	dd=dat
 	names(dd)=match(names(dat),phy$tip.label)
-	xx=c(ace(dat, phy, CI=FALSE, method="pic")$ace,dd)
+	xx=c(ape:::ace(dat, phy, CI=FALSE, method="pic")$ace,dd)
 	alpha=xx[names(xx)==root]
 	xx=xx[names(xx)!=root]
 	mm=match(phy$edge[,2],names(xx))

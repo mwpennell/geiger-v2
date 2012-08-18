@@ -5,7 +5,8 @@
 	fitting macroevolutionary models to phylogenetic trees
 }
 \usage{
-fitDiscrete(phy, dat, model = c("ER", "SYM", "ARD", "meristic"), 
+fitDiscrete(phy, dat, 
+	model = c("ER","SYM","ARD","meristic"), 
 	transform = c("none", "EB", "lambda", "kappa", "delta", "white"), 
 	bounds = list(), control = list(method = c("SANN", "L-BFGS-B"), 
 	niter = 100, FAIL = 1e+200, hessian = FALSE, hessianCI = 0.95), ...)
@@ -69,7 +70,6 @@ Options for \code{transform} are as follows:
 \value{
 	\code{fitDiscrete} returns a list with the following four elements: 
 	
-	\itemize{
 		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model. 
 			For instance, if estimating an untransformed \code{ER} model, there would be a single argument (the transition rate) necessary for the \code{lik} function. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing 
 			the likelihood under different parameter values 
@@ -86,17 +86,16 @@ Options for \code{transform} are as follows:
 			sample-size corrected AIC (\code{aicc}). The number of observations for AIC computation is taken to be the number of trait values observed. 
 			If the Hessian is used, confidence intervals on the parameter estimates (\code{CI}) and the Hessian matrix (\code{hessian}) are also returned 
 		}
-	}
 }
 \references{ 
-Yang, Z. 2006. Computational Molecular Evolution. Oxford University Press: Oxford.
+Yang, Z. 2006. \emph{Computational Molecular Evolution}. Oxford University Press: Oxford.
 }
 \author{ Luke J. Harmon and R. E. Glor }
 \examples{
 geo=get(data(geospiza))
 
 gb<-round(geo$dat[,5])
-names(gb)<-rownames(geospiza.data)
+names(gb)<-rownames(geo$dat)
 mm=rbind(c(NA, 0, 0), c(1, NA, 2), c(0, 2, NA))
 
 fitDiscrete(geo$phy, gb, model="ER")

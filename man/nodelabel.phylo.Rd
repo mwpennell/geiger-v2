@@ -22,7 +22,7 @@ glomogram.phylo(phy, subtrees)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo' ('multiPhylo' in \code{phylo.clades})}
-  \item{taxonomy}{a ('matrix') linkage table between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
+  \item{taxonomy}{a linkage table (of class \code{matrix}) between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
   \item{clades}{a named list of clade definitions (i.e., spanning taxa; see \bold{Examples}); spanning taxa may invoke other definitions found within the \code{clades} list}
   \item{unplaced}{whether to use 'unplaced' taxa if given as an element in \code{clades}} 
   \item{subtrees}{a list of trees to be grafted into \code{phy}; each \code{subtrees} element has two sub-elements: \code{subtree} and \code{age} (see \bold{Examples})}
@@ -32,12 +32,19 @@ glomogram.phylo(phy, subtrees)
 \details{
 	\code{nodelabel.phylo} provides a function (as part of the \code{phylo} object returned) to resolve the hash key and node identifier for a label found in \code{taxonomy}. 
 	This function is the \code{FUN} element of the returned object. If the taxonomic label cannot be properly placed in the tree (i.e., no subtree is found that is absolutely 
-	consistent with the supplied \code{taxonomy}, the nearest matching node(s) will be returned when invoking \code{FUN}).     
+	consistent with the supplied \code{taxonomy}, the nearest matching node(s) will be returned when invoking \code{FUN}).   
+	
+	\code{phylo.lookup} converts a \code{taxonomy} into a phylogenetic tree. 
+	
+	\code{lookup.phylo} converts a phylogenetic tree (\code{phy}) into a linkage table based on nodelabels associated with \code{phy}, which can be supplemented with a \code{taxonomy} and (or) 
+	\code{clades} object.   
+	
+	\code{phylo.clades} returns a series of phylogenetic subtrees based on clade definitions found in the \code{clades} object.  Definitions can be handles that are recursive (e.g., \code{clades=list(alpha=c(1,2,3), beta=c("alpha", 4))})
 }
 \author{JM Eastman}
 
 \examples{
-sal=get(data(urodela))
+sal=get(data(caudata))
 print(head(sal$tax))
 
 ## TREE from TABLE: phylo.lookup()
@@ -86,6 +93,7 @@ class(phy)="multiPhylo"
 
 res=phylo.clades(clades, phy)
 amph=nodelabel.phylo(res$AMPHIBIA, lkp)
+print(amph$FUN("Salamandroidea"))
 dev.new()
 plot(ladderize(amph, right=FALSE), cex=0.2, label.offset=0.05)
 nodelabels(amph$node.label, cex=0.35, col="red", frame="n")

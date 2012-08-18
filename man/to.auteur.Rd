@@ -4,7 +4,7 @@
 \title{
 conversion of MCMC samples between auteur and coda}
 \description{
-Converts MCMC samples between auteur and coda}
+converting MCMC samples between auteur and coda}
 \usage{
 to.auteur(obj, phy = NULL, ...)
 to.coda(obj)

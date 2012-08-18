@@ -171,11 +171,7 @@ gbcontain=function(x, rank="species", within="", ...){
 	if("ignoreMULTICORE"%in%names(env)) {
 		f=lapply
 	} else {
-		if(.check.multicore()) {
-			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
-		} else {
-			f=lapply
-		}
+		f=.get.multicore()
 	}
 	
 	res=f(x, function(g) {gbc(g)})
@@ -232,16 +228,7 @@ gbresolve.default=function(x, rank="phylum", within="", split=FALSE, ...){
 	}
 						  
 	
-	env=Sys.getenv()
-	if("ignoreMULTICORE"%in%names(env)) {
-		f=lapply
-	} else {
-		if(.check.multicore()) {
-			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
-		} else {
-			f=lapply
-		}
-	}
+	f=.get.multicore()
 	
 	tmp=f(tt, FUN)
 	
@@ -493,16 +480,8 @@ gbresolve.phylo=function(x, rank="phylum", within="", split=TRUE, ...){
 	gb=load_taxdump(...)	
 	FUN=.fetch_gbhierarchy.above(gb, rank=rank, within=within)
 	
-	env=Sys.getenv()
-	if("ignoreMULTICORE"%in%names(env)) {
-		f=lapply
-	} else {
-		if(.check.multicore()) {
-			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
-		} else {
-			f=lapply
-		}
-	}
+	f=.get.multicore()
+	
 	tax=f(tt, function(x) try(FUN(x), silent=TRUE))
 	dd=sapply(tax, function(x) inherits(x, "try-error") | all(is.na(x)))
 	

@@ -4,7 +4,7 @@
 prior densities for truncated discrete random variable
 }
 \description{
-Creating a prior density function for a truncated discrete random variable}
+creating a prior density function for a truncated discrete random variable}
 \usage{
 dcount(x, FUN, ...)
 }

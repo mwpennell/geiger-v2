@@ -1,34 +1,33 @@
 \name{sim.char}
 \alias{sim.char}
-\title{ Simulate character evolution }
+\title{ simulate character evolution }
 \description{
-  Simulates evolution of discrete or continuous characters on a phylogenetic tree
+  simulating evolution of discrete or continuous characters on a phylogenetic tree
 }
 \usage{
-sim.char(phy, model.matrix, nsims = 1, model = "brownian", root.state = 1)
+sim.char(phy, model.matrix, nsims = 1, model = c("brownian", "speciational", "discrete"), root = 1)
 }
 \arguments{
-  \item{phy}{ Phylogenetic tree }
-  \item{model.matrix}{ Matrix describing model: either vcv matrix or q matrix }
-  \item{nsims}{ Number of simulations to run }
-  \item{model}{ "brownian", "speciational", or "discrete" }
-  \item{root.state}{ Starting state at root, only needed for discrete model. }
+  \item{phy}{a phylogenetic tree of class 'phylo'}
+  \item{model.matrix}{matrix describing model (either vcv matrix or Q matrix) }
+  \item{nsims}{ number of simulations to run }
+  \item{model}{a model from which to simulate data}
+  \item{root}{starting state (value) at root}
 }
 \details{
 	This function simulates either discrete or continuous data on a phylogenetic tree. The model variable 
-	determines the type of simulation to be run. There are three options: "discrete," which evolves
-	characters under a continuous time Markov model, and two continuous models, "brownian" and "speciational."
-	Brownian is a constant rate Brownian motion model, while speciational is a Brownian model on a tree
-	where all branches have the same length.  The model.matrix parameter gives the structure of the model, 
-	and should be either a transition matrix, Q, for model = "discrete," or a trait variance-covariance 
-	matrix for model = "brownian" or "speciational."  For discrete models, one character at a time is 
-	simulated, and the size of the model.matrix gives the number of character states; for continuous models, 
-	multivariate characters can be simulated, with their evolution goverened by a covariance matrix specified 
-	in the model.matrix.  "root.state" is only needed for the discrete model.
+	determines the type of simulation to be run. There are three options: \code{discrete}, which evolves
+	characters under a continuous time Markov model, and two continuous models, \code{brownian} and \code{speciational}.
+	\code{brownian} is a constant rate Brownian-motion model, while \code{speciational} is a Brownian model on a tree
+	where all branches have the same length.  The \code{model.matrix} parameter gives the structure of the model, 
+	and should be either a transition matrix, Q, for the \code{discrete} model, or a trait variance-covariance 
+	matrix for \code{brownian} or \code{speciational} models.  For discrete models, multiple characters may be simulated 
+	if \code{model.matrix} is given as a list of Q matrices (see \bold{Examples}). For continuous models, multivariate characters can be simulated, 
+	with their evolution goverened by a covariance matrix specified in the \code{model.matrix}. 
 
 }
 \value{
- 	Array of simulated data, either two or three-dimensional. 
+ 	An array of simulated data, either two or three-dimensional, is returned. 
  	The first dimension is the number of taxa, the second the number of characters, and the third the 
  	number of simulated data sets.
 }
@@ -37,12 +36,21 @@ sim.char(phy, model.matrix, nsims = 1, model = "brownian", root.state = 1)
 geo=get(data(geospiza))
 
 
-s<-ic.sigma(geo$phy, geo$dat)
-sims<-sim.char(geo$phy, s, 100)
+## Continuous character -- univariate
+usims<-sim.char(geo$phy, 0.02, 100)
 
-# Discrete character evolution
+## Continuous character -- multivariate
+s<-ic.sigma(geo$phy, geo$dat)
+csims<-sim.char(geo$phy, s, 100)
+
+## Discrete character -- univariate
 q<-list(rbind(c(-.5, .5), c(.5, -.5)))
-sims<-sim.char(geo$phy, q, model="discrete", n=100)
+dsims<-sim.char(geo$phy, q, model="discrete", n=10)
+
+## Discrete character -- multivariate
+qq<-list(rbind(c(-.5, .5), c(.5, -.5)), rbind(c(-.05, .05), c(.05, -.05)))
+msims<-sim.char(geo$phy, qq, model="discrete", n=10)
+
   
 }
 

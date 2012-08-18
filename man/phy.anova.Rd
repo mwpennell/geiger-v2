@@ -1,43 +1,43 @@
 \name{phy.anova}
 \alias{phy.anova}
 \alias{phy.manova}
-\title{Phylogenetic ANOVA and MANOVA}
+\title{phylogenetic ANOVA and MANOVA}
 \description{
-	Calculates ANOVA or MANOVA, and returns p-value based on Brownian motion simulations
+	computing phylogenetic ANOVA or MANOVA
 }
 \usage{
 phy.anova(phy, data, group, nsim=1000)
-phy.manova(phy, data, group, nsim=1000, test="Wilks")
+phy.manova(phy, data, group, nsim=1000, test=c("Wilks", "Pillai", "Hotelling-Lawley", "Roy"))
 
 }
 \arguments{
-  \item{phy}{ an object of class 'phylo'}
-  \item{data}{ Dependent variable(s) - should be continuous }
-  \item{group}{ Independent variable - should be a factor }
-  \item{nsim}{ Number of simulations for calculating p-value; default = 1000 }
-  \item{test}{ If you're using a MANOVA, the name of the test statistic to be used. 
-  				Partial matching is used so the name can be abbreviated. 
-  				Options are "Pillai", "Wilks", "Hotelling-Lawley", and "Roy"}
+  \item{phy}{a phylogenetic tree of class 'phylo'}
+  \item{data}{dependent variable(s) (should be continuous)}
+  \item{group}{independent variable (should be a factor)}
+  \item{nsim}{number of simulations for calculating p-value}
+  \item{test}{the name of the test statistic to be used}
 }
 \details{
 
-This function allows an ANOVA or MANOVA in a phylogenetic context.  First, the test statistic for ANOVA 
+This function performs an ANOVA or MANOVA in a phylogenetic context.  First, the test statistic for ANOVA 
 (one dependent variable) or MANOVA (more than one dependent variable) is calculated.  The null distribution 
 of this test statistic is then obtained by simulating new sets of dependent variables on the phylogenetic
-tree.  Simulations are run under a Brownian motion model.  For ANOVA, the rate parameter is estimated from 
+tree.  Simulations are run under a Brownian-motion model.  For ANOVA, the rate parameter is estimated from 
 the average squared independent contrast; for MANOVA the simulations use an estimated variance-covariance (vcv) 
-matrix from the GEIGER function ic.sigma.
+matrix from \code{\link[geiger]{ic.sigma}}.
 
 For MANOVA, you can specify the test statistic for the summary table.  Wilks' statistic is most popular in the 
-literature; for more details see the summary.manova help page.
+literature and for further details, see \code{\link[stats]{summary.manova}}.
 }
 \value{
 	Standard ANOVA or MANOVA table and p-value based on simulations
 	}
-\references{Garland Jr., T., A. W. Dickerman, C. M. Janis, and J. A. Jones. 1993. Phylogenetic analysis of covariance 
-by computer simulation. Syst. Biol. 42(3):265-292.}
+\references{
+Garland Jr., T., A. W. Dickerman, C. M. Janis, and J. A. Jones. 1993. Phylogenetic analysis of covariance 
+by computer simulation. \emph{Syst. Biol.} 42(3):265-292.
+}
 \author{ Luke J. Harmon }
-\seealso{ anova, summary.manova, ic.sigma }
+\seealso{ \code{\link[stats]{anova}}; \code{\link[stats]{summary.manova}}; \code{\link[geiger]{vcv.phylo}} }
 \examples{
 
 geo=get(data(geospiza))

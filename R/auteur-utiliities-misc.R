@@ -13,6 +13,17 @@ print.rbm=function (x, printlen = 3, ...)
 }
 
 
+.get.multicore=function(){
+	ee=Sys.getenv()
+	
+	if(.check.multicore()) {
+		if("ignoreMULTICORE"%in%names(ee)) f=lapply else f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE) 
+	} else {
+		f=lapply
+	}
+	
+	f
+}
 .check.multicore=function(){
 	tmp=rownames(installed.packages())
 	if("multicore"%in%tmp) {

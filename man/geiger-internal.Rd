@@ -2,7 +2,6 @@
 
 \alias{print.bm}
 \alias{print.mkn}
-\alias{transform.phylo}
 \alias{ROOT.ALL}
 \alias{ROOT.BOTH}
 \alias{ROOT.EQUI}
@@ -10,7 +9,6 @@
 \alias{ROOT.GIVEN}
 \alias{ROOT.MAX}
 \alias{ROOT.OBS}
-\alias{acegram}
 \alias{argn}
 \alias{argn.default}
 \alias{argn.bm}
@@ -30,12 +28,9 @@
 \alias{ess}
 \alias{fitDiversification}
 \alias{fitSplitModel}
-\alias{gbcontain}
 \alias{gbresolve.default}
-\alias{gbresolve.phylo}
 \alias{gbtaxdump}
 \alias{gen}
-\alias{get.simulation.matrix}
 \alias{getBD}
 \alias{getDiversificationModel}
 \alias{getFullSplitModel}
@@ -52,14 +47,10 @@
 \alias{is.root}
 \alias{kendallmoran.rate}
 \alias{likfx.bm}
-\alias{Linnaean}
 \alias{load}
-\alias{load_taxdump}
 \alias{make.bm.relaxed}
 \alias{mkn.lik}
-\alias{node.sons}
 \alias{PATHd8.phylo}
-\alias{picAnc}
 \alias{plotDiversificationSurface}
 \alias{plot.auteurMCMCMC}
 \alias{plot.auteurMCMC}
@@ -73,13 +64,12 @@
 \alias{print.rjmcmcmc}
 \alias{print.taxdump}
 \alias{print.transformer}
-\alias{rcp}
 \alias{resplitEdgeMatrixGeiger}
 \alias{root.phylo}
 \alias{sem}
-\alias{set.seed.clock}
 \alias{splitEdgeMatrixGeiger}
 \alias{subset.phylo}
+\alias{transform}
 \alias{trace.plot}
 \alias{ultrametricize.phylo}
 \alias{unique.multiPhylo}

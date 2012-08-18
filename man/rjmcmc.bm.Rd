@@ -31,12 +31,12 @@ After a run has completed, acceptance rates for the primary proposal mechanisms 
 settings of control parameters for the run (see \code{\link[geiger]{cache}}).  
 
 Posterior results are written to several files within a base directory, the contents of which are as follows:
-  \item{log}{a logfile including the following for each Markov chain: the generations at which samples were retained (\code{state}), the \code{min}, \code{max}, and \code{median} rate of the 
+  \item{\bold{log} }{is a logfile including the following for each Markov chain: the generations at which samples were retained (\code{state}), the \code{min}, \code{max}, and \code{median} rate of the 
   diffusion process across the tree, the number of evolutionary pulses (\code{jumps}) along single branches, the variance associated with the jump process (\code{jumpvar}), the \code{root} state, 
   and the likelihood (\code{lnL}) and prior (\code{lnLp}) of the model at sampled generations.}
   
-  \item{rda}{a compressed R object, which stores branchwise estimates of the jump and diffusion processes. In order to be interpretable, the \code{rda} file should be processed by the function 
-  \code{\link[geiger]{load.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed output.}
+  \item{\bold{rda} }{is a compressed R object, which stores branchwise estimates of the jump and diffusion processes. In order to be interpretable, the \code{rda} file should be processed by the function 
+  \code{\link[geiger]{load.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed output (see, e.g., \code{\link[coda]{heidel.diag}} and \code{\link[coda]{autocorr}}.}
 }
 
 \author{JM Eastman, LJ Harmon, and AL Hipp}

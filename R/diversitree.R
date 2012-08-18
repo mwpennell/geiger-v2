@@ -192,19 +192,16 @@ ROOT.ALL   <- ROOT.BOTH
 }
 
 .check.control.ode <- function(control=list()) {
-	defaults <- list(safe=FALSE, tol=1e-8, eps=0, backend="deSolve",
-					 unsafe=FALSE)
+	defaults <- list(safe=FALSE, tol=1e-8, eps=0, backend="deSolve", unsafe=FALSE)
 	control <- modifyList(defaults, control)
 	
-	backends <- c("deSolve", "cvodes", "CVODES")
-	if ( length(control$backend) != 1 )
-    stop("'backend' must be a single element")
+#	backends <- c("deSolve", "cvodes", "CVODES")
+	backends <- "deSolve"
+	if ( length(control$backend) != 1 ) stop("'backend' must be a single element")
 	control$backend <- backends[pmatch(control$backend, backends)]
-	if ( is.na(control$backend) )
-    stop("Invalid backend selected")
+	if ( is.na(control$backend) ) stop("Invalid backend selected")
 	
-	if ( tolower(control$backend) == "cvodes" )
-    check.cvodes(error=TRUE)
+#	if ( tolower(control$backend) == "cvodes" ) check.cvodes(error=TRUE)
 	
 	control$tol <- .check.scalar(control$tol)
 	control$eps <- .check.scalar(control$eps)
@@ -389,30 +386,22 @@ ROOT.ALL   <- ROOT.BOTH
 
 .make.cache.mkn <- function(tree, states, k, strict, control) {
 	method <- control$method
-	
+	method=match.arg(method, "exp")
 	tree <- .check.tree(tree)
 	if ( !is.null(states) ) # for multitrait
     states <- .check.states(tree, states, strict.vals=1:k)
 	cache <- .make.cache(tree)
-	if ( method == "mk2" )
-    cache$info <- .make.info.mk2(tree)
-	else
+#	if ( method == "mk2" )
+#   cache$info <- .make.info.mk2(tree)
+#	else
     cache$info <- .make.info.mkn(k, tree)
 	cache$states  <- states
-	if ( method == "ode" ) {
-		cache$y <- initial.tip.mkn.ode(cache)
-		cache$info$name.ode <- "mknode"
-	}
+#	if ( method == "ode" ) {
+#		cache$y <- initial.tip.mkn.ode(cache)
+#		cache$info$name.ode <- "mknode"
+#	}
 	
 	cache
-}
-
-.make.info.mk2 <- function(phy) {
-	info <- make.info.mkn(2, phy)
-	info$name <- "mk2"
-	info$name.pretty <- "Mk2"
-	info$argn <- .default.argn.mk2()
-	info
 }
 
 
@@ -456,10 +445,9 @@ ROOT.ALL   <- ROOT.BOTH
 
 
 .make.pij.mkn <- function(info, control) {
-	if ( control$method == "mk2" )
-    return(pij.mk2)
+	method=match.arg(control$method, "exp")
 	control <- .check.control.ode(control)
-## TODO/NEW: cvodes should be easy too.
+	## TODO/NEW: cvodes should be easy too.
 	if ( control$backend != "deSolve" )
     stop("Only deSolve backend available")
 	
@@ -805,8 +793,7 @@ constrain <- function(f, ..., formulae=NULL, names=argn(f), extra=NULL) {
 	lq <- res$lq
 	k <- length(d.root)
 	
-	root.p <- .root.p.calc(d.root, pars, root, root.p,
-						  stationary.freq.mkn)
+	root.p <- .root.p.calc(d.root, pars, root, root.p, NULL)
 	if ( root == ROOT.ALL )
     loglik <- log(d.root) + sum(lq)
 	else

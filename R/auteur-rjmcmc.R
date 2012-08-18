@@ -6,7 +6,6 @@
 	nm=names(phy)
 	if(is.null(nm)) nm=1:length(phy)
 	if(!is.null(fb)) files=paste(fb, nm, sep="_") else files=nm
-#	if(.check.multicore()) FUN=function(X, FUN) mclapply(X, FUN, mc.silent = TRUE) else FUN=lapply
 	FUN=lapply
 	FUN(1:length(phy), function(idx){
 		rjmcmc.bm(phy=trees[[idx]], dat=dat, SE=SE, ngen=ngen, sample.freq=sample.freq, hashtips=attributes(trees[[idx]])$hashtips, filebase=files[idx], ...)
