@@ -59,7 +59,6 @@ print.rbm=function (x, printlen = 3, ...)
 
 
 
-
 .resolve.executable=function(package="geiger"){
 	packagedir=system.file(package=package)
 	execs=lapply(d<-dir(paste(packagedir,"exec",sep="/")), function(x) {paste(packagedir, "exec", x, sep="/")})

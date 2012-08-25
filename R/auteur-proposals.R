@@ -31,7 +31,8 @@ dcount=function(x, FUN, ...){
 	sum(FUN(new))-sum(FUN(cur))
 }
 
-.compute_prior.bm=function(rates, jumpvar, njump, nshift, root, control){
+
+.gbm.prior.lik=function(rates, jumpvar, njump, nshift, root, control){
 	if(njump==0) jumpvar=0
 	pR=sum(control$dlnRATE(rates))
 	pJ=sum(control$dlnPULS(jumpvar))
@@ -81,8 +82,8 @@ dcount=function(x, FUN, ...){
 }
 
 ## PROPOSAL UTILITY ##
-.check.rates=function(rates, lim=list(min=0,max=Inf)){
-	if(all(rates>lim$min) & all(rates<lim$max)) return(TRUE) else return(FALSE)
+.check.lim=function(x, lim=list(min=0,max=Inf)){
+	if(all(x>lim$min) & all(x<lim$max)) return(TRUE) else return(FALSE)
 }
 
 
@@ -90,9 +91,21 @@ dcount=function(x, FUN, ...){
 #scales phylogeny by relative evolutionary rates under Brownian motion
 #author: JM EASTMAN 2011
 .scale.brlen <-
-function(ape.tre, new.rates){
-	ape.tre$edge.length=ape.tre$edge.length*new.rates
-	return(ape.tre)
+function(phy, scalars){
+	phy$edge.length=phy$edge.length*scalars
+	return(phy)
+}
+
+.dunifn=function(n){
+	FUN=function(x){
+		if(x!=n) return(NA) else return(log(1))
+	}
+	
+	g=0
+	attr(g,"count")=n
+	attr(g,"cumsum")=1
+	attr(FUN,"density")=g
+	return(FUN)
 }
 
 ## PRIOR DISTRIBUTIONS ##
@@ -176,7 +189,7 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 ## PROPOSAL MECHANISM ##
 #rjmcmc proposal mechanism: proposal mechanism for traversing model complexity (by one parameter at a time)
 #author: JM EASTMAN 2010
-.splitormerge <- function(cur.delta, cur.values, control, cache) { 
+.splitormerge <- function(x, delta, control, cache) { 
 	phy=cache$phy
 	fdesc=cache$desc$fdesc
 	adesc=cache$desc$adesc
@@ -184,8 +197,38 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 	rootd=fdesc[[root]]
 	nm=phy$edge[,2]
 	
-	bb=cur.delta
-	vv=cur.values
+	bb=delta
+	vv=x
+	
+	.shifts.simulation <- function(phy, exclude=NULL)
+	{
+		drp=phy$edge[,2]%in%exclude
+		nm=phy$edge[!drp,2]
+		nd=nm[sample(1:length(nm), 1)]
+		nd
+	}
+	
+	.splitrate <-
+	function(value, n.desc, n.split, lim=list(min=0, max=Inf)){
+		if(!.check.lim(value, lim)) stop("Rate appears out of bounds.")
+		while(1) {
+			u=runif(1, -n.desc*value, n.split*value)
+			nr.desc=value+u/n.desc
+			nr.split=value-u/n.split	
+			
+			if(.check.lim(c(nr.desc, nr.split), lim)) break()
+		}
+		return(list(nr.desc=nr.desc, nr.split=nr.split))
+	}
+	
+	.splitvalue <-
+	function(cur.vv, n.desc, n.split, factor=log(2)){
+		dev=cur.vv-.adjustvalue(cur.vv, factor)
+		nr.desc=cur.vv + dev/n.desc
+		nr.split=cur.vv - dev/n.split
+		return(list(nr.desc=nr.desc, nr.split=nr.split))
+	}
+	
 	
 	s=.shifts.simulation(cache$phy, exclude=control$excludeSHIFT)
 	marker=match(s, nm)
@@ -255,7 +298,7 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 	
 	new.values=new.vv
 	
-	return(list(new.delta=new.bb, new.values=new.vv, lnHastingsRatio=lnHastingsRatio, decision=decision))
+	return(list(x=new.vv, delta=new.bb, lnHastingsRatio=lnHastingsRatio, decision=decision))
 }
 
 
@@ -297,13 +340,13 @@ function(rate, prop.width) {
 ## PROPOSAL MECHANISM ##
 #proposal utility: move shift-point in tree for rjmcmc.bm()
 #author: JM EASTMAN 2011
-.adjustshift <- function(cur.delta, cur.values, control, cache){
+.adjustshift <- function(x, delta, control, cache){
 	
+	values=x
 	fdesc=cache$desc$fdesc
 	phy=cache$phy
 	root=cache$root
-	delta=cur.delta
-	values=cur.values
+	
 	
 	root.des=fdesc[[root]]
 	names(delta)<-names(values)<-phy$edge[,2]
@@ -362,6 +405,7 @@ function(rate, prop.width) {
 .adjustjump <-
 function(jumps, add=FALSE, drop=FALSE, swap=FALSE, control, cache){
 	# jump.table: orient as with phy$edge[,2]
+	# jumps: list of nodes
 	
 	lim=control$jump.lim
 	if(lim!=1) stop("Cannot yet accommodate more than a single jump per branch.")
@@ -573,55 +617,6 @@ function(node=NULL, up=NA, use.edges=FALSE, cache){
 
 
 ## PROPOSAL UTILITY ##
-#general phylogenetic utility for selecting one element of a list of values, each of which can be associated with the edges of a phylogeny (phy$edge[,2])
-#author: JM EASTMAN 2011
-.shifts.simulation <- function(phy, exclude=NULL)
-{
-	drp=phy$edge[,2]%in%exclude
-	nm=phy$edge[!drp,2]
-	nd=nm[sample(1:length(nm), 1)]
-	nd
-}
-
-
-## SIMULATION UTILITY ##
-.jumps.simulation=function(phy, exclude=NULL){
-	drp=phy$edge[,2]%in%exclude
-	nm=phy$edge[!drp,2]
-	edge=cumsum(phy$edge.length[!drp])
-	edges=list(length=edge/max(edge), name=nm)
-	sim=function(N) {
-		if(N==0) return(NULL)
-		return(sapply(1:N, function(x){
-					  r=runif(1)
-					  edges$name[min(which(r<=edges$length))]
-					  }))
-	}
-	return(sim)
-}
-
-## SIMULATION UTILITY ##
-.rates.simulation=function(phy, exclude=NULL){
-	drp=phy$edge[,2]%in%exclude
-	nm=phy$edge[!drp,2]
-	nt=Ntip(phy)
-	sim=function(N) {
-		n=1
-		if(N==1) return(NULL)
-		shifts=c()
-		while(n<N){
-			shifts=c(shifts, nm[z<-sample(1:length(nm), 1)])
-			nm=nm[-z]
-			n=n+1
-		}
-		return(c(sort(shifts[shifts>nt]), shifts[shifts<=nt]))
-		
-	}
-	return(sim)
-}
-
-
-## PROPOSAL UTILITY ##
 #general phylogenetic utility: recurse down tree changing values of descendants to 'value' until an 'excluded' descendant subtree is reached
 #author: JM EASTMAN 2011
 .assigndescendants <-
@@ -632,7 +627,6 @@ function(vv, node, value, exclude=NULL, cache){
 	vv[match(dd, phy$edge[,2])]=value
 	return(vv)
 }
-
 
 
 
@@ -649,34 +643,6 @@ function(vv, node, value, exclude=NULL, cache){
 	res
 }
 
-## PROPOSAL MECHANISM ##
-#rjmcmc proposal mechanism: split a rate into two while maintaining the mean
-#author: JM EASTMAN 2011 [ from Huelsenbeck et al. 2004 MBE ]
-.splitrate <-
-function(value, n.desc, n.split, lim=list(min=0, max=Inf)){
-	if(!.check.rates(value, lim)) stop("Rate appears out of bounds.")
-	while(1) {
-		u=runif(1, -n.desc*value, n.split*value)
-		nr.desc=value+u/n.desc
-		nr.split=value-u/n.split	
-		
-		if(.check.rates(c(nr.desc, nr.split), lim)) break()
-	}
-	return(list(nr.desc=nr.desc, nr.split=nr.split))
-}
-
-
-
-## PROPOSAL MECHANISM ##
-#rjmcmc proposal mechanism: split a value into two while maintaining the mean
-#author: JM EASTMAN 2010
-.splitvalue <-
-function(cur.vv, n.desc, n.split, factor=log(2)){
-	dev=cur.vv-.adjustvalue(cur.vv, factor)
-	nr.desc=cur.vv + dev/n.desc
-	nr.split=cur.vv - dev/n.split
-	return(list(nr.desc=nr.desc, nr.split=nr.split))
-}
 
 
 
@@ -770,7 +736,7 @@ function(values, control) {
 #rjmcmc proposal mechanism: adjust a value (within bounds)
 #author: JM EASTMAN 2011
 .proposal.slidingwindow <- function(value, prop.width, lim=list(min=-Inf, max=Inf)){
-	if(!.check.rates(value, lim)) stop("Values appear out of bounds.")
+	if(!.check.lim(value, lim)) stop("Values appear out of bounds.")
 	min=lim$min
 	max=lim$max
 	
@@ -785,7 +751,7 @@ function(values, control) {
 		if(any(v<min)){
 			v[v<min]=min-(v[v<min]-min)
 		}
-		if(.check.rates(v, lim)) break()
+		if(.check.lim(v, lim)) break()
 	}
 		
 	return(list(v=v, lnHastingsRatio=0))
@@ -797,7 +763,7 @@ function(values, control) {
 #author: JM EASTMAN 2011
 # from Lakner et al. 2008 Syst Biol
 .proposal.multiplier <- function(value, prop.width, lim=list(min=-Inf, max=Inf)){
-	if(!.check.rates(value, lim)) stop("Values appear out of bounds.")
+	if(!.check.lim(value, lim)) stop("Values appear out of bounds.")
 	
 #	tmp=c(prop.width, 1/prop.width)
 #	a=min(tmp)
@@ -807,7 +773,7 @@ function(values, control) {
 		m=exp(prop.width*(runif(1)-0.5))
 #		m=exp(lambda*(u-0.5))
 		v=value*m
-		if(.check.rates(v, lim)) break()
+		if(.check.lim(v, lim)) break()
 	}
 	return(list(v=v, lnHastingsRatio=log(m)))
 }

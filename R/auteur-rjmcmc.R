@@ -1,25 +1,27 @@
-.rjmcmc.bm.multi=function(phy, dat, SE, ngen, sample.freq, ...){
+.rjmcmc.bm.multi=function(phy, dat, SE, ngen, sample.freq, type=c("jump-rbm", "rbm", "jump-bm", "bm"),...){
 	con=list(...)
+	trees=phy
 	fb=con$filebase
-	trees=hashes.phylo(phy)
 #	Sys.setenv(ignoreMULTICORE=TRUE)
 	nm=names(phy)
 	if(is.null(nm)) nm=1:length(phy)
 	if(!is.null(fb)) files=paste(fb, nm, sep="_") else files=nm
 	FUN=lapply
-	FUN(1:length(phy), function(idx){
-		rjmcmc.bm(phy=trees[[idx]], dat=dat, SE=SE, ngen=ngen, sample.freq=sample.freq, hashtips=attributes(trees[[idx]])$hashtips, filebase=files[idx], ...)
+	FUN(1:length(trees), function(idx){
+		rjmcmc.bm(phy=trees[[idx]], dat=dat, SE=SE, ngen=ngen, sample.freq=sample.freq, type=type, filebase=files[idx], ...)
 	})
 }
 
-rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, ... ) 
+rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("jump-rbm", "rbm", "jump-bm", "bm"), ... ) 
 { 
 	
+	type=match.arg(type, c("jump-rbm", "rbm", "jump-bm", "bm"))
+	
 	if(sample.freq>ngen) stop("increase 'ngen' or decrease 'sample.freq'")
-	if("multiPhylo"%in%class(phy)) return(.rjmcmc.bm.multi(phy, dat, SE, ngen, sample.freq, ...))
+	if("multiPhylo"%in%class(phy)) return(.rjmcmc.bm.multi(phy, dat, SE, ngen, sample.freq, type, ...))
 	
 	# controller objects 
-	tmp=cache(phy, dat, type="bm", SE, ...)
+	tmp=cache(phy, dat, SE=SE, type=type, ...)
 	ct=tmp$control
 	ct$thin=sample.freq
 	ct$ngen=ngen
@@ -72,9 +74,9 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, ... )
 			if (cur.proposal==1) {												## update BM process
 				if(runif(1) < ct$bm.jump & is.null(ct$constrainSHIFT)) {			# adjust rate categories
 					if(runif(1) < ct$mergesplit.shift) {
-						nr=.splitormerge(cur.delta=cur.delta, cur.values=cur.rates, control=ct, cache=cache)
-						new.rates=nr$new.values
-						new.delta=nr$new.delta
+						nr=.splitormerge(x=cur.rates, delta=cur.delta, control=ct, cache=cache)
+						new.rates=nr$x
+						new.delta=nr$delta
 						new.nR=sum(new.delta)
 						new.scalars=new.rates+cur.jumprates
 						lnHastingsRatio=nr$lnHastingsRatio
@@ -83,7 +85,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, ... )
 						subprop="mergesplit"
 						break()	
 					} else if(cur.nR>0){											# shift local rate
-						nr=.adjustshift(cur.delta=cur.delta, cur.values=cur.rates, control=ct, cache=cache)
+						nr=.adjustshift(x=cur.rates, delta=cur.delta, control=ct, cache=cache)
 						new.rates=nr$new.values
 						new.delta=nr$new.delta 
 						new.scalars=new.rates+cur.jumprates
@@ -218,7 +220,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, ... )
 			cat(". ")
 		}
 		if(i%%sample.freq==0 & ct$summary) {
-			pr=.compute_prior.bm(cur.scalars, cur.jumpvar, cur.nJ, cur.nR, cur.root, ct)
+			pr=.gbm.prior.lik(cur.scalars, cur.jumpvar, cur.nJ, cur.nR, cur.root, ct)
 
 			parms=list(principal=list(shifts=list(delta=cur.delta, shifts=cur.rates), jumps=list(delta=cur.jumps)), gen=i, lnL=cur.mod, 
 					   lnLp=pr, qlnL.p=lnPriorRatio, qlnL.h=lnHastingsRatio, jumpvar=cur.jumpvar, SE=cur.SE, root=cur.root)

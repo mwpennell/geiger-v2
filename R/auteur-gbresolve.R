@@ -466,50 +466,6 @@ exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
 }
 
 
-## Assign internal node labels to phy based on genbank taxonomy
-gbresolve.phylo=function(x, rank="phylum", within="", split=TRUE, ...){
-	phy=x
-#	require(auteur)
-	if(split) {
-		tt=unique(tips<-sapply(phy$tip.label, function(x) unlist(strsplit(x, "_"))[1]))
-	} else {
-		tt=unique(tips<-phy$tip.label)
-		names(tips)=tips
-	}
-	
-	gb=load_taxdump(...)	
-	FUN=.fetch_gbhierarchy.above(gb, rank=rank, within=within)
-	
-	f=.get.multicore()
-	
-	tax=f(tt, function(x) try(FUN(x), silent=TRUE))
-	dd=sapply(tax, function(x) inherits(x, "try-error") | all(is.na(x)))
-	
-	if(any(dd)){
-		tt=tt[!dd]
-		tax=tax[!dd]
-	}
-	
-	names(tax)=tt
-	
-	if(!length(tt)) return(NA)
-	
-	tmp=.compile_taxonomy(tax)
-	res=tmp[match(tips, rownames(tmp)),]
-	rownames(res)=names(tips)
-	aa=apply(res, 1, function(x) all(is.na(x)))
-	if(any(aa)) res=res[-which(aa),]
-	ll=apply(res, 2, function(x) length(unique(x))==1 & !any(x==""))
-	if(any(ll)){
-		tmp=res[,1:min(which(ll))]
-	} else {
-		tmp=res
-	}
-	
-	phy=nodelabel.phylo(phy, tmp)
-	return(list(phy=phy, tax=res))
-}
-
 print.taxdump=function(x, ...){
 	if(nrow(x)>6){
 		cat(paste("\nNCBI GenBank taxonomy assembled ", attributes(x)$date, "\n ...showing the first several entries...\n\n", sep=""))	
@@ -540,14 +496,6 @@ print.taxdump=function(x, ...){
 		mm[i,match(names(cur), hier)]=cur
 	}
 	
-	## exclude peculiar assignments (e.g., Proteus [salamander genus] returns prokaryotic labels)
-	## FIX ME: more problem anticipation
-#	primary=table(mm[,ncol(mm)])
-#	zz=mm[,ncol(mm)]!=names(primary[primary==max(primary)])
-#	if(any(zz)) {
-#		mm=mm[-which(zz),]
-#		dat=dat[-which(zz)]
-#	}
 	mm[is.na(mm)]=""
 	rownames(mm)=names(dat)
 	colnames(mm)=hier

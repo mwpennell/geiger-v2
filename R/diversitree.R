@@ -494,7 +494,7 @@ ROOT.ALL   <- ROOT.BOTH
 												   fields="Version"))
 		max.deSolve <- package_version("1.10-3")
 		if ( !unsafe && vers > max.deSolve ) {
-			str <- paste("geiger is not known to work with deSolve > ",
+			str <- paste(sQuote("geiger"), "is not known to work with deSolve >",
 						 max.deSolve, "\n\tfalling back on slow version")
 			warning(str)
 			control$safe <- TRUE

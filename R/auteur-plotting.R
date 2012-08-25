@@ -84,8 +84,24 @@ plot.auteurMCMC=function(x, par=c("jumps","shifts"), ...){
 #plotting function for comparing posterior densities of estimates
 #author: JM EASTMAN 2010
 
-trace.plot <-
+.traceplot <-
 function(obj, col, alpha, lwd=1, hpd=0.95, bars=TRUE, legend.control=list(plot=TRUE, pos=NA, cex=1, pt.cex=1, pch=22, title=""), truncate=list(min=NA, max=NA), xlim=list(min=NA, max=NA), ylim=NULL, ...){
+	
+	.infer.y <-
+	function(xx, x, y) {
+		f=lm(y~x)
+		p=unname(coef(f))
+		yy=xx*p[2]+p[1]
+		return(yy)
+	}
+	
+	.nearest.pair <-
+	function(val, x) {
+		dev=abs(x-val)
+		names(dev)=1:length(dev)
+		return(sort(as.numeric(names(sort(dev))[1:2])))
+	}
+	
 	
 	if(!is.data.frame(obj)) {
 		if(is.vector(obj)) {
@@ -207,7 +223,7 @@ function(obj, col, alpha, lwd=1, hpd=0.95, bars=TRUE, legend.control=list(plot=T
 #author: JM EASTMAN 2010
 
 .process.shifts<-function(phy, shifts, level) {
-	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object -- see hashes.rjmcmc().")
+	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object")
 	hits.tmp<-apply(shifts,1,sum,na.rm=TRUE)
 	hits=length(hits.tmp[hits.tmp>0])
 	branches.tmp=apply(shifts, 2, function(x) sum(x, na.rm=TRUE))
@@ -232,7 +248,7 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 	}
 	
 	phy=reorder(samples$phy)
-	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object -- see hashes.rjmcmc().")
+	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object")
 
 	ps.tmp=lapply(posterior.samples, function(x) {mm=match(phy$hash[phy$edge[,2]], colnames(x)); return(x[,mm])})
 	names(ps.tmp)=names(posterior.samples)
@@ -241,10 +257,10 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 	# collect data
 	shifts=posterior.samples$shifts
 	burnin=ceiling(burnin*nrow(shifts))
-	shifts=shifts[-c(1:(burnin)),]
+	if(burnin>0) shifts=shifts[-c(1:(burnin)),]
 	shifts.res=.process.shifts(phy, shifts, level)
 	ests=posterior.samples[[(which(names(posterior.samples)%in%c("rates"))->target)]]
-	ests=ests[-c(1:(burnin)),]
+	if(burnin>0) ests=ests[-c(1:(burnin)),]
 	
 	# determine whether to use logspace for plotting
 	if(any(ests<=0,na.rm=TRUE)) logspace=FALSE else logspace=TRUE
@@ -254,7 +270,7 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 	
 	# collect edge colors (for rates)
 	if(paint.branches) {
-		colors.branches.tmp=.branchcol.plot(phy, ests, plot=FALSE, colors=list(branches=colors, legend=color.length), log=logspace)
+		colors.branches.tmp=.branchcol.plot(phy, ests, plot=FALSE, colors=list(branches=colors, legend=color.length, missing=1), log=logspace)
 		colors.branches=colors.branches.tmp$col
 	} else {
 		colors.branches=1
@@ -389,7 +405,7 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 }
 
 .process.jumps<-function(phy, jumps) {
-	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object -- see hashes.rjmcmc().")
+	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object")
 	m=match(phy$hash[phy$edge[,2]], colnames(jumps))
 	jumps=jumps[,m]
 	jump.prob <- apply(jumps,2,function(x) sum(x!=0,na.rm=TRUE)/length(x[!is.na(x)]))
@@ -400,11 +416,11 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 .jumps.plot <-
 function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=TRUE, ...) {
 	phy=samples$phy
-	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object -- see hashes.rjmcmc().")
+	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object")
 	if("mcmc"%in%class(samples$jumps)){
 		posterior.samples=samples$jumps
 	} else {
-		stop("'samples' must contain an object of class 'rjmcmc' -- see to.auteur().")
+		stop("'samples' must contain an object of class 'rjmcmc' -- see load.rjmcmc().")
 	}
 	phy=reorder(phy)
 	zz=match(phy$hash[phy$edge[,2]], colnames(posterior.samples))
@@ -443,6 +459,7 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 		ll[match(branches, hh)]=1
 	}
 	cc=j.prob
+	cc[is.na(cc)]=0
 	rr=sapply(j.count, function(x) {tmp=rrx[min(which(abs(x-cols.x)==min(abs(x-cols.x))))]; tmp})
 	
 	## PLOTTING OF TREE ##
@@ -456,7 +473,7 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 	if(paint.branches){
 		# scalars=j.var+bm.var
 		scalars=bm.var
-		colors.branches=.branchcol.plot(phy, scalars, plot=FALSE, colors=list(branches=colors, legend=17))
+		colors.branches=.branchcol.plot(phy, scalars, plot=FALSE, colors=list(branches=colors, legend=17, missing=1))
 		plot(phy, edge.color=colors.branches$col, no.margin=TRUE, ...)
 	} else {
 		plot(phy, no.margin=TRUE, ...)		
@@ -496,36 +513,51 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 #note: small values are given bluish hues, large values reddish hues; median values are given gray hues
 
 .branchcol.plot <-
-function(phy, cur.rates, colors=list(branches=256, legend=17), digits=3, plot=TRUE, legend=TRUE, legend.title="", log=FALSE, ...) {
-	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object -- see hashes.rjmcmc().")
+function(phy, cur.rates, colors=list(branches=256, legend=17, missing=1), digits=3, plot=TRUE, legend=TRUE, legend.title="", log=FALSE, ...) {
+	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object")
 	if(!is.null(colnames(cur.rates))) {
 		cur.rates=cur.rates[,match(phy$hash[phy$edge[,2]],colnames(cur.rates))] 
 	} else {
 		names(cur.rates)=phy$hash[phy$edge[,2]]
 		warning("Rates assumed to be ordered as in 'phy$edge'")
 	}
-	cur.rates=apply(cur.rates, 2, median, na.rm=TRUE)
+	cur.rates=apply(cur.rates, 2, function(x) {
+					if(any(!is.na(x))){
+						return(median(x, na.rm=TRUE))
+					} else {
+						return(NA)
+					}
+	})
 	if(log) {
 		ests=log(cur.rates) 
 	} else {
 		ests=cur.rates
 	}
 	
-	ms=median(ests)
+	ms=median(ests, na.rm=TRUE)
 	mm=sapply(ests, function(x) x-ms)
 	cce=diverge_hcl(2*colors$branches+1, power = 0.5)
 	lcce=cce[round(seq(1, length(cce), length=colors$legend))]
-	e.seq=seq(-max(abs(mm+0.05*ms)),max(abs(mm+0.05*ms)),length=2*colors$branches+1)
+	e.seq=seq(-max(abs(mm+0.05*ms), na.rm=TRUE),max(abs(mm+0.05*ms), na.rm=TRUE),length=2*colors$branches+1)
 	lseq=e.seq+ms
 	lseq=seq(min(lseq), max(lseq), length=colors$legend)
 	lcce=cce[round(seq(1, length(cce), length=colors$legend))]
 	if(log) lseq=exp(rev(lseq)) else lseq=rev(lseq)
 	
-	if(length(unique(cur.rates))==1){
+	ucr=unique(cur.rates)
+	ucr=ucr[!is.na(ucr)]
+	if(length(ucr)==1){
 		mp=cce[round(length(cce)/2)]
 		colors.branches=rep(mp, length(mm))
+		colors.branches[is.na(mm)]=colors$missing
 	} else {
-		colors.branches=sapply(mm, function(x) cce[which(min(abs(e.seq-x))==abs(e.seq-x))])
+		colors.branches=sapply(mm, function(x) {
+							   if(is.na(x)) {
+							   return(colors$missing)
+							   } else {
+							   cce[which(min(abs(e.seq-x))==abs(e.seq-x))]
+							   }
+		})
 	}
 	
 	if(plot) {

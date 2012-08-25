@@ -155,7 +155,7 @@ RcppExport SEXP open_subtree (SEXP dat, SEXP desc)
 			for(i=0; i<se; i++){
 				cur=exclude[i];
 				drop.push_back(cur);
-				if(cur>node & cur<=nn)
+				if( (cur>node) & (cur<=nn) )
 				{
 					dd=adesc[cur-1];
 					sd=dd.size();

@@ -70,7 +70,6 @@
 \alias{splitEdgeMatrixGeiger}
 \alias{subset.phylo}
 \alias{transform}
-\alias{trace.plot}
 \alias{ultrametricize.phylo}
 \alias{unique.multiPhylo}
 \alias{unique.phylo}

@@ -63,17 +63,37 @@ hme=function(x, scale=c("lnL", "logL", "p")){
 	zz
 }
 
+.bf.interpreter=function(x){
+	set=unique(c(as.character(x[,"m1"]), as.character(x[,"m2"])))
+	
+	foo=function(interp){
+		p=interp
+		z=ifelse(p=="bare mention", "~", ifelse(p%in%c("positive","substantial"), ">", ifelse(p%in%c("strong"), ">>", ">>>")))
+		return(z)	
+	}
+	
+	idx=numeric(length(set)-1)
+	for(i in 1:(length(set)-1)){
+		y1=set[i]
+		y2=set[i+1]
+		
+		idx[i]=which(x[,"m1"]==y1 & x[,"m2"]==y2)
+	}
+	res=sapply(x[idx,"interp"], foo)
+	txt=paste(paste(set[-length(set)], res, collapse=" "), set[length(set)])
+	return(txt)
+}
 
-bf=function(x, scale=c("lnL","logL"), interp=FALSE){
+bf=function(x, scale=c("lnL","logL")){
 	list.obj=x 
 #	list.obj must contain list of lnL (natural log) or logL (base 10) data
 #   list.obj=list(a=c(-1,-4,-5), b=c(-10,-4,-5))
 #	returns Bayes factor by computing the harmonic mean of likelihoods
 	if("matrix"%in%class(list.obj)) list.obj=data.frame(list.obj)
-	verbose=interp
 	
 	if(length(scale)>1) stop("'scale' of the data must be specified")
 	
+	if(any(sapply(list.obj, length)>1)) warning("Using harmonic mean estimator for marginal likelihood")
 	hm=sapply(list.obj, hme, scale=scale)
 	combn=combn(names(list.obj),2)
 	t=data.frame(t(combn))
@@ -112,39 +132,27 @@ bf=function(x, scale=c("lnL","logL"), interp=FALSE){
 	res=res[order(res[,3], res[,4], decreasing=TRUE),]
 	rownames(res)=NULL
 	res$interp=sapply(1:nrow(res), function(i) as.character(interp$interp[min(which(abs(res[i,5])<interp[,1]))]))
-	if(verbose){
-		cat("see Kass and Raftery 1995 J Amer Stat Assoc\n\n")
-		print(interp)	
-		cat("\n\n")
-	}
+	attr(interp, "reference")="Kass and Raftery 1995 J Amer Stat Assoc"
+	attr(res, "interpretation")=interp
+	attr(res, "txt")=.bf.interpreter(res)
 	
+	class(res)=c("bayesfactor", class(res))
 	return(res)
 }
 
+print.bayesfactor=function(x, ...){
+	cat("Bayes factor summary:\n\t")
+	cat(attributes(x)$txt)
+	cat("\n\n\n")
+	cat(paste("Interpretation uses ", sQuote(attributes(attributes(x)$interpretation)$reference)), ":\n", sep="")
+	print(attributes(x)$interpretation)
+	cat("\n\n")
+	class(x)=class(x)[-which(class(x)=="bayesfactor")]
+	print(x)
+}
 
 .is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
 
 
-
-#general statistical function for finding a 'yy' value (by extrapolation or interpolation) given a linear model constructed from 'x' and 'y' and a specified value 'xx' at which to compute 'yy'
-#author: JM EASTMAN 2010
-
-.infer.y <-
-function(xx, x, y) {
-	f=lm(y~x)
-	p=unname(coef(f))
-	yy=xx*p[2]+p[1]
-	return(yy)
-}
-
-#general utility for finding the indices of the two most similar values in 'x', given 'val' 
-#author: JM EASTMAN 2010
-
-.nearest.pair <-
-function(val, x) {
-	dev=abs(x-val)
-	names(dev)=1:length(dev)
-	return(sort(as.numeric(names(sort(dev))[1:2])))
-}
 
 

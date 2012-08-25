@@ -385,12 +385,12 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 }
 
 
-root.phylo=function(phy, outgroup, taxonomy=NULL){
+.TESTING.root.phylo=function(phy, outgroup, taxonomy=NULL){
 ## GENERAL FUNCTION FOR ROOTING (based on outgroup)
 # taxonomy: classification data.frame with 'species' minimally as a rownames
 
-	sys=taxonomy
 	if(!is.null(sys)) {
+		sys=cbind(rn=rownames(sys), taxonomy)
 		rows=unique(unlist(sapply(outgroup, function(o) which(sys==o, arr.ind=TRUE)[,1])))
 		outgroup=rownames(sys)[rows]
 		outgroup=outgroup[outgroup%in%phy$tip.label]
@@ -400,7 +400,7 @@ root.phylo=function(phy, outgroup, taxonomy=NULL){
 	
 	tips=match(outgroup, phy$tip.label)
 	node=getMRCA(phy,tips)
-	if(node==Ntip(phy)+1 & !is.null(sys)){
+	if(node==Ntip(phy)+1){
 		node=getMRCA(phy, (1:Ntip(phy))[-tips])
 	}
 	rooted=root(phy, node=node, resolve.root=TRUE)
@@ -411,7 +411,7 @@ root.phylo=function(phy, outgroup, taxonomy=NULL){
 
 
 
-ultrametricize.phylo=function(phy, trim=c("min","max","mean","depth"), depth=NULL){
+.TESTING.ultrametricize.phylo=function(phy, trim=c("min","max","mean","depth"), depth=NULL){
 	
 	phy <- reorder(phy)
     n <- length(phy$tip.label)
@@ -522,7 +522,6 @@ function(node, phy, tips=FALSE){
 }
 
 is.phylo=function(x) "phylo"%in%class(x)
-
 
 ## FUNCTIONS
 ## grabs most exclusive tips from clade definitions (and whose tips can then be reconciled with a taxonomic database -- a lookup table)
@@ -955,13 +954,6 @@ bind.phylo=function(phy, taxonomy){
 }
 
 
-.check.taxonomy=function(taxon, position, taxonomy){
-# determines whether each nested rank is exclusively nested within a single higher taxon 
-	hits=taxonomy[which(taxonomy[,position]==taxon),position-1]
-	if(length(unique(hits))==1) return(unique(hits)) else return(NA)	
-}
-
-
 .fill.taxonomy=function(taxonomy){
 	push.taxon=function(taxonomy, indices, column){
 		for(n in which(indices)){
@@ -975,140 +967,6 @@ bind.phylo=function(phy, taxonomy){
 		if(any(ii)) taxonomy=push.taxon(taxonomy, ii, c)
 	}
 	return(taxonomy)	
-}
-
-
-.phylo.lookupDEFUNCT=function(taxonomy) {
-# GENERAL FUNCTION: convert taxonomic 'lookup' table to phylogeny
-# lookup is data.frame with ranks as columns
-# rowlabels of 'taxonomy' are assumed to be tips of the phylogeny
-# rank corresponds to (numeric) position in rank names (R to L) to use in building taxonomic tree; if null, all ranks are used
-# NOTE: taxonomic groups in 'lookup' MUST be ordered by exclusivity from R to L -- e.g., genera must precede families must precede orders
-	labels=rownames(taxonomy)
-	rank=NULL
-#	oo=order(apply(taxonomy, 2, function(x) length(unique(x))),decreasing=TRUE)
-#	if(!all(oo==c(1:ncol(taxonomy)))){
-#		warning("Assuming 'taxonomy' is not from most to least exclusive")
-#		taxonomy=taxonomy[,ncol(taxonomy):1]
-#	}
-	
-	if(class(taxonomy)=="matrix") taxonomy=data.frame(taxonomy, stringsAsFactors=FALSE)
-	taxonomy[taxonomy==""]=NA
-	
-	# check for 'species' column
-	if(ncol(taxonomy)>1){
-		taxonomy=taxonomy[,ncol(taxonomy):1]
-		check=apply(taxonomy, 2, function(x) {y=all(x==labels); if(is.na(y)) return(FALSE) else return(y)})
-		if(any(check)) taxonomy=as.data.frame(taxonomy[,-which(names(taxonomy)==names(which(check)))])
-	}
-	
-	if(ncol(taxonomy)>1){
-		# check for invariant columns
-		check=apply(taxonomy, 2, function(x) length(unique(x)))
-		if(any(check==1)) taxonomy=as.data.frame(taxonomy[,-which(names(taxonomy)==names(which(check==1)))])
-	}
-	
-	# initialize taxonomy for missing data
-	if(is.null(rank)) rank=1:ncol(taxonomy)
-	
-	# find rows lacking information
-	t=apply(taxonomy,1,function(t)any(is.na(t)))
-	if(any(t)) {
-		missing=labels[t]
-	} else {
-		missing=NULL
-	}
-	
-	# fill in missing information
-	#cat("Filling taxonomy and checking for internal consistency\n")
-	tt=.fill.taxonomy(cbind(taxonomy, labels))
-	taxonomy=data.frame(tt[,1:(ncol(tt)-1)])
-	
-	# prepare dataframe for processing
-	if(class(taxonomy)=="data.frame" | class(taxonomy)=="matrix"){
-		taxonomy=as.matrix(taxonomy)
-		if(ncol(taxonomy)>=max(rank)) {
-			taxonomy=as.matrix(taxonomy[,rank])
-			tt=apply(taxonomy,2,function(x)all(x==labels))
-			if(any(tt)) taxonomy=taxonomy[,-which(tt)]
-			rank=seq(1,ncol(taxonomy))
-			taxonomy=cbind(taxonomy,labels)
-			colnames(taxonomy)=c(paste("R",rank,sep=""),"labels")
-		} else {
-			stop("Supplied taxonomy appears inconsistent with called rank(s).")
-		}
-	} else {
-		stop("Please supply taxonomy as a data.frame.")
-	}
-	
-	### BUILD EDGE MATRIX ###
-	#cat("Constructing tree representation of taxonomy\n")
-	
-	# find unique rank labels
-	uranks=lapply(rank, function(x) unique(taxonomy[,x]))
-	
-	n=nrow(taxonomy)
-	N=length(unlist(uranks))+1
-	
-	# initialize internal and terminal edge matrices
-	int.edge=matrix(NA, nrow=N-1, ncol=2)
-	tip.edge=matrix(NA, nrow=n, ncol=2)
-	
-	
-	## LABEL INTERNAL NODES ##
-	start=n+2
-	start.node=0
-	for(i in 1:length(rank)) {
-		
-	# numerically label each unique rank
-		curints=length(uranks[[i]])
-		end=start+curints-1
-		names(uranks[[i]])=start:end
-		edge.start=start-n-1
-		start=end+1
-		
-	# indexing for edge matrix
-		edge.end=edge.start+curints-1
-		
-		if(i==1) {
-			
-	# first rank is bounded by root (n+1)
-			int.edge[edge.start:edge.end,]=c(rep(n+1,curints),as.numeric(names(uranks[[i]])))
-			
-		} else {
-			
-	# subsequent ranks must be linked to their ancestral node ID
-			monophyletic.ranks=sapply(uranks[[i]], function(x) .check.taxonomy(x, rank[i], taxonomy))
-			
-	# record ancestor-descendant relationships for all internal nodes --> int.edge[ancestor,descendant]
-			if(!any(is.na(monophyletic.ranks))) {
-				start.row<-start.node<-start.node+length(uranks[[i-1]])
-				int.nodes=as.numeric(names(uranks[[i-1]][match(monophyletic.ranks, uranks[[i-1]])]))
-				int.edge[(start.row+1):(start.row+length(uranks[[i]])),]=cbind(int.nodes, as.numeric(names(uranks[[i]])))
-			} else {
-				stop(paste("\n\nNOTE: ensure that 'taxonomy' is supplied with most exclusive taxa (e.g., species) in the leftmost columns\n\nThe following taxa appear non-monophyletic: \n\t"),paste(uranks[[i]][which(is.na(monophyletic.ranks))],collapse="\n\t"))
-			}
-		}
-	}
-	
-	## LABEL TERMINAL NODES ##
-	innermost.rank=uranks[[length(rank)]]
-	innermost.rank.IDs=as.numeric(names(innermost.rank))
-	innernodes=unname(sapply(taxonomy[,max(rank)], function(x) innermost.rank.IDs[which(innermost.rank==x)]))
-	tip.edge=cbind(innernodes, 1:n)
-	
-	# build phylo object
-	edge=rbind(int.edge,tip.edge)
-	phy=list(edge=edge, 
-			 Nnode=N, 
-			 tip.label=taxonomy[,ncol(taxonomy)],
-			 edge.length=rep(1,nrow(edge)),
-			 root.edge=0
-			 )
-	class(phy)="phylo"
-	phy=reorder(collapse.singles(phy))		
-	phy$tip.label=unname(phy$tip.label)
-	return(list(phy=phy, missing=missing))		
 }
 
 phylo.lookup=function(taxonomy) {

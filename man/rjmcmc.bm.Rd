@@ -41,6 +41,10 @@ Posterior results are written to several files within a base directory, the cont
 
 \author{JM Eastman, LJ Harmon, and AL Hipp}
 
+\seealso{
+\code{\link[geiger]{load.rjmcmc}}
+}
+
 \examples{
 ## generate data
 jumptarget=10
@@ -170,7 +174,7 @@ r=paste(sample(letters,9,replace=TRUE),collapse="")
 traitgram(phy, hist, alpha=0)
 
 ## RUN ANALYSIS
-rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, sample.freq=500, filebase=r, simple.start=TRUE, constrainSHIFT=0, constrainJUMP=FALSE, excludeJUMP=NULL, excludeSHIFT=NULL)
+rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, sample.freq=500, filebase=r, simple.start=TRUE, type="jump-bm")
 outdir=paste("jump-BM", r, sep=".")
 ps=load.rjmcmc(outdir)
 dev.new()
@@ -194,7 +198,7 @@ scl=scaler(phy, show.tip=FALSE)
 dat=rTraitCont(scl)
 
 ## RUN ANALYSIS
-rjmcmc.bm(phy, dat, prop.width=1.5, ngen=20000, sample.freq=500, filebase=r, simple.start=TRUE, constrainSHIFT=FALSE, constrainJUMP=0, excludeJUMP=NULL, excludeSHIFT=NULL)
+rjmcmc.bm(phy, dat, prop.width=1.5, ngen=20000, sample.freq=500, filebase=r, simple.start=TRUE, type="rbm")
 outdir=paste("relaxedBM", r, sep=".")
 ps=load.rjmcmc(outdir)
 dev.new()

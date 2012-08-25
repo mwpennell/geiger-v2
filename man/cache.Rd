@@ -5,18 +5,18 @@ tailor reversible-jump Markov chain Monte Carlo sampling}
 \description{
 controlling reversible-jump Markov chain Monte Carlo sampling}
 \usage{
-cache(phy, dat, type = "bm", ...)
+cache(phy, dat, type = "rbm", ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
   \item{dat}{a named vector of continuous trait values, associated with each species in \code{phy}}
-  \item{type}{currently the only supported option is the general \code{bm} model}
+  \item{type}{currently the only supported option is the general \code{rbm} model}
   \item{...}{arguments passed internally to control other settings (see \bold{Details})}
 
 }
 \details{
-	Currently, the only \code{type} possible is for the generalized model for continuous traits (i.e., \code{type="bm"}).  
+	Currently, the only \code{type} possible is for the generalized model for continuous traits (i.e., \code{type="rbm"}).  
 	
 	The argument \code{...} controls the substitution of default settings for Markov-chain Monte Carlo sampling. Below are the settings that are controllable by the user. 
 	These parameters and their default settings can be found with an \emph{empty} call to the function (e.g., \code{cache()}). 

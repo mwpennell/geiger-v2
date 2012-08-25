@@ -340,7 +340,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 		
 		datc$var=as.numeric(modSE(se))
 		
-        out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, nn)), package = "auteur")
+        out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, nn)), package = "geiger")
         vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
         loglik <- .root.bm.direct(vals, out$lq[-rootidx], root, root.x)
         if (intermediates) {
@@ -763,7 +763,7 @@ control=list(root=ROOT.OBS),
 	
 	if(trns=="white") return(FUN)	
 	
-## KIND OF WORKING
+	## KIND OF WORKING
 	ll.mkn=function(cache, control) {
 		k <- cache$info$k
 		f.pars <- .make.pars.mkn(k)

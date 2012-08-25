@@ -1,5 +1,5 @@
 # optimization for single-rate Brownian model -- use fitContinuous instead 
-likfx.bm=function(phy, dat, SE=NULL, root=NA, method=c("direct","vcv","reml")){
+.TESTING.likfx.bm=function(phy, dat, SE=NULL, root=NA, method=c("direct","vcv","reml")){
 	method=match.arg(method, c("direct","vcv","reml"))
 	
 	lik=make.bm.relaxed(phy, dat, SE, method=method)
@@ -35,7 +35,7 @@ make.bm.relaxed <- function(phy, dat, SE=NA, method=c("direct","vcv","reml")){
 
 #primary function for computing the likelihood of data, given a root state, VCV matrix, and Brownian motion model 
 #author: LJ HARMON 2009 and JM EASTMAN 2010
-.bm.lik.fn <-
+.bm.lik.fn.vcv <-
 function(root, dat, vcv, SE) { 
 # mod 12.02.2010 JM Eastman: using determinant()$modulus rather than det() to stay in log-space
 	y=dat
@@ -51,7 +51,7 @@ function(root, dat, vcv, SE) {
 #primary function for computing the likelihood of data, using REML, under Brownian motion model 
 #author: LJ HARMON, LJ REVELL, and JM EASTMAN 2011
 #'phy' and 'rates' must be in 'pruningwise' order (as 'ic')
-.bm.reml.fn <- 
+.bm.lik.fn.reml <- 
 function(phy, rates, ic) {
 	new.tre=.scale.brlen(phy, rates)
 	new.var=.pic_variance.phylo(new.tre)
@@ -60,7 +60,7 @@ function(phy, rates, ic) {
 }
 
 
-#compute expected PIC variance given tree: used for .bm.reml.fn()  
+#compute expected PIC variance given tree: used for .bm.lik.fn.reml()  
 #author: JM EASTMAN 2011
 .pic_variance.phylo <- function(phy)
 {
@@ -93,7 +93,7 @@ function(phy, rates, ic) {
 		vcv=.vmat(tt)
 		SE=SE[match(colnames(vcv),names(cache$SE))]
 		dat=dat[match(colnames(vcv),names(cache$dat))]
-		.bm.lik.fn(root, cache$dat, vcv, cache$SE)
+		.bm.lik.fn.vcv(root, cache$dat, vcv, cache$SE)
 	}
 	attr(lik,"cache")=cache
 	attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root")
@@ -116,7 +116,7 @@ function(phy, rates, ic) {
 		mm=match(cache$phy$tip.label, names(cache$SE))
 		tt=cache$phy$edge[,2]<=cache$n.tip
 		rates[tt]=rates[tt]+cache$SE[mm]^2
-		.bm.reml.fn(cache$phy, rates, cache$ic)
+		.bm.lik.fn.reml(cache$phy, rates, cache$ic)
 	}
 	attr(lik,"cache")=cache
 	attr(lik,"argn")=list(rates=cache$phy$edge[,2], root=NA)

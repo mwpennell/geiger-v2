@@ -11,14 +11,15 @@
 void pic_variance(int *ntip, int *nnode, int *edge1, int *edge2, double *edge_len, double *var)
 {
 /* The tree must be in pruningwise order */
-    int anc, d1, d2, ic, i, j, k;
+//  int anc, d1, d2, ic, i, j, k;
+	int anc, ic, i, j, k;
     double sumbl;
 
     for (i = 0; i < *ntip * 2 - 3; i += 2) {
         j = i + 1;
 	anc = edge1[i];
-	d1 = edge2[i] - 1;
-	d2 = edge2[j] - 1;
+//	d1 = edge2[i] - 1;
+//	d2 = edge2[j] - 1;
 	sumbl = edge_len[i] + edge_len[j];
 	ic = anc - *ntip - 1;
 //	contr[ic] = phe[d1] - phe[d2];
