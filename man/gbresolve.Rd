@@ -2,7 +2,6 @@
 \alias{gbresolve.phylo}
 \alias{gbresolve}
 \alias{gbcontain}
-\alias{load_taxdump}
 \alias{Linnaean}
 
 \title{ NCBI taxonomy }
@@ -11,7 +10,6 @@ working with NCBI taxonomy}
 \usage{
 	gbresolve(x, rank="phylum", within="", split=FALSE, ...)
 	gbcontain(x, rank="species", within="", ...)
-	load_taxdump(update=FALSE)
 }
 
 %- maybe also 'usage' for other objects documented here.
@@ -20,8 +18,7 @@ working with NCBI taxonomy}
   \item{rank}{a Linnaean rank to restrict taxonomic resolution}
   \item{within}{a character string representing a group within which to resolve query}
   \item{split}{whether to use the first epithet encountered in tips labels of 'x'} 
-  \item{update}{whether to reload the NCBI taxonomy (which requires an internet connection)}
-  \item{...}{additional arguments to be passed to \code{load_taxdump}}
+  \item{...}{additional arguments to be passed to the taxdump constructor (\code{geiger:::.ncbi})}
 }
 
 \details{
@@ -31,7 +28,7 @@ working with NCBI taxonomy}
 	The argument \code{split=TRUE} starts resolution from the first epithet in the queried names (e.g., the genus epithet \emph{Ambystoma} in \emph{Ambystoma laterale}). 
 	The argument \code{within} can restrict the group within which to conduct the search (see \bold{Examples}).  
 	
-	The local copy of the taxonomy resource (accessible in with \code{data(ncbi)}) can be updated with a call to \code{load_taxdump(update=TRUE)}.  
+	The local copy of the taxonomy resource (accessible in with \code{data(ncbi)}) can be updated with a call to \code{geiger:::.ncbi(update=TRUE)}.  
 }
 
 \author{JM Eastman}

@@ -57,6 +57,7 @@
 \alias{plot.rjmcmc}
 \alias{plot.rjmcmc.list}
 \alias{print.auteurRAW}
+\alias{print.bayesfactor}
 \alias{print.constraint.m}
 \alias{print.mcmc.list}
 \alias{print.rbm}

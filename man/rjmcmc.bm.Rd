@@ -3,7 +3,7 @@
 \title{Bayesian sampling of shifts in trait evolution: relaxed Brownian motion}
 \description{Implements reversible-jump Markov chain Monte Carlo sampling for trait evolutionary models}
 \usage{
-rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, sample.freq = 100, ...)
+rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, sample.freq = 100, type = c("jump-rbm", "rbm", "jump-bm", "bm"), ...)
 }
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
@@ -11,19 +11,25 @@ rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, sample.freq = 100, ...)
   \item{SE}{a named vector of standard errors for each trait value; applied to all trait values if given a single value}
   \item{ngen}{number of sampling generations}
   \item{sample.freq}{frequency with which Markov samples are retained (e.g., \code{sample.freq=10} retains every tenth sample in the chain)}
+  \item{type}{the class of model to use (see \bold{Details})}
   \item{...}{arguments passed to \code{\link[geiger]{cache}}}
 }
 
 \details{
-Implemented is an MCMC sampler for a general model of Brownian motion, allowing relaxed local clocks and allowing a point process of pulses in evolutionary rate along individual branches.
-Posterior estimates of \code{shifts} between local rates, estimates of the \code{rates} themselves, and inferred \code{jumps} (or pulses) are provided as output. 
-Estimates are stored as an MCMC-generations-by-branches matrix (see \bold{Examples}), and branches are uniquely labeled by a cryptographic function (see \code{\link[digest]{digest}}). 
-In the \bold{Examples} below do \bold{not} expect convergence with such short chains!
+Implemented is an MCMC sampler for a general model of Brownian motion, which in the full model (\code{jump-rbm}) allows relaxed local clocks and also a point process of pulses 
+in evolutionary rate along individual branches. Restricted models include global-rate Brownian motion (\code{jump-rbm}), relaxed-rates Brownian motion (\code{rbm}), and models including
+jumps but a single rate of diffusion across the tree (\code{jump-bm}). 
+
+Where applicable, posterior estimates of \code{shifts} between local rates, estimates of the \code{rates} themselves, and inferred \code{jumps} (or pulses) are provided as output. 
+Estimates are stored as an MCMC-generations-by-branches matrix (see \bold{Examples}), and branches are uniquely labeled by a cryptographic function to ensure comparability amongst trees 
+differing in topology (see \code{\link[digest]{digest}}). 
 
 Note that default settings (as the user assumes if nothing is specified in \code{...}) provide absolutely no guarantee of the chain achieving convergence.  The user is 
 emphatically encouraged to supply informed arguments for what are the most critical aspects of this MCMC sampler (see \code{\link[geiger]{cache}} for more information on 
 permissible modifications to the MCMC sampler). Finding reasonable run parameters will likely require much trial and error.  Run diagnosis and inspection of chain mixing is 
 facilitated by the R-package \pkg{coda} or by the Java application, Tracer (\url{http://tree.bio.ed.ac.uk/software/tracer/}).
+
+In the \bold{Examples} below, do \emph{not} expect such short chains to reach stationarity!
 
 }
 \value{

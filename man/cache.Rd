@@ -5,13 +5,14 @@ tailor reversible-jump Markov chain Monte Carlo sampling}
 \description{
 controlling reversible-jump Markov chain Monte Carlo sampling}
 \usage{
-cache(phy, dat, type = "rbm", ...)
+cache(phy, dat, SE=NA, type = c("bm", "rbm", "jump-bm", "jump-rbm"), ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
   \item{dat}{a named vector of continuous trait values, associated with each species in \code{phy}}
-  \item{type}{currently the only supported option is the general \code{rbm} model}
+  \item{SE}{a named vector of standard errors for each trait value; applied to all trait values if given a single value}
+  \item{type}{the class of model to use (see \code{\link[geiger]{rjmcmc.bm}})}
   \item{...}{arguments passed internally to control other settings (see \bold{Details})}
 
 }
@@ -58,12 +59,15 @@ cache(phy, dat, type = "rbm", ...)
 				\item{\emph{prob.root} -- }{\code{0.02}; the proportion of proposals that alter the root state}
 				\item{\emph{prop.width} -- }{\code{1}; the proposal width used for multiplier and sliding-window proposals}
 				\item{\emph{simple.start} -- }{\code{TRUE}; whether to start the MCMC sampler with minimal dimensionality}
-				\item{\emph{hashtips} -- }{\code{c()}; a character vector of names (e.g., \code{phy$tip.label}) from which unique branch identifiers will be constructed}
 				\item{\emph{filebase} -- }{\code{result}; a character string specifying a 'base' for the output}
 		}
 		 
 }
 
 \author{JM Eastman}
+
+\seealso{
+	\code{\link[geiger]{rjmcmc.bm}})
+}
 
 

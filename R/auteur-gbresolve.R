@@ -43,7 +43,7 @@ Linnaean=c(
 
 ## EXPORTING GB taxonomy to R tables
 # partly from OMeara phyloorchard code ncbiTaxonomy.R::ncbiTaxonomy()
-load_taxdump=function(update=FALSE){
+.ncbi=function(update=FALSE){
 	
 	gb_path=.path_to_gb.dmp()
 	rda=as.list(gb_path)$ncbi
@@ -112,7 +112,7 @@ load_taxdump=function(update=FALSE){
 	
 }
 
-gbtaxdump=load_taxdump(update=FALSE)
+gbtaxdump=.ncbi(update=FALSE)
 
 gbcontain=function(x, rank="species", within="", ...){
 	type="scientific name"
@@ -120,7 +120,7 @@ gbcontain=function(x, rank="species", within="", ...){
 	lidx=which(Linnaean==rank)
 #	if(length(x)>1) stop("Supply 'x' as a single taxon")
 	
-	gb=load_taxdump(...)
+	gb=.ncbi(...)
 	ss=gb[,"type"]%in%type
 
 	FUN=function(id){
@@ -198,7 +198,7 @@ gbresolve=function(x, rank="phylum", within="", split=FALSE, ...){
 
 gbresolve.default=function(x, rank="phylum", within="", split=FALSE, ...){
 		
-	gb=load_taxdump(...)
+	gb=.ncbi(...)
 	FUN=.fetch_gbhierarchy.above(gb, rank=rank, within=within)
 				
 	if(!within==""){
