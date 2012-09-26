@@ -318,7 +318,13 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 				y = as.numeric(cache$y$y[1, ]), 
 				n = as.integer(z), 
 				descRight = as.integer(cache$children[ ,1]), 
-				descLeft = as.integer(cache$children[, 2]))
+				descLeft = as.integer(cache$children[, 2]),
+#               thetasq=0,
+#               sigsq=0,
+#               alpha=0,
+#               hsq=0,
+                model=0
+    )
 	
     ll.bm.direct = function(q, sigsq, se, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
 		
@@ -347,6 +353,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
             attr(loglik, "intermediates") <- intermediates
             attr(loglik, "vals") <- vals
         }
+        attr(loglik, "ROOT.MAX")=vals[1]
 		if(is.na(loglik)) loglik=-Inf
         return(loglik)
     }

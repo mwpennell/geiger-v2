@@ -14,8 +14,12 @@
 
 rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("jump-rbm", "rbm", "jump-bm", "bm"), ... ) 
 { 
+	typs=c("jump-rbm", "rbm", "jump-bm", "bm")
+	if((tolower(type)->tt)%in%(tolower(c("jump-relaxedBM", "relaxedBM", "jump-BM", "BM"))->vv)){
+		type=typs[which(vv==tt)]
+	}
 	
-	type=match.arg(type, c("jump-rbm", "rbm", "jump-bm", "bm"))
+	type=match.arg(type, typs)
 	
 	if(sample.freq>ngen) stop("increase 'ngen' or decrease 'sample.freq'")
 	if("multiPhylo"%in%class(phy)) return(.rjmcmc.bm.multi(phy, dat, SE, ngen, sample.freq, type, ...))
@@ -72,8 +76,8 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 			cur.proposal=min(which(runif(1)<ct$prop.cs))
 			
 			if (cur.proposal==1) {												## update BM process
-				if(runif(1) < ct$bm.jump & is.null(ct$constrainSHIFT)) {			# adjust rate categories
-					if(runif(1) < ct$mergesplit.shift) {
+				if(runif(1) < ct$bm.jump) {                                         # adjust rate categories
+					if(is.null(ct$constrainSHIFT) & runif(1) < ct$mergesplit.shift) {
 						nr=.splitormerge(x=cur.rates, delta=cur.delta, control=ct, cache=cache)
 						new.rates=nr$x
 						new.delta=nr$delta

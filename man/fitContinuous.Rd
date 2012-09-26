@@ -23,12 +23,18 @@ This function fits various likelihood models for continuous character evolution.
 returns parameter estimates and the likelihood for univariate datasets. 
 
 The model likelihood is maximized using methods available in \code{\link[stats]{optim}} as well as \code{\link[subplex]{subplex}}. 
-Optimization methods to be used within \code{optim} can be specified through the \code{control} object. A number of random starting points 
-are used in optimization and are given through the \code{niter} element within the \code{control} object 
+Optimization methods to be used within \code{optim} can be specified through the \code{control} object (i.e., \code{control$method}). 
+
+A number of random starting points are used in optimization and are given through the \code{niter} element within the \code{control} object 
 (e.g., \code{control$niter}). The \code{FAIL} value within the \code{control} object should be a large value 
 that will be considerably far from -lnL of the maximum model likelihood. In most cases, the default setting 
 for \code{control$FAIL} will be appropriate. The Hessian may be used to compute confidence intervals 
 (\code{hessianCI}) for the parameter estimates if the \code{hessian} element in \code{control} is TRUE.
+
+\emph{Beware}: difficulty in finding the optimal solution is determined by an interaction between the nature and complexity of the 
+likelihood space (which is data- and model-dependent) and the numerical optimizer used to explore the space.  There is never a 
+guarantee that the optimal solution is found, but using many random starting points (\code{control$niter}) and many optimization methods 
+(\code{control$method}) will increase these odds.
 
 Bounds for the relevant parameters of the fitted model may be given through the \code{bounds} argument. Bounds 
 may be necessary (particularly under the \code{OU} model) if the likelihood surface is characterized by a long, 

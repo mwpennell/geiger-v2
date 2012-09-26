@@ -132,16 +132,20 @@ function(phy, rates, ic) {
     rootidx = as.integer(cache$root)
 	adjvar = as.integer(cache$y$SE)
 	
-    datc_init = list(len = 
-				as.numeric(cache$len), 
+    datc_init = list(len = as.numeric(cache$len),
 				intorder = as.integer(cache$order[-length(cache$order)]), 
 				tiporder = as.integer(cache$y$target), 
 				root = rootidx, 
 				y = as.numeric(cache$y$y[1, ]), 
 				var = as.numeric(cache$y$y[2, ]),
 				n = as.integer(z), 
-				descRight = as.integer(cache$children[, 1]), 
-				descLeft = as.integer(cache$children[, 2]))
+				descRight = as.integer(cache$children[, 1]),
+				descLeft = as.integer(cache$children[, 2]),
+#               thetasq=0,
+#               sigsq=0,
+#               alpha=0,
+#               hsq=0,
+                model=0)
 	
 	ll.bm.direct <- function(pars, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
         out = .Call("bm_direct", dat = datc, pars = pars, package = "geiger")

@@ -208,7 +208,10 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 		warning(paste("taxa not found in 'taxonomy':\n\t", paste(phy$tip.label[!xx], collapse="\n\t"), sep=""))
 	}
 	taxonomy[taxonomy==""]=NA
-	options(expressions=50000)
+
+    op<-orig<-options()
+    op$expressions=max(op$expressions, 500000)
+	options(op)
 	
 	unmatched=phy$tip.label[!xx]
 	idx=match(phy$tip.label, taxonomy[,rank])
@@ -273,7 +276,10 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 	phy$node.label=nodelabels
 	
 	edges=NULL
-	
+    
+	desc=.compile_descendants(phy)$tips[-c(1:Ntip(phy))]
+    tidx=match(tips, phy$tip.label)
+    
 	FUN=function(taxon){
 		nm=rownames(dat)
 		dat=as.matrix(dat, ncol=ncol(dat))
@@ -303,15 +309,20 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 		
 		bin=as.integer(tips%in%expected)
 		
-		if(is.null(edges)) edges=edges.phylo(phy, tips=tips)
-		rownames(edges)=1:nrow(edges)
+#		rownames(edges)=1:nrow(edges)
 		N=Ntip(phy)
-		dist=apply(edges[-c(1:N),], 1, function(x) sum(abs(x-bin)))
-		nearest=as.integer(names(dist)[which(dist==min(dist))])
+        
+        ff=.get.multicore()
+
+		dist=unlist(ff(desc, function(x) {
+            y=tidx%in%x
+            sum(abs(y-bin))
+        }))
+		nearest=N+which(dist==min(dist))
 		hs=character(length(nearest))
 		for(i in 1:length(nearest))hs[i]=.hash.tip(edges[nearest[i],], tips)
 		res=lapply(nearest, function(x) {
-				   tt=colnames(edges)[which(edges[x,]==1)]
+				   tt=tips[which(tidx%in%desc[[x-N]])]
 				   unexpected=sort(setdiff(tt, expected)) ## in tree but unexpected
 				   missing=sort(setdiff(expected, tt)) ## expected but not in tree
 				   tmp=list(unexpected=unexpected, missing=missing)
@@ -330,20 +341,6 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 		mss=hashes_labels[is.na(mm)]
 		if(!strict){
 			N=Ntip(phy)
-			env=environment(FUN)
-			env$edges=edges.phylo(phy, tips=tips)
-			
-			ee=Sys.getenv()
-			if("ignoreMULTICORE"%in%names(ee)) {
-				f=lapply
-			} else {
-				if(.check.multicore()) {
-#					f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
-					f=lapply # mclapply copies env$edges for each node (which is too large for most trees)
-				} else {
-					f=lapply
-				}
-			}
 			
 			ll=list()
 			nm=rev(names(mss))
@@ -381,6 +378,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 	}
 
 	phy$FUN=FUN
+
 	phy
 }
 
@@ -539,127 +537,178 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE){
 #			 CAUDATA=c("Sirenoidea","Salamandroidea","Cryptobranchoidea")
 #	)
 	
-	
-	if(!is.null(phy)){
-		if(!"multiPhylo"%in%class(phy) | is.null(names(phy)->phynm)) stop("Supply 'phy' as a 'multiPhylo' object with names") 
-		tmp=character(length(phy))
-		for(i in 1:length(phy)){
-			cur=phy[[i]]
-			cur$edge.length=NULL
-			tre=write.tree(cur)
-			tmp[i]=gsub(";", "", tre)
-		}
-		phy=tmp
-		names(phy)=phynm
+    if (!is.null(phy)) {
+        if (!"multiPhylo" %in% class(phy) | is.null(phynm <- names(phy))) 
+            stop("Supply 'phy' as a 'multiPhylo' object with names")
+        tmp = character(length(phy))
+        for (i in 1:length(phy)) {
+            cur = phy[[i]]
+            cur$edge.length = NULL
+            tre = write.tree(cur)
+            tmp[i] = gsub(";", "", tre)
+        }
+        phy = tmp
+        names(phy) = phynm
+        for (i in 1:length(clades)) {
+            cur = clades[[i]]
+            if (any(cur == names(clades)[i])) 
+                stop("Encountered self-referential clade")
+            mm = match(cur, phynm)
+            if (any(!is.na(mm))) {
+                ww = which(!is.na(mm))
+                for (j in 1:length(ww)) {
+                  clades[[i]][ww[j]] = phy[[mm[ww[j]]]]
+                }
+            }
+        }
+    }
+    
+    ll = sapply(clades, length)
+    if (any(ll == 1)) {
+    	unis=clades[ll==1]
+    	clades=clades[ll!=1]
+        warning("Non-splitting lineages found in 'clades'")
+    } else {
+        unis=NULL
+    }
+    cc = unique(c(unlist(clades)))
+    tt = cc %in% names(clades)
+    nested = cc[tt]
+    is.nestedclade = function(clade, nested) {
+        if (clade %in% nested) 
+            return(TRUE)
+        else return(FALSE)
+    }
+    
+    fetch_nestedclades = function(clade, clades, nested) {
+        if (is.nestedclade(clade, nested)) {
+            desc = clades[[clade]]
+            new = as.list(desc)
+            names(new) = desc
+            tt = sapply(new, is.nestedclade, nested)
+            for (i in 1:length(new)) {
+                if (tt[i]) 
+                  new[[i]] = fetch_nestedclades(new[[i]], clades, nested)
+                else new[[i]] = NA
+            }
+        }
+        else {
+            new = NA
+        }
+        return(new)
+    }
+    
+    paths_through_clades = function(clades, nested) {
+        nn = names(clades)
+        res = lapply(nn, function(x) {
+           dd = clades[[x]]
+           y = lapply(dd, fetch_nestedclades, clades, nested)
+           names(y)[1:length(dd)] = dd
+           y
+        })
+        names(res) = nn
+        res
+    }
+    
+    unplaced_phy = function(phy, cladepath) {
+        if (any(names(cladepath) == "unplaced")) {
+            tips = names(cladepath$unplaced)
+            y = .polytomy.phylo(tips)
+            y$edge.length = NULL
+            new = bind.tree(phy, y)
+            new = drop.tip(new, "unplaced")
+            return(new)
+        }
+        else {
+            return(phy)
+        }
+    }
+    
+    tree_cladepath = function(cladepath, nested) {
+        print_group = function(cladepath) {
+            xx = sapply(names(cladepath), is.nestedclade, nested)
+            middle = character(length(xx))
+            for (i in 1:length(xx)) {
+                if (xx[i]) {
+                  new = cladepath[[names(xx)[i]]]
+                  middle[i] = print_group(new)
+                }
+                else {
+                  middle[i] = names(cladepath)[i]
+                }
+            }
+            paste("(", paste(middle, collapse = ", "), ")", sep = "")
+        }
+        tmp = paste(print_group(cladepath), ";", sep = "")
+        phy = read.tree(text = tmp)
+        return(unplaced_phy(phy, cladepath))
+    }
+    
+    cladepaths = paths_through_clades(clades, nested)
+    
+    if (unplaced) {
+        for (i in 1:length(cladepaths)) {
+            cur = cladepaths[[i]]
+            if (!is.null(unplc <- attributes(clades[[i]])$unplaced)) {
+                unplaced_taxa = lapply(unplc, function(x) return(NA))
+                names(unplaced_taxa) = unplc
+                cladepaths[[i]]$unplaced = unplaced_taxa
+            }
+        }
+    }
+    
+    alt_tip_label=function(phy, unis){
+    	phy$alt.tip.label=character(Ntip(phy))
+    	pt=phy$tip.label
+    	for(i in 1:length(unis)){
+    		if(length(cur<-unis[[i]])!=1) stop("'unis' should have a single member in each element")
+    		if(!is.na(mm<-match(cur, pt))) phy$alt.tip.label[mm]=names(unis)[i]
+    	}
+    	phy
+    }
+    
+    phy = lapply(cladepaths, tree_cladepath, nested)
+    if(length(unis)) phy = lapply(phy, alt_tip_label, unis)
+    nn=sapply(phy, Ntip)
+    midx<-which(nn==max(nn))
+   	master=phy[midx]
+    
+    ## RESOLVE NODE LABELS for 'master' tree (most comprehensive)
+   	if(length(master)==1){
+   		master=master[[1]]
+   		tt=master$tip.label
+   		null=.hash.tip(c(), tt)
 		
-		for(i in 1:length(clades)){
-			cur=clades[[i]]
-			if(any(cur==names(clades)[i])) stop("Encountered self-referential clade")
-			mm=match(cur, phynm)
-			if(any(!is.na(mm))){
-				ww=which(!is.na(mm))
-				for(j in 1:length(ww)){
-					clades[[i]][ww[j]]=phy[[mm[ww[j]]]]
-				}
-			}
+   		mm=hashes.phylo(master, tt)
+   		ss=sapply(phy, function(x) .hash.tip(x$tip.label, tt))
+   		if(any(ss==null)){
+			warning(paste("The following not encountered:\n\t", paste(names(ss)[which(ss==null)], collapse="\n\t")))
 		}
-	}
-	
-	ll=sapply(clades, length)
-	if(any(ll==1)) stop("Non-splitting lineages found in 'clades'")
-	cc=unique(c(unlist(clades)))
-	tt=cc%in%names(clades)
-	nested=cc[tt]
-	
-## FUNCTION for testing whether a clade is 'nested' within 'clades'	
-	is.nestedclade=function(clade, nested){
-		if(clade%in%nested) return(TRUE) else return(FALSE)
-	}
-	
-	
-## FUNCTION for grabbing the set of nested groups within 'clades'
-	fetch_nestedclades=function(clade, clades, nested){
-		
-		if(is.nestedclade(clade, nested)){
-			desc=clades[[clade]]
-			new=as.list(desc)
-			names(new)=desc
-			tt=sapply(new, is.nestedclade, nested)
-			for(i in 1:length(new)){
-				if(tt[i]) new[[i]]=fetch_nestedclades(new[[i]], clades, nested) else new[[i]]=NA
-			}
-		} else {
-			new=NA
-		}
-		return(new)
-	}
-	
-## FUNCTION for finding nestedness of clades within clades (and their path)
-	paths_through_clades=function(clades, nested){
-		nn=names(clades)
-		res=lapply(nn, function(x) {
-				   dd=clades[[x]]
-				   y=lapply(dd, fetch_nestedclades, clades, nested)
-				   names(y)[1:length(dd)]=dd
-				   y
-				   })
-		names(res)=nn
-		res
-	}
-	
-	unplaced_phy=function(phy, cladepath){
-		if(any(names(cladepath)=="unplaced")){
-			tips=names(cladepath$unplaced)
-			y=.polytomy.phylo(tips)
-			y$edge.length=NULL
-			new=bind.tree(phy, y)
-			new=drop.tip(new, "unplaced")
-			return(new)
-		} else {
-			return(phy)
-		}
-	}
-	
-## FUNCTION for writing a Newick tree from cladepath
-	tree_cladepath=function(cladepath, nested){
-		
-# write newick string
-		print_group=function(cladepath) {
-			xx=sapply(names(cladepath), is.nestedclade, nested)
-			middle=character(length(xx))
-			for(i in 1:length(xx)){
-				if(xx[i]) {
-					new=cladepath[[names(xx)[i]]]
-					middle[i]=print_group(new)
-				} else {
-					middle[i]=names(cladepath)[i]
-				}
-			}
-			paste("(", paste(middle, collapse=", "), ")", sep="")
-		}
-		
-		tmp=paste(print_group(cladepath),";",sep="")
-		phy=read.tree(text=tmp)
-		return(unplaced_phy(phy, cladepath))
-	}
-	
-	cladepaths=paths_through_clades(clades, nested)
-	
-	if(unplaced){
-		for(i in 1:length(cladepaths)){
-			cur=cladepaths[[i]]
-			if(!is.null(unplc<-attributes(clades[[i]])$unplaced)){
-				unplaced_taxa=lapply(unplc, function(x) return(NA))
-				names(unplaced_taxa)=unplc
-				cladepaths[[i]]$unplaced=unplaced_taxa
-			}
-		}
-	}
-	
-	phy=lapply(cladepaths, tree_cladepath, nested)
-	
-	return(phy)
+   		ts=table(ss)
+   		if(any(ts>1)){
+   			drp=numeric()
+   			ts=ts[ts>1]
+   			for(i in 1:length(ts)){
+   				ww=which(ss==names(ts[i]))
+   				drp=c(drp, ww[which(ww!=min(ww))])
+   			}
+   			warning("The following node labels appear redundant:\n\t", paste(names(ss)[drp], collapse="\n\t"))
+   			ss=ss[-drp]
+   		}
+   		xx=match(ss, mm$hash)
+   		if(any(is.na(xx))){
+   			warning(paste("The following not encountered:\n\t", paste(names(ss)[is.na(xx)], collapse="\n\t")))
+   			ss=ss[-which(is.na(xx))]
+   		}
+   		N=Ntip(master)
+   		nd=character(Nnode(master))
+   		nd[xx-N]=names(ss)
+   		master$node.label=nd
+   		phy[[midx]]=master
+   	}
+    return(phy)
 }
+
 
 lookup.phylo=function(phy, taxonomy=NULL, clades=NULL){
 ## taxonomy expected to have first column at same level as tip labels in phy
@@ -976,10 +1025,18 @@ phylo.lookup=function(taxonomy) {
 # rank corresponds to (numeric) position in rank names (R to L) to use in building taxonomic tree; if null, all ranks are used
 # NOTE: taxonomic groups in 'lookup' MUST be ordered by exclusivity from R to L -- e.g., genera must precede families must precede orders
 	labels=rownames(taxonomy)
-	tax=cbind(as.matrix(taxonomy, ncol=ncol(taxonomy)),"root")
+    mm=nrow(taxonomy)
+    tax=as.matrix(taxonomy, ncol=ncol(taxonomy))
 	rownames(tax)=labels
 	occurrences=table(tax)
 	occurrences=occurrences[names(occurrences)!="" & occurrences>1]
+    if(any(labels%in%names(occurrences))) stop(paste("The following appear to be both ranks and row.names of 'taxonomy':\n\t", paste(labels[labels%in%names(occurrences)], collapse="\n\t"), sep=""))
+
+    if(!any(occurrences==mm)){
+        tax=cbind(as.matrix(taxonomy, ncol=ncol(taxonomy)),root="root")
+        rownames(tax)=labels
+        occurrences=c(occurrences, root=mm)
+    }
 	
 	env=Sys.getenv()
 	if("ignoreMULTICORE"%in%names(env)) {
@@ -992,58 +1049,109 @@ phylo.lookup=function(taxonomy) {
 		}
 	}
 	
-	clds=f(names(occurrences), function(x) {
-		tmp=which(tax==x, arr.ind=TRUE)
-		xcol=max(tmp[,"col"])
-		dat=as.matrix(tax[xrow<-tmp[,"row"],1:xcol], ncol=xcol)
-		tab=occurrences[names(occurrences)!=x]
-		unique(sapply(1:nrow(dat), function(idx){
-			cur=dat[idx,]
-			   if(any(cur%in%names(tab)->xx)){
-					ht=tab[names(tab)%in%cur]
-					return(names(ht)[max(which(ht==max(ht)))])
-			   } else {
-					return(rownames(dat)[idx])
-			   }
-		}))
+    #clds=f(names(occurrences), function(x) {
+    #		tmp=which(tax==x, arr.ind=TRUE)
+	#	xcol=max(tmp[,"col"])
+	#	dat=as.matrix(tax[xrow<-tmp[,"row"],1:xcol], ncol=xcol)
+	#	tab=occurrences[names(occurrences)!=x]
+	#	unique(sapply(1:nrow(dat), function(idx){
+	#		cur=dat[idx,]
+	#		   if(any(cur%in%names(tab)->xx)){
+	#				ht=tab[names(tab)%in%cur]
+	#				return(names(ht)[max(which(ht==max(ht)))])
+	#		   } else {
+	#				return(rownames(dat)[idx])
+	#		   }
+	#	}))
+	#})
+    
+    
+    clds=f(names(occurrences), function(x) {
+		tmp=which(tax==x, arr.ind=TRUE)[,"row"]
+        taxinx=rownames(tax)[tmp]
+        return(taxinx)
 	})
-	names(clds)=names(occurrences)
-	ll=sapply(clds, length)==1
-	if(any(ll)) {
-		equiv=unlist(clds[which(ll)])
+    names(clds)=names(occurrences)
+    
+    nn=sapply(clds, length)
+    clds=clds[order(nn)]
+    
+    ## exclude DUPLICATES
+    eq=f(1:length(clds), function(idx){
+        others=clds[-which(names(clds)==names(clds)[idx])]
+        vv=sapply(others, function(x) setequal(clds[[idx]], x))
+        if(any(vv)) return(names(which(vv))) else return()
+    })
+    drop=c()
+    tmp=unique(c(unlist(eq)))
+    if(length(tmp)){
+        mm=match(tmp, names(clds))
+        tmp=tmp[order(mm)]
+        mm=mm[order(mm)]
+        names(mm)=tmp
+        
+        for(i in 1:length(mm)){
+            ww=which(sapply(eq, function(x) names(mm[i])%in%x))
+            tt=names(clds)[ww]
+            a=which(names(clds)==names(mm[i]))
+            b=match(tt, names(clds))
+            if(any(b<a)) drop=c(drop, names(mm[i]))
+        }
+        
+        clds=clds[-which(names(clds)%in%drop)]
+    }
+    
+    resolve_definition=function(taxon, clades){
+        cldother=clades[-which(names(clades)==taxon)]
+        tips=clades[[taxon]]
+        
+        resolver=function(tips, cld){
+            
+            members=c()
+            if(!length(cld)) {
+                members=c(members, tips)
+            } else {
+                tt=sapply(cld, function(y){
+                    all(y%in%tips)
+                })
+                
+                if(any(tt)){
+                    nm=names(cld)[max(which(tt))]
+                    members=c(members, nm)
+                    ftips=tips[-which(tips%in%cld[[nm]])]
+                    fcld=cld[which(tt)]
+                    fcld=fcld[!names(fcld)%in%nm]
+                    members=c(members, resolver(ftips, fcld))
+                } else {
+                    members=c(members, tips)
+                }
 
-		zz=function(nm){
-			if(nm%in%names(equiv)){
-				nm=unname(equiv[match(nm, names(equiv))])
-				zz(nm)
-			} else {
-				return(nm)
-			}
-		}
-		
-		clds=f(clds, function(x){
-			   tmp=match(x, equiv)
-			   if(any(!is.na(tmp)->ww)){
-					x=c(x[-which(ww)], clds[[zz(x[ww])]])
-			   }
-			   x
-		})
-		eq=unname(equiv)
-		drp=unique(c(eq, sapply(eq, zz)))
-		clds=clds[!names(clds)%in%drp]
-		
-	}
+            }
+            return(members)
+        }
+       
+        def=resolver(tips, cldother)
+        def
+    }
+    
+    defs=lapply(1:length(clds), function(idx){
+        taxon=names(clds)[idx]
+        resolve_definition(taxon, clds)
+    })
+    names(defs)=names(clds)
+    
+    op=options()
+    op$expressions=max(op$expressions, 500000)
+    options(op)
 	
-	tmp=phylo.clades(clds)
-	phy=tmp$root
+	tmp=phylo.clades(defs)
+	phy=tmp[[length(defs)]]
 	tt=table(phy$tip.label)
 	if(any(tt>1)){
 		warning(paste("The following tips occur multiply, suggesting non-monophyly of subtending groups:\n\t", paste(names(tt[tt>1]), collapse="\n\t"), sep=""))
 		warning("Offending tips removed from labeled phylogeny")
 		phy=drop.tip(phy, names(tt[tt>1]))
 	}
-	phy=nodelabel.phylo(phy, tax[,-ncol(tax)], strict=TRUE)
-	if(length(phy$missed)>0) warning(paste("Offending groups are likely as follows:\n\t", paste(phy$missed, collapse="\n\t"), sep=""))
 	phy$root.edge=0
 	phy		
 }

@@ -449,7 +449,7 @@ ROOT.ALL   <- ROOT.BOTH
 	control <- .check.control.ode(control)
 	## TODO/NEW: cvodes should be easy too.
 	if ( control$backend != "deSolve" )
-    stop("Only deSolve backend available")
+    stop("Only deSolve backend is available")
 	
 	k <- info$k
 	info <- list(name="mkn_pij",ny=k*k, np=k*k, idx.d=integer(0))
@@ -492,7 +492,7 @@ ROOT.ALL   <- ROOT.BOTH
 		else
 		vers <- package_version(packageDescription("deSolve",
 												   fields="Version"))
-		max.deSolve <- package_version("1.10-3")
+		max.deSolve <- package_version("1.10-4")
 		if ( !unsafe && vers > max.deSolve ) {
 			str <- paste(sQuote("geiger"), "is not known to work with deSolve >",
 						 max.deSolve, "\n\tfalling back on slow version")
@@ -640,6 +640,7 @@ is.constrained <- function(x) inherits(x, "constrained")
 ## for a very minor speedup.
 constrain <- function(f, ..., formulae=NULL, names=argn(f), extra=NULL) {
 	if ( is.constrained(f) ) {
+        stop("'f' appears already constrained")
 		formulae <- c(attr(f, "formulae"), formulae)
 		f <- attr(f, "func")
 	}

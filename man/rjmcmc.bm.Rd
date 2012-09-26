@@ -16,9 +16,9 @@ rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, sample.freq = 100, type = c("jump-rbm",
 }
 
 \details{
-Implemented is an MCMC sampler for a general model of Brownian motion, which in the full model (\code{jump-rbm}) allows relaxed local clocks and also a point process of pulses 
-in evolutionary rate along individual branches. Restricted models include global-rate Brownian motion (\code{jump-rbm}), relaxed-rates Brownian motion (\code{rbm}), and models including
-jumps but a single rate of diffusion across the tree (\code{jump-bm}). 
+Implemented is an MCMC sampler for a general model of Brownian motion, which in the full model (\code{type="jump-rbm"}) allows relaxed local clocks and also a point process of pulses 
+in evolutionary rate along individual branches. Restricted models include global-rate Brownian motion (\code{type="bm"}), relaxed-rates Brownian motion (\code{type="rbm"}), and models including
+jumps but a single rate of diffusion across the tree (\code{type="jump-bm"}). 
 
 Where applicable, posterior estimates of \code{shifts} between local rates, estimates of the \code{rates} themselves, and inferred \code{jumps} (or pulses) are provided as output. 
 Estimates are stored as an MCMC-generations-by-branches matrix (see \bold{Examples}), and branches are uniquely labeled by a cryptographic function to ensure comparability amongst trees 

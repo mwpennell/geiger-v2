@@ -584,8 +584,9 @@ function(node=NULL, up=NA, use.edges=FALSE, cache){
 					choice=node
 					direction="none"
 				} else {
-					choice=.treeslide(node=node, up=TRUE, use.edges=use.edges, cache=cache)$node
-					direction="up"
+					tmp=.treeslide(node=node, up=TRUE, use.edges=use.edges, cache=cache)
+                    choice=tmp$node
+					direction=tmp$direction
 				}
 			} else {						# -- choice is an internal node
 				if(!use.edges) desc.edges=rep(1,length(descendants)) else desc.edges=phy$edge.length[match(descendants, nd)]
