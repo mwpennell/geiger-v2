@@ -1,30 +1,94 @@
 # optimization for single-rate Brownian model -- use fitContinuous instead 
-.TESTING.likfx.bm=function(phy, dat, SE=NULL, root=NA, method=c("direct","vcv","reml")){
+.TESTING.likfx.bm=function(phy, dat, SE=NULL, method=c("direct","vcv","reml"), niter=10){
 	method=match.arg(method, c("direct","vcv","reml"))
 	
 	lik=make.bm.relaxed(phy, dat, SE, method=method)
 	
-	if(!is.na(root) || method=="reml") {
-		x=function(par) lik(rep(exp(par),nrow(attributes(lik)$cache$phy$edge)), root)
-		par=c(s2=-1)
-		method="Brent"
-		lower=-100
-		upper=100
-	} else {
-		x=function(par) lik(rep(exp(par[1]),nrow(attributes(lik)$cache$phy$edge)), par[2])
-		par=c(s2=-1,root=0)
-		method="Nelder-Mead"
-		lower=-Inf
-		upper=Inf
-	}
-	z=optim(par, fn=x, lower=lower, upper=upper, method=method, control=list(fnscale=-1))
-	z$par[1]=exp(z$par[1])
-	z
+    pp=names(argn(lik))
+    
+    xLIK=function(lik){
+        attz=names(attributes(lik)$argn)
+        if("root"%in%attz){
+            if("SE"%in%attz){
+                f=function(p){
+                    rr=numeric(length(argn(lik)$rates))
+                    rr[]=exp(p[1])
+                    rt=p[2]
+                    se=exp(p[3])
+                    lik(rr, rt, se)
+                }
+            } else {
+                f=function(p){
+                    rr=numeric(length(argn(lik)$rates))
+                    rr[]=exp(p[1])
+                    rt=p[2]
+                    lik(rr, rt)
+                }
+            }
+        } else {
+            if("SE"%in%attz){
+                f=function(p){
+                    rr=numeric(length(argn(lik)$rates))
+                    rr[]=exp(p[1])
+                    se=exp(p[2])
+                    lik(rr, se)
+                }
+
+            } else {
+                f=function(p){
+                    rr=numeric(length(argn(lik)$rates))
+                    rr[]=exp(p[1])
+                    lik(rr)
+                }
+            }
+            
+        }
+        f
+    }
+    
+    f=xLIK(lik)
+    z=function(p){
+        t=try(f(p), silent=TRUE)
+        if(inherits(t, "try-error")){
+            t=-1e200
+        }
+        if(is.na(t)) t=-1e200
+        if(is.infinite(t)) t=-1e200
+        t
+    }
+    att=argn(lik)
+    if(is.list(att)) args=names(att) else args=att
+    
+    bnds=cbind(min=c(-500, -(max(abs(dat))*100), -500), max=c(10, (max(abs(dat))*100), 10))
+    rownames(bnds)=c("rates", "root", "SE")
+    typ=c("exp", "nat", "exp")
+    names(typ)=rownames(bnds)
+    
+    out=lapply(1:niter, function(i){
+        while(1){
+            st=apply(matrix(bnds[args,], nrow=length(args)), 1, function(x) runif(1, x[1], x[2]))
+            if(!is.na(z(st)->L)) if(is.finite(L) & L>-1e200) break()
+        }
+        
+        if(length(args)==1) method="Brent" else method="L-BFGS-B"
+        rr=optim(st, fn=z, lower=bnds[args,"min"], upper=bnds[args,"max"], method=method, control=list(fnscale=-1))
+        names(rr$par)=args
+        typ=typ[args]
+        rr$par=ifelse(typ=="nat", rr$par, exp(rr$par))
+        rr$lik=z
+        rr
+    })
+    
+    lnL=sapply(out, function(x) x$value)
+    res=out[[min(which(lnL==max(lnL)))]]
+    res
 }
 
 ## replacing prepare.data.bm
 make.bm.relaxed <- function(phy, dat, SE=NA, method=c("direct","vcv","reml")){
-	method=match.arg(method, c("direct","vcv","reml"))
+#   method=match.arg(method, c("direct","vcv","reml"))
+    method=match.arg(method, c("direct","vcv")) ## REML not trusted currently
+
 	lik=switch(method,
 			   direct=.make.bm.relaxed.direct(phy, dat, SE),
 			   vcv=.make.bm.relaxed.vcv(phy, dat, SE),
@@ -33,7 +97,7 @@ make.bm.relaxed <- function(phy, dat, SE=NA, method=c("direct","vcv","reml")){
 }
 
 
-#primary function for computing the likelihood of data, given a root state, VCV matrix, and Brownian motion model 
+#primary function for computing the likelihood of data, given a root state, VCV matrix, and Brownian motion model
 #author: LJ HARMON 2009 and JM EASTMAN 2010
 .bm.lik.fn.vcv <-
 function(root, dat, vcv, SE) { 
@@ -50,13 +114,12 @@ function(root, dat, vcv, SE) {
 
 #primary function for computing the likelihood of data, using REML, under Brownian motion model 
 #author: LJ HARMON, LJ REVELL, and JM EASTMAN 2011
-#'phy' and 'rates' must be in 'pruningwise' order (as 'ic')
+#'rphy' is rate-scaled tree in pruning-wise order (as 'ic')
 .bm.lik.fn.reml <- 
-function(phy, rates, ic) {
-	new.tre=.scale.brlen(phy, rates)
-	new.var=.pic_variance.phylo(new.tre)
+function(rphy, ic) {
+    new.var=.pic_variance.phylo(rphy)
 	reml=dnorm(ic, mean=0, sd=sqrt(new.var), log=TRUE)
-	return(sum(reml))	
+	return(sum(reml))
 }
 
 
@@ -87,42 +150,84 @@ function(phy, rates, ic) {
 		if(length(rates)!=(cache$n.node+cache$n.tip-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
 	
-	lik <- function(rates, root){
-		check.argn(rates, root)
-		tt=.scale.brlen(cache$phy, rates)
-		vcv=.vmat(tt)
-		SE=SE[match(colnames(vcv),names(cache$SE))]
-		dat=dat[match(colnames(vcv),names(cache$dat))]
-		.bm.lik.fn.vcv(root, cache$dat, vcv, cache$SE)
-	}
-	attr(lik,"cache")=cache
-	attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root")
-	class(lik)=c("rbm","bm","function")
-	lik
+    adjvar = as.integer(cache$SE==-666)
+ 
+    if(any(adjvar==1)){ # adjustable SE
+        if(!all(cache$SE[adjvar==1]==-666)) stop("unexpected error when substituting 'SE'")
+		likSE <- function(rates, root, SE) {
+			check.argn(rates, root)
+            tt=.scale.brlen(cache$phy, rates)
+            vcv=.vmat(tt)
+            xSE=cache$SE[mm<-match(colnames(vcv), names(cache$SE))]
+            adjvar=adjvar[mm]
+            xSE[which(adjvar==1)]=SE
+            dat=cache$dat[match(colnames(vcv), names(cache$dat))]
+            .bm.lik.fn.vcv(root, dat, vcv, xSE)
+        }
+		attr(likSE, "cache") <- cache
+		attr(likSE,"argn")=list(rates=cache$phy$edge[,2], root="root", SE="SE")
+		class(likSE)=c("rbm","bm","function")
+		return(likSE)
+	} else { # unadjustable SE
+		lik <- function(rates, root){
+            check.argn(rates, root)
+            tt=.scale.brlen(cache$phy, rates)
+            vcv=.vmat(tt)
+            SE=cache$SE[match(colnames(vcv),names(cache$SE))]
+            dat=cache$dat[match(colnames(vcv),names(cache$dat))]
+            .bm.lik.fn.vcv(root, dat, vcv, SE)
+        }
+        attr(lik, "cache") <- cache
+        attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root")
+        class(lik)=c("rbm","bm","function")
+        return(lik)
+    }
 }
 
 .make.bm.relaxed.pic <- function(phy, dat, SE=NULL){
+    
+    ## NOT YET VERIFIED to work with .prepare.bm()
 	cache=.prepare.bm(phy, dat, SE)
 	
 	ic=pic(dat, phy, scaled=FALSE)
 	cache$ic=ic
 	
-	check.argn=function(rates, root){
+	check.argn=function(rates){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1)) stop("Supply 'rates' as a vector of rate scalars for each branch.")
 	}
 	
-	lik <- function(rates, root=NA){
-		check.argn(rates, root)
-		mm=match(cache$phy$tip.label, names(cache$SE))
-		tt=cache$phy$edge[,2]<=cache$n.tip
-		rates[tt]=rates[tt]+cache$SE[mm]^2
-		.bm.lik.fn.reml(cache$phy, rates, cache$ic)
-	}
-	attr(lik,"cache")=cache
-	attr(lik,"argn")=list(rates=cache$phy$edge[,2], root=NA)
-	class(lik)=c("rbm","bm","function")
+    adjvar = as.integer(cache$SE==-666)
+    subSE=match(1:Ntip(cache$phy), cache$phy$edge[,2])
+    xSE=cache$SE
+    
+    if(any(adjvar==1)){ # adjustable SE
+        if(!all(xSE[adjvar==1]==-666)) stop("unexpected error when substituting 'SE'")
+		likSE <- function(rates, SE) {
+			check.argn(rates)
+            xSE[adjvar==1]=SE
+            rphy=.scale.brlen(cache$phy, rates)
+            rphy$edge.length[subSE]=rphy$edge.length[subSE]+xSE^2
+            .bm.lik.fn.reml(rphy, cache$ic)
+        }
+		attr(likSE, "cache") <- cache
+		attr(likSE,"argn")=list(rates=cache$phy$edge[,2], SE="SE")
+		class(likSE)=c("rbm","bm","function")
+		return(likSE)
+	} else {
+        lik <- function(rates){
+            check.argn(rates)
+            rphy=.scale.brlen(cache$phy, rates)
+            rphy$edge.length[subSE]=rphy$edge.length[subSE]+xSE^2
+            .bm.lik.fn.reml(rphy, cache$ic)
+        }
+        attr(lik,"cache")=cache
+        attr(lik,"argn")=list(rates=cache$phy$edge[,2])
+        class(lik)=c("rbm","bm","function")
+    }
+
 	lik
 }
+
 
 .make.bm.relaxed.direct <- function (phy, dat, SE=NULL) 
 {
@@ -130,7 +235,7 @@ function(phy, rates, ic) {
 	z = length(cache$len)
     rr = numeric(z)
     rootidx = as.integer(cache$root)
-	adjvar = as.integer(cache$y$SE)
+	adjvar = as.integer(cache$y$adjSE)
 	
     datc_init = list(len = as.numeric(cache$len),
 				intorder = as.integer(cache$order[-length(cache$order)]), 
@@ -141,10 +246,6 @@ function(phy, rates, ic) {
 				n = as.integer(z), 
 				descRight = as.integer(cache$children[, 1]),
 				descLeft = as.integer(cache$children[, 2]),
-#               thetasq=0,
-#               sigsq=0,
-#               alpha=0,
-#               hsq=0,
                 model=0)
 	
 	ll.bm.direct <- function(pars, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
@@ -168,13 +269,19 @@ function(phy, rates, ic) {
 		if(length(rates)!=(cache$n.node+cache$n.tip-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
 	
+    var=cache$y$SE
+    
 	## LIKELIHOOD FUNCTION
 	if(any(adjvar==1)){ # adjustable SE
+        if(!all(var[adjvar==1]==-666)) stop("unexpected error when substituting 'SE'")
+        var=var^2
 		likSE <- function(rates, root, SE) {
 			check.argn(rates, root)
 			vv[mm] = rates
 			datc_se=datc_init
-			datc_se$var[which(adjvar==1)]=SE^2
+			var[which(adjvar==1)]=SE^2
+            datc_se$var=var
+            
 			ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE, datc_se)
 			return(ll)
 		}
@@ -183,9 +290,11 @@ function(phy, rates, ic) {
 		class(likSE)=c("rbm","bm","function")
 		return(likSE)
 	} else { # unadjustable SE
+        var=var^2
 		lik <- function(rates, root) {
 			check.argn(rates, root)
 			vv[mm] = rates
+            datc_init$var=var
 			ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE, datc_init)
 			return(ll)
 		}
@@ -221,7 +330,7 @@ function(phy, rates, ic) {
     root <- n.tip + 1
     is.tip <- idx <= n.tip
 	
-	desc=.compile_descendants(phy)
+	desc=.cache_tree(phy)
     children <- desc$fdesc
 	if(!max(sapply(children, length) == 2)){
 		children=NULL
@@ -243,22 +352,42 @@ function(phy, rates, ic) {
 }
 
 
+## CHECK ##
 .prepare.bm <- function(phy, dat, SE=NA) {
 
 	## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species) 
 	# resolve estimation of SE
+    seTMP=structure(rep(NA, length(dat)), names=names(dat))
+    
 	if(is.null(SE)) SE=NA
-	if(any(is.na(SE))) SE[is.na(SE)]=-666
-	
+    
+    if(length(SE)>1){
+        if(is.null(names(SE))) stop("'SE' should be a named vector")
+        if(!all(names(SE)%in%names(dat))) stop("names in 'SE' must all occur in names of 'dat'")
+        seTMP[names(SE)]=SE
+        SE=seTMP
+    } else {
+        if(is.numeric(SE)){
+            seTMP[]=SE
+            SE=seTMP
+        } else {
+            SE=seTMP
+        }
+    }
+    
+    SE[is.na(SE)]=-666
+    
 	# check major issues
 	if(all(is.null(names(dat)))) stop("'dat' must have names matchable to tip labels in 'phy'")
-	if(!inherits(phy,"phylo")) stop("Supply 'phy' as a phylo object.")
+	if(!inherits(phy,"phylo")) stop("Supply 'phy' as a phylo object")
 	td=treedata(phy, dat, sort = TRUE, warnings=FALSE)
-	if(any(sapply(td, length)==0)) stop("'dat' and 'phy' appear unmatchable.")
+	if(any(sapply(td, length)==0)) stop("'dat' and 'phy' appear unmatchable")
 	if(ncol(td$data)>1) stop("Please supply one trait at a time")
 	td$phy=reorder(td$phy,"pruningwise")
 	
 	# cache object
+    if(!setequal(names(SE),td$phy$tip.label)) stop("'phy', 'dat', and 'SE' are not matchable")
+    SE=SE[match(td$phy$tip.label, names(SE))]
 	cache=.cache.data.bm(td$phy, td$data[,1], SE)
 	cache$nodes=cache$phy$edge[,2]
 	return(cache)
@@ -272,7 +401,6 @@ function(phy, rates, ic) {
 	# RESOLVE SE
 	# SE should be entirely numeric
     if (is.null(SE)) stop("'SE' must be a numeric value or vector")
-	adjustSE=FALSE
 	
 	if(length(SE)==1) {
 		SE=rep(SE, Ntip(phy))
@@ -281,7 +409,7 @@ function(phy, rates, ic) {
 	
 	if(!is.null(names(SE))) {
 		xx=setequal(names(SE), phy$tip.label)
-		ss.match=match(names(SE), phy$tip.label)
+		ss.match=match(phy$tip.label, names(SE))
 		if(!xx) stop(paste("encountered error in constructing 'SE' with the following tips not found in the dataset:\n\t", paste(names(SE[is.na(ss.match)]), collapse="\n\t"), sep=""))
 		SE=SE[ss.match]
 	} else {
@@ -292,13 +420,16 @@ function(phy, rates, ic) {
     states <- tmp$states
     states.sd <- tmp$states.sd
     cache$ny <- 3
-    y <- mapply(function(mean, sd) c(mean, sd * sd, 0), states, states.sd, SIMPLIFY = TRUE)
+    #    y <- mapply(function(mean, sd) c(mean, sd * sd, 0), states, states.sd, SIMPLIFY = TRUE)
+    y <- mapply(function(mean, sd) c(mean, sd * sd, 0), states, 0, SIMPLIFY = TRUE)
+
 
     cache$y <- .dt.tips.ordered(y, cache$tips, cache$len[cache$tips])
-	cache$y$SE <- as.integer((SE==-666)[cache$y$target])
+	cache$y$adjSE <- as.integer((SE==-666)[cache$y$target])
+    cache$y$SE <- SE[cache$y$target]
 	
 	cache$SE=SE
-	cache$dat=dat
+	cache$dat=dat[match(phy$tip.label, names(dat))]
 	cache$phy=phy
 	
     cache

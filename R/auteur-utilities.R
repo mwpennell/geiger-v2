@@ -177,7 +177,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 	if(is.null(hashtips)) hashtips=phy$tip.label
 	orig=hashes.phylo(orig, hashtips)
 	
-	desc=.compile_descendants(orig)
+	desc=.cache_tree(orig)
 	rootd=desc$fdesc[[Ntip(orig)+1]]
 	
 	cache=list(desc=desc,phy=orig)

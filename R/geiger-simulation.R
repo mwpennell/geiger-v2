@@ -1,7 +1,7 @@
 .get.simulation.matrix=function(phy){
 	N=Ntip(phy)
 	n=nrow(phy$edge)
-	dd=.compile_descendants(phy)$tips
+	dd=.cache_tree(phy)$tips
 	m=matrix(0, N, n)
 	edg=phy$edge.length
 	idx=phy$edge[,2]

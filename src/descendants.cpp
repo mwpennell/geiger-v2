@@ -1,7 +1,7 @@
 #include <Rcpp.h>
 #include <vector>
 
-RcppExport SEXP compile_descendants (SEXP phy)
+RcppExport SEXP cache_tree (SEXP phy)
 {	
 	try {	
 		Rcpp::List phylo(phy);
@@ -16,6 +16,8 @@ RcppExport SEXP compile_descendants (SEXP phy)
 		std::vector< std::vector<int> > TIPS;
 		std::vector< std::vector<int> > FDESC;
 		std::vector< std::vector<int> > ADESC;
+		std::vector< std::vector<int> > AANC;
+        
 		std::vector<int> empty;
 		
 		
@@ -25,6 +27,7 @@ RcppExport SEXP compile_descendants (SEXP phy)
 		std::vector<int> cur;
 		for(i = 0; i < maxnode; i++) { 
 			FDESC.push_back(empty);
+            AANC.push_back(empty);
 			if(i < N)
 			{
 				cur.push_back(i+1);
@@ -109,15 +112,31 @@ RcppExport SEXP compile_descendants (SEXP phy)
 				/* store tips associated with nd into main list */
 				TIPS.at(nd-1)=subtendedtips;
 				ADESC.at(nd-1)=subtendednodes;
+                s=subtendednodes.size();
+                for(k=0; k<s; k++){
+                    int idx = subtendednodes.at(k);
+                    std::vector<int> ancnodes = AANC[idx-1];
+                    ancnodes.push_back(nd);
+                    AANC.at(idx-1)=ancnodes;
+                }
 			}
 		}
 		
 		for(i=0; i<N; i++){
 			ADESC.at(i)=empty;
 		}
+        for(k=0; k<maxnode; k++){
+            int idx = k+1;
+            if(idx!=root){
+                std::vector<int> ancnodes = AANC[k];
+                ancnodes.push_back(root);
+                AANC.at(k)=ancnodes;
+            }
+        }
 		return Rcpp::List::create(Rcpp::Named("tips",TIPS),
 								  Rcpp::Named("fdesc",FDESC),
-								  Rcpp::Named("adesc",ADESC));
+								  Rcpp::Named("adesc",ADESC),
+                                  Rcpp::Named("anc",AANC));
 	} catch( std::exception &ex ) {		
 		forward_exception_to_r( ex );
 	} catch(...) { 

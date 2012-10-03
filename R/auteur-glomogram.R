@@ -82,7 +82,7 @@
 
 .prep.glomogram=function(labels, phy){
 	N=Ntip(phy)
-	dd=.compile_descendants(phy)
+	dd=.cache_tree(phy)
 	nn=c(phy$tip.label, phy$node.label)
 	mm=match(labels, nn)
 	if(any(is.na(mm))) stop("Some 'labels' not encountered in 'phy'")

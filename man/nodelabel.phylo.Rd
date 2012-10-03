@@ -3,7 +3,6 @@
 \alias{lookup.phylo}
 \alias{phylo.lookup}
 \alias{phylo.clades}
-\alias{bind.phylo}
 \alias{glomogram.phylo}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
@@ -15,7 +14,6 @@ nodelabel.phylo(phy, taxonomy, strict=TRUE)
 phylo.lookup(taxonomy)
 lookup.phylo(phy, taxonomy = NULL, clades = NULL)
 phylo.clades(clades, phy=NULL, unplaced=TRUE)
-bind.phylo(phy, taxonomy)
 glomogram.phylo(phy, subtrees)
 }
 
@@ -68,14 +66,6 @@ dev.new()
 plot.phylo(ladderize(nphy,right=FALSE), cex=0.35, type="fan", label.offset=2.5, no.margin=TRUE, edge.color="gray", edge.width=0.5)
 
 nodelabels(nphy$node.label, cex=0.45, col="red", frame="n")
-
-## BIND TAXA to TREE: bind.phylo()
-bphy=bind.phylo(sal$fam, sal$tax)
-bphy=nodelabel.phylo(bphy, sal$tax)
-dev.new()
-plot.phylo(ladderize(bphy,right=FALSE), cex=0.35, show.tip=FALSE, label.offset=2.5, no.margin=TRUE, edge.color="gray", edge.width=0.5)
-
-nodelabels(bphy$node.label, cex=0.45, col="red", frame="n")
 
 ## CLADES to TREE: phylo.clades()
 salamandroidea=extract.clade(nphy, geiger:::.mrca(c("Ambystomatidae", "Plethodontidae"), nphy))

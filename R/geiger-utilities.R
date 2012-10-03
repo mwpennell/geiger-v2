@@ -332,7 +332,7 @@ constrain.m=function(f, m){
 .paths.phylo=function(phy){
 ## from vcv.phylo()
 	n <- length(phy$tip.label)
-	pp <- .compile_descendants(phy)$adesc[-c(1:n)]
+	pp <- .cache_tree(phy)$adesc[-c(1:n)]
 	phy <- reorder(phy, "pruningwise")
 	e1 <- phy$edge[, 1]
 	e2 <- phy$edge[, 2]

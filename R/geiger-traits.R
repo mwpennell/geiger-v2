@@ -4,7 +4,7 @@
 fitContinuous=function(
 phy, 
 dat, 
-SE = NA, 
+SE = 0,
 model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"), 
 bounds=list(), 
 control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessianCI=0.95)
@@ -55,8 +55,8 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	
 	
 ## CONSTRUCT BOUNDS ##
-	mn=c(-500, -500, -5, -100, -500, -500, -500, -500)
-	mx=c(100, 5, 0.1, 100, 0, 0, log(2.999999), 100)
+	mn=c(-500, -500, -10, -100, -500, -500, -500, -500)
+	mx=c(100, 5, 10, 100, 0, 0, log(2.999999), 100)
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("exp", "exp", "nat", "nat", "exp", "exp", "exp", "exp")
 	rownames(bnds)=c("sigsq", "alpha", "a", "slope", "lambda", "kappa", "delta", "SE")
@@ -93,9 +93,8 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	xx=function(p){
 		pars=ifelse(typs=="exp", exp(p), p)
 		tmp=-lik(pars)
-		if(is.infinite(tmp)) {
-			tmp=ct$FAIL
-		}
+		if(is.infinite(tmp)) tmp=ct$FAIL
+        if(is.na(tmp)) tmp=ct$FAIL
 		tmp
 	}
 	
@@ -270,32 +269,16 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	
 	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
 	
-# resolve binary tree
+    # cache object for likelihood computation
 	if(!is.binary.tree(phy)){
+        warning("'phy' randomly resolved to be binary")
 		phy=multi2di(phy)
 	}
 	phy=reorder(phy)
-	
-# resolve estimation of SE
-	if(is.null(SE)) SE=NA
-	if(any(is.na(SE))) {
-		if(model=="white"){
-			warning("'SE' and 'sigsq' are confounded in the 'white' model:\n\t'SE' will be set to nil")
-			adjSE=FALSE 
-			SE[is.na(SE)]=0
-		} else {
-			adjSE=TRUE 
-			SE[is.na(SE)]=-666
-		}
-	} else {
-		adjSE=FALSE
-	}
-	
-# cache object for likelihood computation
-	cache = .cache.data.bm(phy, dat, SE)
-	
-	cache$ordering=attributes(cache$phy)$order
-	
+    cache=.prepare.bm(phy,dat,SE)
+    cache$ordering=attributes(cache$phy)$order
+
+	# function for reshaping tree by model
 	FUN=switch(model, 
 			   BM=.null.cache(cache),
 			   OU=.ou.cache(cache),
@@ -311,7 +294,9 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
     rr = numeric(z)
     rootidx = as.integer(cache$root)
 	nn = length(cache$len)
-	
+	adjSE = any(cache$y$adjSE==1)
+    
+    # cache object needed for 'bm_direct'
     datc = list(intorder = as.integer(cache$order[-length(cache$order)]), 
 				tiporder = as.integer(cache$y$target), 
 				root = rootidx, 
@@ -319,10 +304,6 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 				n = as.integer(z), 
 				descRight = as.integer(cache$children[ ,1]), 
 				descLeft = as.integer(cache$children[, 2]),
-#               thetasq=0,
-#               sigsq=0,
-#               alpha=0,
-#               hsq=0,
                 model=0
     )
 	
@@ -331,10 +312,10 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 		if(is.null(argn(FUN))) new=FUN() else new=FUN(q)
 		datc$len=as.numeric(new$len)
 		.xxSE=function(cache){
-			vv=cache$y$y[2,]
+			vv=cache$y$SE^2
 			ff=function(x){
-				if(adjSE){
-					vv[which(cache$y$SE==1)]=x^2 
+				if(any(cache$y$adjSE==1->ww)){
+					vv[ww]=x^2
 					return(vv)
 				} else {
 					return(vv)
@@ -360,7 +341,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
     class(ll.bm.direct) <- c("bm", "dtlik", "function")
 	
 	
-## EXPORT LIKELIHOOD FUNCTION
+    ## EXPORT LIKELIHOOD FUNCTION
 	if(is.null(argn(FUN))){
 		
 		if(adjSE){
@@ -513,8 +494,8 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	argn=unlist(argn(lik))
 	
 ## CONSTRUCT BOUNDS ##
-	mn=c(-5, -500, -500, -5, -500)
-	mx=c(0.1, 0, 0, log(2.999999), log(1000))
+	mn=c(-10, -500, -500, -5, -500)
+	mx=c(10, 0, 0, log(2.999999), log(1000))
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("nat", "exp", "exp", "exp", "exp")
 	rownames(bnds)=c("a", "lambda", "kappa", "delta", "trns")
@@ -551,9 +532,8 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	xx=function(p){
 		pars=ifelse(typs=="exp", exp(p), p)
 		tmp=-lik(pars)
-		if(is.infinite(tmp)) {
-			tmp=ct$FAIL
-		}
+		if(is.infinite(tmp)) tmp=ct$FAIL
+        if(is.na(tmp)) tmp=ct$FAIL
 		tmp
 	}
 	

@@ -139,7 +139,7 @@ function(node,phy) {
 	}
 }
 
-.compile_descendants=function(phy){
+.cache_tree=function(phy){
 # fetches all tips subtended by each internal node
 	
 	N=as.integer(Ntip(phy))
@@ -153,7 +153,7 @@ function(node,phy) {
 			DES=as.integer(phy$edge[,2])
 			)
 	
-	res=.Call("compile_descendants", phy=zz, package="geiger")
+	res=.Call("cache_tree", phy=zz, package="geiger")
 	return(res)
 }
 
@@ -277,7 +277,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 	
 	edges=NULL
     
-	desc=.compile_descendants(phy)$tips[-c(1:Ntip(phy))]
+	desc=.cache_tree(phy)$tips[-c(1:Ntip(phy))]
     tidx=match(tips, phy$tip.label)
     
 	FUN=function(taxon){
@@ -844,7 +844,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL){
 			nn=nn[nn!=""]
 			if(length(nn)){
 				tt=matrix("", nrow=Ntip(phy), ncol=length(nn))
-				dd=.compile_descendants(phy)$tips
+				dd=.cache_tree(phy)$tips
 				for(i in 1:length(nn)){
 					tt[phy$tip.label%in%phy$tip.label[dd[[as.integer(names(nn[i]))]]],i]=nn[i]
 				}
@@ -903,7 +903,7 @@ subset.phylo=function(x, taxonomy, rank="family", ...){
 	return(rank_phy)	
 }
 
-bind.phylo=function(phy, taxonomy){
+.TESTING_bind.phylo=function(phy, taxonomy){
 ## phy: a 'rank' level phylogeny (tips of 'phy' should be matchable to taxonomy[,rank])
 ## taxonomy: a mapping from genus, family, order (columns in that order); rownames are tips to be added to constraint tree
 ##		-- 'taxonomy' MUST absolutely be ordered from higher exclusivity to lower (e.g., genus to order)
@@ -960,7 +960,12 @@ bind.phylo=function(phy, taxonomy){
 		warning(paste("tips missing data at 'rank' level in 'taxonomy' but included in constraint tree:\n\t", paste(rownames(deeper_tips), collapse="\n\t"), sep=""))
 	}
 	phy$node.label=NULL
-	tax=original_taxonomy[at_rank,1:ridx]
+	tax=as.matrix(original_taxonomy[at_rank,1:ridx])
+    if(ridx==1) {
+        rownames(tax)=rownames(original_taxonomy)[at_rank]
+        colnames(tax)=colnames(original_taxonomy)[ridx]
+    }
+    tax=as.data.frame(tax)
 	if(any(is.na(tax[,rank]))) stop("Corrupted data encountered when checking taxonomy[,rank]")
 	
 	rsc=function(phy, age=1) {
