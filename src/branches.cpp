@@ -22,21 +22,8 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 		int root = Rcpp::as<int>(cache["root"]);
 		int n = Rcpp::as<int>(cache["n"]);
         
-        int model = Rcpp::as<int>(cache["model"]);
-    
-        // needed for model == 1
-//       double thetasq = Rcpp::as<double>(cache["thetasq"]);
-//       double alpha = Rcpp::as<double>(cache["alpha"]);
-//       double sigsq = Rcpp::as<double>(cache["sigsq"]);
-//       double hsq = Rcpp::as<double>(cache["hsq"]);
+        double drift = Rcpp::as<double>(cache["drift"]);
 
-        /* MODELS
-         *  0: standard Brownian motion
-         *  1: Brownian-motion evolution of optimum (Estes and Arnold 2007)
-         *
-         *
-         */
-        
 		std::vector<double> len = Rcpp::as<std::vector<double> >(cache["len"]);
 		std::vector<double> y = Rcpp::as<std::vector<double> >(cache["y"]);
 		std::vector<double> var = Rcpp::as<std::vector<double> >(cache["var"]);
@@ -76,7 +63,7 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 			ri=rates[cur];
 			
 			branchinitM[cur] = yi;
-			branchbaseM[cur] = yi;
+			branchbaseM[cur] = yi + li*drift;
 			branchbaseV[cur] = var[i] + li*ri;
 		}
 		
@@ -92,17 +79,15 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 			v2=branchbaseV[d2];
 			v12=v1+v2;
 			
-			m = (((m1*v2) + (m2*v1))/v12); // model-specific -- assumes mean 0 -- weighted average of states
+			m = (((m1*v2) + (m2*v1))/v12); // model-specific -- assumes mean 0 model
 			branchinitM[cur] = m;
 			v = ((v1*v2)/v12); //estimation error variance
 			m12=pow((m1-m2),2);
 			lq[cur] = ((-m12/(2*v12)) - (log(2*PIx*v12)/2));
 			
-			branchbaseM[cur] = m;
-            if(model==0){
-                branchbaseV[cur] = (v + (rates[cur]*len[cur]));} // Brownian motion
-//            else if(model==1){
-//                branchbaseV[cur] = (v + (thetasq*len[cur]) + ( alpha+ (pow(sigsq,2) / (2*hsq)) )*(1-( exp(-2*len[cur]*((hsq*sigsq)/((2*alpha*( hsq/sigsq ))+sigsq))))));} // Brownian-motion movt of optimum
+            li=len[cur];
+			branchbaseM[cur] = m + drift*li;
+            branchbaseV[cur] = v + rates[cur]*li;
 		}
 		
 		/* compute root */ 

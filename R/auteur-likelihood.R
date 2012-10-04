@@ -246,7 +246,8 @@ function(rphy, ic) {
 				n = as.integer(z), 
 				descRight = as.integer(cache$children[, 1]),
 				descLeft = as.integer(cache$children[, 2]),
-                model=0)
+                drift=0
+    )
 	
 	ll.bm.direct <- function(pars, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
         out = .Call("bm_direct", dat = datc, pars = pars, package = "geiger")

@@ -5,14 +5,12 @@ fitContinuous=function(
 phy, 
 dat, 
 SE = 0,
-model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"), 
+model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"), 
 bounds=list(), 
 control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessianCI=0.95)
 )
 {
-	
-#	require(auteur)
-	
+		
 # SE: can be vector or single value (numeric, NULL, or NA); vector can include NA
 # opt: a list with elements 'method', 'niter', 'FAIL'; 'method' may include several optimization methods
 # bounds: a list with elements specifying constraint(s): e.g., bounds=list(alpha=c(0,1))
@@ -45,7 +43,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
 	ct$hessian_P=1-ct$hessianCI
 	
-	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
+	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
 	
 # CONTROL OBJECT for likelihood
 	con=list(method="pruning",backend="C")
@@ -55,12 +53,12 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	
 	
 ## CONSTRUCT BOUNDS ##
-	mn=c(-500, -500, -10, -100, -500, -500, -500, -500)
-	mx=c(100, 5, 10, 100, 0, 0, log(2.999999), 100)
+	mn=c(-500, -500, -10, -100, -100, -500, -500, -500, -500)
+	mx=c(100, 5, 10, 100, 100, 0, 0, log(2.999999), 100)
 	bnds=as.data.frame(cbind(mn, mx))
-	bnds$typ=c("exp", "exp", "nat", "nat", "exp", "exp", "exp", "exp")
-	rownames(bnds)=c("sigsq", "alpha", "a", "slope", "lambda", "kappa", "delta", "SE")
-	bnds$model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "SE")
+	bnds$typ=c("exp", "exp", "nat", "nat", "nat", "exp", "exp", "exp", "exp")
+	rownames(bnds)=c("sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE")
+	bnds$model=c("BM", "OU", "EB", "drift", "trend", "lambda", "kappa", "delta", "SE")
 	typs=bnds[argn, "typ"]
 	
 # User bounds
@@ -98,7 +96,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		tmp
 	}
 	
-# boxconstrain from diversitree
+# boxconstrain (from diversitree) to avoid out-of-bounds values
 	boxconstrain=function (f, lower, upper, fail.value) 
 	{
 		function(x) {
@@ -125,13 +123,13 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		bnds$st=sapply(1:nrow(bnds), function(x) runif(1, bnds$mn[x], bnds$mx[x]))
 		start=bnds[argn,"st"]
 		
-## OU ##
+        ## OU ##
 		if(par=="alpha"){
 			if(i==1 | runif(1)<0.25) start[match(c("sigsq", par), argn)]=c(bmstart, oustart)
 			if(runif(1) < 0.5) start[match(c("sigsq", par), argn)]=c(0,oustart)
 		}
 		
-## PAGEL MODELS ##
+        ## PAGEL MODELS ##
 		if(par%in%c("lambda","delta","kappa")){
 			ww=match(par, rownames(bnds))
 			if(runif(1)<0.5){
@@ -143,7 +141,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 			}
 		}
 		
-## WHITE NOISE ##
+        ## WHITE NOISE ##
 		if(par=="white"){
 			if(runif(1)<0.5){
 				start[match("sigsq", argn)]=var(dat)
@@ -155,7 +153,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		max=bnds[argn,"mx"]
 		
 		
-# resolve method	
+    # resolve method	
 		if(length(argn)==1) {
 			method="Brent" 
 		} else {
@@ -189,7 +187,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	colnames(res)=c(argn,"lnL","convergence")
 	rownames(res)=mt
 	
-## HANDLE OPTIMIZER OUTPUT ##
+    ## HANDLE OPTIMIZER OUTPUT ##
 	colnames(mm)=c(argn, "lnL", "convergence")
 	conv=mm[,"convergence"]==0
 	mm=mm[,-which(colnames(mm)=="convergence")]
@@ -205,11 +203,13 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		names(mm)=c(argn,"lnL")
 	}
 	zz=mm[-which(names(mm)%in%c("lnL"))]
-	mm=as.list(mm)
+    z0=attributes(lik(unlist(mm[argn])))$ROOT.MAX
+	mm=as.list(c(z0=z0, mm))
+
 	mm$method=ifelse(is.na(z), NA, mt[z])
 	mm$k=length(argn)+1
 	
-## HESSIAN-based CI of par estimates
+    ## HESSIAN-based CI of par estimates
 	if(ct$hessian){
 		hessian=out[[z]]$hessian
 		CI=.bnd.hessian(hessian, zz, typs, ct$hessian_P)
@@ -248,6 +248,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	mm=.aic(mm, n=length(dat))
 	
 # RETURN OBJECT
+
 	mm$CI=CI
 	mm$hessian=hessian
 #	if(is.null(CI)){
@@ -263,11 +264,11 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 
 ## WORKHORSE -- built from diversitree:::make.bm by tricking models into multivariate normal 
 # likelihood function creation
-bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white")) 
+bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white")) 
 {
 ## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species) 
 	
-	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "white"))
+	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
 	
     # cache object for likelihood computation
 	if(!is.binary.tree(phy)){
@@ -287,6 +288,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			   lambda=.lambda.cache(cache),
 			   kappa=.kappa.cache(cache),
 			   delta=.delta.cache(cache),
+               drift=.null.cache(cache),
 			   white=.white.cache(cache)
 			   )
 	
@@ -295,6 +297,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
     rootidx = as.integer(cache$root)
 	nn = length(cache$len)
 	adjSE = any(cache$y$adjSE==1)
+    adjDRIFT=model=="drift"
     
     # cache object needed for 'bm_direct'
     datc = list(intorder = as.integer(cache$order[-length(cache$order)]), 
@@ -304,12 +307,14 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 				n = as.integer(z), 
 				descRight = as.integer(cache$children[ ,1]), 
 				descLeft = as.integer(cache$children[, 2]),
-                model=0
+                drift = 0
     )
 	
-    ll.bm.direct = function(q, sigsq, se, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
+    ll.bm.direct = function(q, sigsq, se, root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft, datc) {
 		
 		if(is.null(argn(FUN))) new=FUN() else new=FUN(q)
+        if(adjDRIFT) datc$drift=drft 
+        
 		datc$len=as.numeric(new$len)
 		.xxSE=function(cache){
 			vv=cache$y$SE^2
@@ -346,17 +351,23 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 		
 		if(adjSE){
 			attb=c("sigsq", "SE")
+            if(adjDRIFT) attb=c(attb, "drift")
+
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
-				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+                if(adjDRIFT) drft=-pars[3] else drft=0
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb
 		} else {
 			attb="sigsq"
+            if(adjDRIFT) attb=c(attb, "drift")
+
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
-				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+                if(adjDRIFT) drft=-pars[2] else drft=0
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb
@@ -365,17 +376,23 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	} else {
 		if(adjSE){
 			attb=c(argn(FUN), "sigsq", "SE")
+            if(adjDRIFT) attb=c(attb, "drift")
+
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
-				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+                if(adjDRIFT) drft=-pars[4] else drft=0
+				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft=drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb			
 		} else {
 			attb=c(argn(FUN), "sigsq")
+            if(adjDRIFT) attb=c(attb, "drift")
+
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
-				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc)
+                if(adjDRIFT) drft=-pars[3] else drft=0
+				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft=drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb			

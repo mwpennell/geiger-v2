@@ -598,12 +598,18 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 	z=function(slope){
 		ht$br=1+ht$head*slope
 		ht$er=1+ht$tail*slope
-		bl=ifelse(ht$br>0 & ht$er>0, 
-				  (ht$br+ht$er)/2, 
-				  ifelse(ht$br<0 & ht$er<0, 
-						 0, 
-						 ht$br*((-1/slope)-ht$head)/(2*(ht$tail-ht$head))))
-		cache$len=cache$len*bl
+        scl=sapply(1:nrow(ht), function(idx){
+            if(idx==N+1) return(NA)
+            if(ht$br[idx]>0 & ht$er[idx]>0) {
+                return((ht$br[idx]+ht$er[idx])/2)
+            } else if(ht$br[idx]<0 & ht$er[idx]<0) {
+                return(0)
+            } else {
+                si=-1/slope
+                return(ht$br[idx]*(si-ht$head[idx])/(2*(ht$tail[idx]-ht$head[idx])))
+            }
+        })
+		cache$len=cache$len*scl
 		cache
 	}
 	attr(z,"argn")="slope"
@@ -622,14 +628,23 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 	
 	
 	z=function(slope){
+        # begin (age): head
+        # end: tail
 		ht$br=1+ht$head*slope
 		ht$er=1+ht$tail*slope
-		bl=ifelse(ht$br>0 & ht$er>0, 
-				  (ht$br+ht$er)/2, 
-				  ifelse(ht$br<0 & ht$er<0, 
-						 0, 
-						 ht$br*((-1/slope)-ht$head)/(2*(ht$tail-ht$head))))
-		phy$edge.length=phy$edge.length*bl[phy$edge[,2]]
+        scl=sapply(1:nrow(ht), function(idx){
+            if(idx==N+1) return(NA)
+            if(ht$br[idx]>0 & ht$er[idx]>0) {
+                return((ht$br[idx]+ht$er[idx])/2)
+            } else if(ht$br[idx]<0 & ht$er[idx]<0) {
+                return(0)
+            } else {
+                si=-1/slope
+                return(ht$br[idx]*(si-ht$head[idx])/(2*(ht$tail[idx]-ht$head[idx])))
+            }
+        })
+        
+		phy$edge.length=phy$edge.length*scl[phy$edge[,2]]
 		phy
 	}
 	attr(z,"argn")="slope"
