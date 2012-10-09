@@ -382,8 +382,8 @@ constrain.m=function(f, m){
 		if (nb.node != 1) {
 			nb.tip <- cache$n.tip
 			nb.edge <- dim(cache$edge)[1]
-			ord=.C("neworder_cladewise", as.integer(nb.tip), as.integer(cache$edge[, 1]), 
-				   as.integer(cache$edge[, 2]), as.integer(nb.edge), integer(nb.edge), PACKAGE = "ape")[[5]]
+			ord=.C("neworder_phylo", as.integer(nb.tip), as.integer(cache$edge[, 1]), 
+				   as.integer(cache$edge[, 2]), as.integer(nb.edge), integer(nb.edge), 1, DUP=FALSE, NAOK=TRUE, PACKAGE = "ape")[[5]]
 			cache$edge=cache$edge[ord,]
 			cache$edge.length=cache$edge.length[ord]
 		}	
