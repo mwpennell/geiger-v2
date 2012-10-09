@@ -53,12 +53,12 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	
 	
 ## CONSTRUCT BOUNDS ##
-	mn=c(-500, -500, -10, -100, -100, -500, -500, -500, -500)
-	mx=c(100, 5, 10, 100, 100, 0, 0, log(2.999999), 100)
+	mn=c(-500, -500, -10, -100, -100, -500, -500, -500, -500, -1e6)
+	mx=c(100, 5, 10, 100, 100, 0, 0, log(2.999999), 100, 1e6)
 	bnds=as.data.frame(cbind(mn, mx))
-	bnds$typ=c("exp", "exp", "nat", "nat", "nat", "exp", "exp", "exp", "exp")
-	rownames(bnds)=c("sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE")
-	bnds$model=c("BM", "OU", "EB", "drift", "trend", "lambda", "kappa", "delta", "SE")
+	bnds$typ=c("exp", "exp", "nat", "nat", "nat", "exp", "exp", "exp", "exp", "nat")
+	rownames(bnds)=c("sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE", "z0")
+	bnds$model=c("BM", "OU", "EB", "drift", "trend", "lambda", "kappa", "delta", "SE", "z0")
 	typs=bnds[argn, "typ"]
 	
 # User bounds
@@ -112,6 +112,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		if(inherits(bmstart, "try-error")) bmstart=0.01 
 		if(par=="alpha") oustart=.ou.smartstart(bmstart,var(dat))
 	}
+    rt=max(abs(dat))
 	
 ## OPTIMIZATION ##
 	mm=matrix(NA, nrow=ct$niter, ncol=length(argn)+2)
@@ -149,6 +150,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		}
 		
 		names(start)=argn
+        start[["z0"]]=runif(1, -rt, rt)
 		min=bnds[argn,"mn"]
 		max=bnds[argn,"mx"]
 		
@@ -203,8 +205,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		names(mm)=c(argn,"lnL")
 	}
 	zz=mm[-which(names(mm)%in%c("lnL"))]
-    z0=attributes(lik(unlist(mm[argn])))$ROOT.MAX
-	mm=as.list(c(z0=z0, mm))
+	mm=as.list(mm)
 
 	mm$method=ifelse(is.na(z), NA, mt[z])
 	mm$k=length(argn)+1
@@ -339,9 +340,9 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
             attr(loglik, "intermediates") <- intermediates
             attr(loglik, "vals") <- vals
         }
-        attr(loglik, "ROOT.MAX")=vals[1]
+        #        attr(loglik, "ROOT.MAX")=vals[1]
 		if(is.na(loglik)) loglik=-Inf
-        return(loglik)
+        return(as.numeric(loglik))
     }
     class(ll.bm.direct) <- c("bm", "dtlik", "function")
 	
@@ -350,24 +351,24 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	if(is.null(argn(FUN))){
 		
 		if(adjSE){
-			attb=c("sigsq", "SE")
+			attb=c("sigsq", "SE", "z0")
             if(adjDRIFT) attb=c(attb, "drift")
 
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
                 if(adjDRIFT) drft=-pars[3] else drft=0
-				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft, datc)
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], root = ROOT.GIVEN, root.x = pars[3], intermediates = FALSE, drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb
 		} else {
-			attb="sigsq"
+			attb=c("sigsq", "z0")
             if(adjDRIFT) attb=c(attb, "drift")
 
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
                 if(adjDRIFT) drft=-pars[2] else drft=0
-				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft, datc)
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, root = ROOT.GIVEN, root.x = pars[2], intermediates = FALSE, drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb
@@ -375,24 +376,24 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 		
 	} else {
 		if(adjSE){
-			attb=c(argn(FUN), "sigsq", "SE")
+			attb=c(argn(FUN), "sigsq", "SE", "z0")
             if(adjDRIFT) attb=c(attb, "drift")
 
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
                 if(adjDRIFT) drft=-pars[4] else drft=0
-				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft=drft, datc)
+				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], root = ROOT.GIVEN, root.x = pars[4], intermediates = FALSE, drft=drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb			
 		} else {
-			attb=c(argn(FUN), "sigsq")
+			attb=c(argn(FUN), "sigsq", "z0")
             if(adjDRIFT) attb=c(attb, "drift")
 
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
                 if(adjDRIFT) drft=-pars[3] else drft=0
-				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft=drft, datc)
+				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, root = ROOT.GIVEN, root.x = pars[3], intermediates = FALSE, drft=drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb			

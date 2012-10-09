@@ -226,6 +226,7 @@ argn.mkn=function(x, ...){
 }
 
 .repars=function(pars, expected){
+    if(!length(pars)==length(expected)) stop(paste("The following 'pars' are expected:\n\t", paste(expected, collapse="\n\t", sep=""), sep=""))
 	if(all(!is.null(nm<-names(pars)))){
 		if(!all(nm%in%expected)) stop(paste("The following 'pars' are unexpected:\n\t", paste(nm[!nm%in%expected], collapse="\n\t", sep=""), sep=""))
 		if(length(unique(nm))!=length(expected)) stop(paste("The following 'pars' are expected:\n\t", paste(expected, collapse="\n\t", sep=""), sep="")) 

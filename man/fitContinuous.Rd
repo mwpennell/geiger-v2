@@ -121,8 +121,8 @@ print(brownFit)
 #---- COMPUTE LIKELIHOOD
 flik=brownFit$lik
 print(argn(flik))
-print(flik(c(sigsq=0.07054568, SE=0))) # 8.243269
-print(flik(c(sigsq=0, SE=0.1138144))) # 9.805223
+print(flik(c(sigsq=0.07054568, SE=0, z0=4.205953))) # 8.243269
+print(flik(c(sigsq=0, SE=0.1138144, z0=4.235734))) # 9.805223
 
 #---- CREATE a FUNCTION to COMPARE MODELS
 fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
