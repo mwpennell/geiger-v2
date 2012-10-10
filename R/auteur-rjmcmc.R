@@ -12,8 +12,35 @@
 	})
 }
 
-rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("jump-rbm", "rbm", "jump-bm", "bm"), ... ) 
-{ 
+.link.root=function(rootd, rootv, nd, d, v){
+    open=nd[which(d==0)]
+    rooto=rootd[rootd%in%open]
+    if(length(rooto)){
+        uu=unique(v[nd%in%rooto])
+        if(!length(uu)==1) stop("encountered unexpected error")
+    } else {
+        uu=rootv
+    }
+    uu
+}
+
+.TESTING_check.root=function(rootd, rootv, nd, d, v, ...){
+    open=nd[which(d==0)]
+    rooto=rootd[rootd%in%open]
+    if(length(rooto)){
+        uu=unique(v[nd%in%rooto])
+        if(!all(uu==rootv)) {
+            xx=as.list(...)
+            for(i in 1:length(xx)) print(xx[[i]])
+            stop("encountered unexpected error in link between 'rates' and 'root'")
+        }
+    }
+}
+
+rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("jump-rbm", "rbm", "jump-bm", "bm"), ... )
+{
+    
+#   SE=NA; ngen=50000; sample.freq=100; type=c("jump-rbm")
 	typs=c("jump-rbm", "rbm", "jump-bm", "bm")
 	if((tolower(type)->tt)%in%(tolower(c("jump-relaxedBM", "relaxedBM", "jump-BM", "BM"))->vv)){
 		type=typs[which(vv==tt)]
@@ -31,13 +58,16 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 	ct$ngen=ngen
 	cache=tmp$cache
 	sp=tmp$start
+    
 	lik=ct$lik
+    rootd=cache$desc$fdesc[[cache$n.tip+1]]
 	nd=argn(lik)$rates
 	max_j=max(attr(attr(ct$dlnJUMP,"density"),"count"))
 	jumpsedgewise=.jumps.edgewise(cache$phy)
 	
 	# runtime objects
 	cur.root=sp$root
+    cur.rootrate=sp$rootrate
 	cur.rates=sp$rates
 	cur.delta=sp$delta
 	cur.nR=sum(cur.delta)
@@ -61,6 +91,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 		
 		# initialize updates
 		new.root=cur.root
+        new.rootrate=cur.rootrate
 		new.rates=cur.rates
 		new.delta=cur.delta
 		new.nR=cur.nR
@@ -81,6 +112,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 						nr=.splitormerge(x=cur.rates, delta=cur.delta, control=ct, cache=cache)
 						new.rates=nr$x
 						new.delta=nr$delta
+                        new.rootrate=.link.root(rootd, cur.rootrate, nd, new.delta, new.rates) ## JME
 						new.nR=sum(new.delta)
 						new.scalars=new.rates+cur.jumprates
 						lnHastingsRatio=nr$lnHastingsRatio
@@ -89,7 +121,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 						subprop="mergesplit"
 						break()	
 					} else if(cur.nR>0){											# shift local rate
-						nr=.adjustshift(x=cur.rates, delta=cur.delta, control=ct, cache=cache)
+						nr=.adjustshift(x=cur.rates, delta=cur.delta, root=cur.rootrate, control=ct, cache=cache)
 						new.rates=nr$new.values
 						new.delta=nr$new.delta 
 						new.scalars=new.rates+cur.jumprates
@@ -150,6 +182,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 				if(runif(1) < ct$tune.scale & cur.nR>0) {						## tune local rate
 					nr=.tune.rate(rates=cur.rates, ct)
 					new.rates=nr$values
+                    new.rootrate=.link.root(rootd, cur.rootrate, nd, new.delta, new.rates)
 					new.scalars=new.rates+cur.jumprates
 					lnHastingsRatio=nr$lnHastingsRatio
 					lnPriorRatio=.dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
@@ -157,10 +190,11 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 					break()						
 				} else {														## scale rates
 					if(runif(1) < ct$bm.jump){										# BM rates
-						nr=.tune.rate(cur.rates, ct)
-						new.rates=nr$v
+						sc=.proposal.slidingwindow(1, ct$prop.width, ct$rate.lim)
+						new.rates=sc$v*cur.rates
+                        new.rootrate=sc$v*cur.rootrate
 						new.scalars=new.rates+cur.jumprates
-						lnHastingsRatio=nr$lnHastingsRatio
+						lnHastingsRatio=sc$lnHastingsRatio
 						lnPriorRatio=.dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
 						subprop="ratescale"
 						break()						
@@ -178,7 +212,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 						next()
 					}
 				} 
-			} else if(cur.proposal==3) {										## adjust root
+			} else if(cur.proposal==3) {										## adjust root state
 				nr=.tune.value(cur.root, ct)
 				new.root=nr$v
 				lnHastingsRatio=nr$lnHastingsRatio
@@ -195,6 +229,11 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 			}
 		}
 		
+        if(is.na(lnPriorRatio)) {
+            stop(print(nr))
+        }
+        .TESTING_check.root(rootd, new.rootrate, nd, new.delta, new.rates, c(subprop, nr))
+        
 		ct$n.subprop[subprop]=ct$n.subprop[subprop]+1				
 		
 		# compute fit of proposed model
@@ -203,6 +242,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 		
 		if (runif(1) <= r$r) {			## adopt proposal ##
 			new.root->cur.root
+            new.rootrate->cur.rootrate
 			new.rates->cur.rates
 			new.delta->cur.delta
 			new.nR->cur.nR

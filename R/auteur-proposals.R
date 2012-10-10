@@ -254,10 +254,13 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 
 	shifts=nm[bb>0]
 	K=sum(bb)
-	Nk=nrow(phy$edge)-1-length(control$excludeSHIFT)
+	Nk=nrow(phy$edge)-length(control$excludeSHIFT)
 	logspace=TRUE
 	
 	if(sum(new.bb)>sum(bb)) {			## add transition: SPLIT
+        if(sum(new.bb)==Nk){
+            return(list(x=x, delta=delta, lnHastingsRatio=0, decision="none")) ## CANNOT SPLIT
+        }
 		decision="split"
 		n.desc=length(s.desc<-.opensubtree.phylo(s, phy, adesc, shifts))+1
 		nd.desc=c(s.desc,s)
@@ -340,9 +343,11 @@ function(rate, prop.width) {
 ## PROPOSAL MECHANISM ##
 #proposal utility: move shift-point in tree for rjmcmc.bm()
 #author: JM EASTMAN 2011
-.adjustshift <- function(x, delta, control, cache){
+# fixed bug (10/2012) concerning shifts round the root
+.adjustshift <- function(x, delta, rootv, control, cache){
 	
 	values=x
+    rootv=rootv
 	fdesc=cache$desc$fdesc
 	phy=cache$phy
 	root=cache$root
@@ -363,8 +368,8 @@ function(rate, prop.width) {
 	shifts=shifts[shifts!=node]
 	
 	# determine if new shift is non-permissible
-	if(newnode%in%c(node,shifts) | all(root.des%in%c(shifts,newnode)) | newnode%in%control$excludeSHIFT) {
-		return(list(new.delta=delta, new.values=values, lnHastingsRatio=0))
+	if(newnode%in%c(node,shifts) | newnode%in%control$excludeSHIFT) {
+		return(list(new.delta=delta, new.values=values, lnHastingsRatio=0, direction="none"))
 	} else {		
 		
 		# update delta
@@ -375,25 +380,25 @@ function(rate, prop.width) {
 		new.values=values
 		if(direction=="up") {
 			new.values=.assigndescendants(values, newnode, val, exclude=shifts, cache=cache)
-			h = ((1/2)*(1/length(.get.desc.of.node(newnode,phy)))) / (1/2)
+			h = ((1/2)*(1/length(fdesc[[newnode]]))) / (1/2)
 			lnh=log(h)
 		} else if(direction=="down") {
 			anc=.get.ancestor.of.node(node, phy)
 			if(anc==root){
-				tmp=.get.desc.of.node(root, phy)
-				dd=tmp[!tmp%in%c(node,shifts)]
-				anc.val=unique(as.numeric(values[match(dd, names(values))]))
+				anc.val=rootv
 			} else {
 				anc.val=as.numeric(values[which(names(values)==anc)])
 			}
 			new.values=.assigndescendants(values, anc, anc.val, exclude=shifts, cache=cache)
 			new.values=.assigndescendants(new.values, newnode, val, exclude=shifts, cache=cache)
-			h = (1/2) / ((1/2)*(1/length(.get.desc.of.node(node,phy))))
+			h = (1/2) / ((1/2)*(1/length(fdesc[[node]])))
 			lnh=log(h)
 		} else if(direction=="root"){
+            new.values=.assigndescendants(values, newnode, val, exclude=shifts, cache=cache)
+            new.values=.assigndescendants(new.values, node, rootv, exclude=shifts, cache=cache)
 			lnh=0
 		}
-		return(list(new.delta=new.delta, new.values=new.values, lnHastingsRatio=lnh))
+		return(list(new.delta=new.delta, new.values=new.values, lnHastingsRatio=lnh, direction=direction))
 	}
 }
 

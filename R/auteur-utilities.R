@@ -960,7 +960,10 @@ function(phy, dat){
 	
 	jv=rate*10
 	
-	return(list(root=root, rates=rr, delta=dd, jumps=jj, jumpvar=jv, se=se))
+    rttmp=.proposal.multiplier(mean(rr), control$prop.width, control$rate.lim)$v
+    rtrt=.link.root(rootd=cache$desc$fdesc[[cache$n.tip+1]], rttmp, nd, dd, rr)
+    
+	return(list(root=root, rates=rr, delta=dd, rootrate=rtrt, jumps=jj, jumpvar=jv, se=se))
 }
 
 
