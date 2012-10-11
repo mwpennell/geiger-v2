@@ -121,7 +121,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 						subprop="mergesplit"
 						break()	
 					} else if(cur.nR>0){											# shift local rate
-						nr=.adjustshift(x=cur.rates, delta=cur.delta, root=cur.rootrate, control=ct, cache=cache)
+						nr=.adjustshift(x=cur.rates, delta=cur.delta, rootv=cur.rootrate, control=ct, cache=cache)
 						new.rates=nr$new.values
 						new.delta=nr$new.delta 
 						new.scalars=new.rates+cur.jumprates

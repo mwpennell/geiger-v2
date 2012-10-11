@@ -364,7 +364,7 @@ constrain.m=function(f, m){
 		nb.node <- cache$n.node
 		if (nb.node != 1) {
 			nb.tip <- cache$n.tip
-			nb.edge <- dim(cache$edge)[1]
+			nb.edge <- nrow(cache$edge)
 			ord=.C("neworder_pruningwise", as.integer(nb.tip), as.integer(nb.node), 
 				   as.integer(cache$edge[, 1]), as.integer(cache$edge[, 2]), as.integer(nb.edge), 
 				   integer(nb.edge), PACKAGE = "ape")[[6]]
@@ -381,9 +381,9 @@ constrain.m=function(f, m){
 		nb.node <- cache$n.node
 		if (nb.node != 1) {
 			nb.tip <- cache$n.tip
-			nb.edge <- dim(cache$edge)[1]
+			nb.edge <- nrow(cache$edge)
 			ord=.C("neworder_phylo", as.integer(nb.tip), as.integer(cache$edge[, 1]), 
-				   as.integer(cache$edge[, 2]), as.integer(nb.edge), integer(nb.edge), 1, DUP=FALSE, NAOK=TRUE, PACKAGE = "ape")[[5]]
+				   as.integer(cache$edge[, 2]), as.integer(nb.edge), integer(nb.edge), as.integer(1), DUP=FALSE, NAOK=TRUE, PACKAGE="ape")[[5]]
 			cache$edge=cache$edge[ord,]
 			cache$edge.length=cache$edge.length[ord]
 		}	
@@ -412,7 +412,6 @@ constrain.m=function(f, m){
 	colnames(res) = c("start", "end")
 	res = data.frame(res)
 	res	
-	
 }
 
 ## tree transformation

@@ -171,9 +171,9 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		} else {
 			op<-out[[i]]<-try(suppressWarnings(optim(par=start, fn=f, upper=max, lower=min, method=method, hessian=ct$hessian)),silent=TRUE)
 		}
-		op$method=method
 		
 		if(!inherits(op,"try-error")){
+            op$method=method
 			op$value=-op$value
 			names(op)[names(op)=="value"]="lnL"
 			names(op$par)=argn
@@ -618,13 +618,14 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		}
 		
 		if(!inherits(op,"try-error")){
+            op$method=method
 			op$value=-op$value
 			names(op)[names(op)=="value"]="lnL"
 			names(op$par)=argn
 			
 			op$par=sapply(1:length(typs), function(x) if(typs[x]=="exp") return(exp(op$par[x])) else return(op$par[x]))
 			mm[i, ]=c(op$par, op$lnL, op$convergence)
-			mt[i]=method
+			mt[i]=op$method
 		} else {
 			mt[i]="FAIL"
 		}

@@ -38,7 +38,7 @@ disparity <- function(phy=NULL, data, disp=c("avg.sq", "avg.manhattan", "num.sta
 		td<-treedata(phy, data)
 		phy=td$phy
 		data=td$data
-		desc=.compile_descendants(phy)$tips
+		desc=.cache_tree(phy)$tips
 		nb.tip <- length(td$phy$tip.label)
 		nb.node <- td$phy$Nnode
 		result<-numeric()
