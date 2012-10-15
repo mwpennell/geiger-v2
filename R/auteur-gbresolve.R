@@ -30,6 +30,7 @@ Linnaean=c(
 )
 
 
+
 .path_to_gb.dmp=function(package="geiger"){
 	path=paste(system.file(package=package), "data", sep="/")
 #	pl=paths[[which(names(paths)=="fetch_genbank")]]
@@ -59,13 +60,13 @@ Linnaean=c(
 	if(build){
 		if(file.exists("taxdump.tar.gz")) unlink("taxdump.tar.gz")
 		cat("Please be patient as 'taxdump' is built from NCBI; download may take several minutes...\n")
-		if(!system("which wget", ignore.stdout=TRUE)==0) stop("Install 'wget' before proceeding.")
+		if(!system("which curl", ignore.stdout=TRUE)==0) stop("Install 'wget' before proceeding.")
 		if(!system("which gunzip", ignore.stdout=TRUE)==0) stop("Install 'gunzip' before proceeding.")
 		if(!system("which tar", ignore.stdout=TRUE)==0) stop("Install 'tar' before proceeding.")
 		if(!system("which perl", ignore.stdout=TRUE)==0) stop("Install 'perl' before proceeding.")
 		
 		
-		system("wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz", ignore.stderr=TRUE, wait=TRUE)
+		system("curl -OL ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz", ignore.stderr=TRUE, wait=TRUE)
 		system("gunzip taxdump.tar.gz", ignore.stderr=TRUE, wait=TRUE)
 		system("tar -xvf taxdump.tar", ignore.stderr=TRUE, wait=TRUE)
 		system("perl -i -p -e's/[^\\w+^\\s+^\\d+^\\|+]//g' names.dmp")
@@ -99,6 +100,7 @@ Linnaean=c(
 #			save(gb, file=rda)
 			ncbi=cbind(names.dmp, nodes.dmp[match(names.dmp$id, nodes.dmp$id), c("parent_id", "rank")])
 			rownames(ncbi)=NULL
+            ncbi[which(ncbi[,"node"]=="root"),"rank"]="root"
 			attr(ncbi, "date")=Sys.Date()
 			class(ncbi)=c("taxdump", class(ncbi))
 			save(ncbi, file=rda)
@@ -118,28 +120,44 @@ gbcontain=function(x, rank="species", within="", ...){
 	type="scientific name"
 	rank=match.arg(rank, Linnaean)
 	lidx=which(Linnaean==rank)
+    if(is.na(lidx)) stop("uninterpretable 'rank'")
 #	if(length(x)>1) stop("Supply 'x' as a single taxon")
 	
 	gb=.ncbi(...)
 	ss=gb[,"type"]%in%type
+#    gb=cbind(gb, ridx=rr)
+    gb=gb[ss,]
+#    gb=gb[gb$ridx<=lidx,]
+    
 
-	FUN=function(id){
-		keep=c()
-		wx=which(gb[,"parent_id"]==id & ss) 
-		if(length(wx)){
-			keep=c(keep, gb[wx[drop<-which(gb[wx,"rank"]==rank)],"node"])
-			if(length(drop)) wx=wx[-drop]
-			if(length(wx)) keep=c(keep, unlist(lapply(gb[wx,"id"], FUN)))
-		}
-		return(keep)
-		
-	}
+	#FUN=function(id){
+	#	keep=c()
+    #		wx=which(gb[,"parent_id"]==id & ss)
+	#	if(length(wx)){
+	#		keep=c(keep, gb[wx[drop<-which(gb[wx,"rank"]==rank)],"node"])
+	#		if(length(drop)) wx=wx[-drop]
+	#		if(length(wx)) keep=c(keep, unlist(lapply(gb[wx,"id"], FUN)))
+	#	}
+	#	return(keep)
+	#}
+    
+    FUN=function(id){
+        rr=match(gb[,"rank"], Linnaean)
+
+        k=rep(1,nrow(gb))
+        k[which(rr==lidx)]=0
+        dfind=.gb_des_worker(gb$parent_id, gb$id, k)
+        ids=dfind(id)
+        ww=match(ids, gb$id)
+        nm=gb[ww[gb$rank[ww]%in%rank],"node"]
+        nm
+    }
 	
 	gbc=function(x){
 		if(is.character(x)) {
-			ww=which(tolower(gb[,"node"])==tolower(x) & ss)
+			ww=which(tolower(gb[,"node"])==tolower(x))
 		} else if(is.numeric(x)){
-			ww=which(gb[,"id"]==x & ss)
+			ww=which(gb[,"id"]==x)
 		} else {
 			return(NULL)
 		}
@@ -182,7 +200,6 @@ gbcontain=function(x, rank="species", within="", ...){
 		warning(paste("Try using the 'within' argument as the following taxa are not unique:\n\t", paste(x[probs], collapse="\n\t"), sep=""))
 	}
 	
-	
 	res=res[!probs]
 	if(length(res)){
 		names(res)=x[!probs]
@@ -192,40 +209,40 @@ gbcontain=function(x, rank="species", within="", ...){
 	}
 }
 
-gbresolve=function(x, rank="phylum", within="", split=FALSE, ...){
+
+.gb_des_worker=function(anc, des, keep){
+    fetcher=function(node){
+        if(length(unique(c(length(anc), length(des)))->sz)!=1) stop("'anc' and 'des' appear mismatched")
+		mat=list(
+            node=as.integer(node),
+            nrow=as.integer(sz),
+            ANC=as.integer(anc),
+            DES=as.integer(des),
+            keep=as.integer(keep)
+        )
+		.Call("compile_descendants", mat=mat, package="geiger")[[1]]
+    }
+    fetcher
+}
+
+
+gbresolve=function(x, rank="phylum", within="", ...){
 	UseMethod("gbresolve")
 }
 
-gbresolve.default=function(x, rank="phylum", within="", split=FALSE, ...){
+gbresolve.default=function(x, rank="phylum", within="", ...){
 		
 	gb=.ncbi(...)
 	FUN=.fetch_gbhierarchy.above(gb, rank=rank, within=within)
 				
-	if(!within==""){
-		ffun=.fetch_gbhierarchy.above(gb, rank="root", within=within)
-		ff=ffun(within)
-		if(!is.na(match(within,ff)->mm)){
-			rnk=names(ff)[mm]
-			ur=match(rnk, Linnaean)
-			rr=match(rank, Linnaean)
-			if(rr>ur){
-				warning(paste(rnk, "used as 'rank'"))
-				rank=rnk
-			}
-			
-		}
-	}
 	if(all(is.numeric(x) | is.integer(x))){
 		ss=gb[,"type"]=="scientific name"
 		x=sapply(x, function(y) gb[which(gb[,"id"]==y & ss),"node"])				  
 	}
 		
-	if(split) {
-		tt=unique(tips<-sapply(x, function(y) unlist(strsplit(y, "_"))[1]))
-	} else {
-		tt=unique(tips<-x)
-		names(tips)=tips
-	}
+
+    tt=unique(tips<-x)
+    names(tips)=tips
 						  
 	
 	f=.get.multicore()
@@ -238,6 +255,8 @@ gbresolve.default=function(x, rank="phylum", within="", split=FALSE, ...){
 		tmp=tmp[-which(dd)]
 		tt=tt[-which(dd)]
 	}
+    
+    tmp=lapply(tmp, function(x) x[1:which(names(x)==rank)])
 	
 	if(!length(tmp)) return(NULL)
 	
@@ -253,11 +272,11 @@ gbresolve.default=function(x, rank="phylum", within="", split=FALSE, ...){
 }
 
 ## Assign internal node labels to phy based on genbank taxonomy
-gbresolve.phylo=function(x, rank="phylum", within="", split=TRUE, ...){
+gbresolve.phylo=function(x, rank="phylum", within="", ...){
 	
 	phy=x
 	x=x$tip.label
-	res=gbresolve(x, rank=rank, within=within, split=split, ...)
+	res=gbresolve(x, rank=rank, within=within, ...)
 	if(is.null(res)) return(res)
 	ll=apply(res, 2, function(x) length(unique(x))==1 & !any(x==""))
 	if(any(ll)){
@@ -271,15 +290,14 @@ gbresolve.phylo=function(x, rank="phylum", within="", split=TRUE, ...){
 }
 
 
-exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
-# strict.vals: used if 
+exemplar.phylo=function(phy, taxonomy=NULL, ...){
 	if(is.null(taxonomy)) {
 		tmp=gbresolve.phylo(phy, ...)
 		taxonomy=tmp$tax
 	}
 	tax=taxonomy
 	drp=which(!phy$tip.label%in%rownames(tax))
-	z=.exemplar.default(tax, strict.vals=strict.vals)
+	z=.exemplar.default(tax)
 	ff=cbind(z, rownames(tax))
 	ww=which(phy$tip.label%in%rownames(tax))
 	phy$tip.label[ww]=z[match(phy$tip.label[ww], rownames(tax))]
@@ -301,18 +319,11 @@ exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
 #Mertensiella_caucasica          "Mertensiella"     "Salamandridae"   -->	Mertensiella      
 #Salamandra_algira               "Salamandra"       "Salamandridae"   -->	Salamandra_algira           
 #Salamandra_atra                 "Salamandra"       "Salamandridae"   -->	Salamandra_atra             
-.exemplar.default=function(x, strict.vals=NULL){
+.exemplar.default=function(x){
 	
 	tax=x
 	if(!is.matrix(tax) | is.null(rownames(tax)) | is.null(colnames(tax))) stop("supply 'tax' as a matrix with both row and column names")
-	if(!is.null(strict.vals)){
-		if(!all(is.character(strict.vals))) stop("supply 'strict.vals' as a character vector specifying which columns are to be used in 'tax'")
-		nn=sort(match(strict.vals, colnames(tax)))
-		nn=nn[!is.na(nn)]
-		if(length(nn)){
-			tax=as.matrix(tax[,nn])
-		}
-	}
+
 	incomparables=c("", NA)
 	z=rownames(tax)
 	for(j in 1:ncol(tax)){
@@ -327,12 +338,32 @@ exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
 	z
 }
 
+.gb_anc_worker=function(anc, des, root){
+	fetcher=function(node){
+		if(length(unique(c(length(anc), length(des)))->sz)!=1) stop("'anc' and 'des' appear mismatched")
+		mat=list(
+            node=as.integer(node),
+            root=as.integer(root),
+            nrow=as.integer(sz),
+            ANC=as.integer(anc),
+            DES=as.integer(des)
+        )
+		.Call("compile_ancestors", mat=mat, package="geiger")[[1]]
+	}
+	fetcher
+}
+
+
+### NEEDS TO BE WRITTEN TO TAKE ADVANTAGE OF .GB_ANC_WORKER
 .fetch_gbhierarchy.above=function(gb, rank="root", within=""){
 	
 ## returns taxonomic information for a 'taxon' up to the 'rank' given
-## requires fetch_genbank.pl and potentially nodes.dmp and names.dmp (if /tmp/idx is not available)
 	dat=gb	
-	
+    sci=dat$type=="scientific name"
+    gb=gb[sci,]
+
+    ancFUN=.gb_anc_worker(gb$parent_id, gb$id, 1)
+
 	get_tax=function(name){
 		
 		# resolve highest rank requested
@@ -344,7 +375,6 @@ exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
 		rank=match.arg(rank, Linnaean)
 		
 		name=gsub("_", " ", name) 
-		sci=dat$type=="scientific name"
 
 		fetch_anc=function(id){
 			ww=which(dat$id==id & sci==TRUE)
@@ -381,6 +411,7 @@ exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
 			}
 		}
 		
+
 		alltax=function(idx){
 			## COMMON NAME --- resolve to scientific name
 			if(!all(dat$type[idx]=="scientific name")){
@@ -397,29 +428,14 @@ exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
 			
 			id=dat$id[idx]
 			
-			
-			## COLLECT TAXONOMY
-			pnms=character()
-			rnks=character()
-			
-			cur=id
-			rr=""
-			while(rr!=rank){
-				orig=cur
-				idx=fetch_anc(cur)
-				pnm=dat$node[idx]
-				pid=dat$parent_id[idx]
-				pnms=c(pnms, pnm)
-				cur=pid
-				rr=dat$rank[idx]
-				rnks=c(rnks, rr)
-				if(rr==rank || orig==pid || pnm=="root") break()
-			}
-			
-			res=pnms
-			names(res)=rnks
-			res=res[names(res)%in%Linnaean]
-			return(res)			
+            tmp=ancFUN(id)
+            mm=match(tmp, gb$id)
+            pnms=gb$node[mm]
+            rnks=gb$rank[mm]
+            res=pnms
+            names(res)=rnks
+    
+			return(res[rnks%in%Linnaean])			
 		}
 		
 		if(length(idx)>1){
@@ -445,7 +461,7 @@ exemplar.phylo=function(phy, strict.vals=NULL, taxonomy=NULL, ...){
 		} else {
 			if(within!=""){
 				tmp=alltax(idx)
-				if(tolower(within)%in%tolower(tmp)){
+                if(tolower(within)%in%tolower(tmp)){
 					return(tmp)
 				} else {
 					warning(paste(sQuote(name), "was encountered in NCBI taxonomy but not found within", sQuote(within)))
