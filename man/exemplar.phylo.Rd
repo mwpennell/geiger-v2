@@ -5,13 +5,12 @@ blending information from taxonomies and trees }
 \description{
 working with systematic reference tables and phylogenies}
 \usage{
-exemplar.phylo(phy, strict.vals=NULL, taxonomy=NULL, ...)
+exemplar.phylo(phy, taxonomy=NULL, ...)
 }
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
-  \item{strict.vals}{if non-NULL, a character vector specifying the columns of \code{taxonomy} to be used in relabeling}
   \item{taxonomy}{a ('matrix') linkage table between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
   \item{...}{additional arguments to be passed to \code{\link[geiger]{gbresolve}} (if \code{taxonomy} is NULL)} 
 }
@@ -22,7 +21,7 @@ exemplar.phylo(phy, strict.vals=NULL, taxonomy=NULL, ...)
 sal=get(data(caudata))
 print(head(sal$tax))
 
-nphy=exemplar.phylo(sal$phy, strict.vals=NULL, sal$tax)
+nphy=exemplar.phylo(sal$phy, sal$tax)
 plot(nphy, type="fan", cex=0.15)
 
 }
