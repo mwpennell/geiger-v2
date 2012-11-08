@@ -59,7 +59,7 @@
 		\item{\code{exponentialchangeTree}}: \code{\link[geiger]{transform.phylo}}
 		\item{\code{speciationalTree}}: use \code{\link[geiger]{transform.phylo}}
 		\item{\code{rescaleTree}}: use \code{\link[geiger]{transform.phylo}}
-		\item{\code{getAncStates}}: use \code{\link[geiger]{ace}}
+		\item{\code{getAncStates}}: use \code{geiger:::.ace}
 		\item{\code{area.between.curves}}: use \code{geiger:::.area.between.curves}
 		\item{\code{ic.sigma}}: use \code{\link[geiger]{vcv.phylo}}
 		\item{\code{rate.estimate}}: use \code{\link[geiger]{bd.ms}} or \code{\link[geiger]{bd.km}}

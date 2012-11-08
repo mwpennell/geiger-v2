@@ -3,14 +3,14 @@
 \title{Bayesian sampling of shifts in trait evolution: relaxed Brownian motion}
 \description{Implements reversible-jump Markov chain Monte Carlo sampling for trait evolutionary models}
 \usage{
-rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, sample.freq = 100, type = c("jump-rbm", "rbm", "jump-bm", "bm"), ...)
+rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, samp = 100, type = c("jump-rbm", "rbm", "jump-bm", "bm"), ...)
 }
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
   \item{dat}{a named vector of continuous trait values, associated with each species in \code{phy}}
   \item{SE}{a named vector of standard errors for each trait value; applied to all trait values if given a single value}
   \item{ngen}{number of sampling generations}
-  \item{sample.freq}{frequency with which Markov samples are retained (e.g., \code{sample.freq=10} retains every tenth sample in the chain)}
+  \item{samp}{frequency with which Markov samples are retained (e.g., \code{samp=10} retains every tenth sample in the chain)}
   \item{type}{the class of model to use (see \bold{Details})}
   \item{...}{arguments passed to \code{\link[geiger]{cache}}}
 }
@@ -126,7 +126,7 @@ traitgram=function(phy, hist, alpha=0, cex.node=2, scl=2, ...){
 }
 
 # wrapper for levylite
-jumper=function(phy, alpha=0, sigmasq.brown=0.001, sigmasq.jump=0.1, jumps=jumptarget){
+jumper=function(phy, alpha=0, sigmasq.brown=0.01, sigmasq.jump=1, jumps=jumptarget){
 	lambda=jumps/sum(phy$edge.length)
 	hist=levylite(phy, alpha=alpha, sigmasq.brown=sigmasq.brown, sigma.jump=sqrt(sigmasq.jump), lambda.jump=lambda)
 	dat=hist$phenotype[hist$descendant<=Ntip(phy)]
@@ -180,7 +180,7 @@ r=paste(sample(letters,9,replace=TRUE),collapse="")
 traitgram(phy, hist, alpha=0)
 
 ## RUN ANALYSIS
-rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, sample.freq=500, filebase=r, simple.start=TRUE, type="jump-bm")
+rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, samp=500, filebase=r, simple.start=TRUE, type="jump-bm")
 outdir=paste("jump-BM", r, sep=".")
 ps=load.rjmcmc(outdir)
 dev.new()
@@ -204,7 +204,7 @@ scl=scaler(phy, show.tip=FALSE)
 dat=rTraitCont(scl)
 
 ## RUN ANALYSIS
-rjmcmc.bm(phy, dat, prop.width=1.5, ngen=20000, sample.freq=500, filebase=r, simple.start=TRUE, type="rbm")
+rjmcmc.bm(phy, dat, prop.width=1.5, ngen=20000, samp=500, filebase=r, simple.start=TRUE, type="rbm")
 outdir=paste("relaxedBM", r, sep=".")
 ps=load.rjmcmc(outdir)
 dev.new()

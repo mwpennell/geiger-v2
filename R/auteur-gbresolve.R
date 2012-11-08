@@ -164,7 +164,7 @@ gbcontain=function(x, rank="species", within="", ...){
 		
 		if(length(ww)==1){
 			id=gb[ww,"id"]
-			return(FUN(id))	
+			return(FUN(id))
 		} else if(!length(ww)){
 			return(NULL)
 		} else {
@@ -232,8 +232,14 @@ gbresolve=function(x, rank="phylum", within="", ...){
 
 gbresolve.default=function(x, rank="phylum", within="", ...){
 		
+    ridx=match(rank, Linnaean)
+    if(any(is.na(ridx)) | length(ridx)>2) stop("'rank' should be a vector of one or two elements occuring in Linnaean") 
+    rank=rank[oridx<-order(ridx)]
+    ridx=ridx[oridx]
+
 	gb=.ncbi(...)
-	FUN=.fetch_gbhierarchy.above(gb, rank=rank, within=within)
+
+	FUN=.fetch_gbhierarchy.above(gb, rank=rank[1], within=within)
 				
 	if(all(is.numeric(x) | is.integer(x))){
 		ss=gb[,"type"]=="scientific name"
@@ -256,7 +262,28 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
 		tt=tt[-which(dd)]
 	}
     
-    tmp=lapply(tmp, function(x) x[1:which(names(x)==rank)])
+    tmp=lapply(1:length(tmp), function(idx) {
+        x=tmp[[idx]]
+        y=x[1:which(names(x)==rank[1])]
+        if(length(rank)==2){
+            wx=which(names(y)==rank[2])
+            if(!length(wx)) {
+                warning(paste(sQuote(rank[2]), "appears to be a rank inconsistent with NCBI taxonomy for", sQuote(tt[idx])))
+                return(NA)
+            }
+            y=y[wx:length(y)]
+        }
+        y
+    })
+    
+    if(!length(tmp)) return(NULL)
+
+    dd=sapply(tmp, function(y) all(is.na(y)))
+    if(any(dd)) {
+		warning(paste("The following taxa were not encountered in the NCBI taxonomy:\n\t", paste(tt[which(dd)], collapse="\n\t"), sep=""))
+		tmp=tmp[-which(dd)]
+		tt=tt[-which(dd)]
+	}
 	
 	if(!length(tmp)) return(NULL)
 	
@@ -287,6 +314,48 @@ gbresolve.phylo=function(x, rank="phylum", within="", ...){
 	
 	phy=nodelabel.phylo(phy, tmp)
 	return(list(phy=phy, tax=res))
+}
+
+subset.phylo=function(x, taxonomy, rank="", ...){
+## rank (e.g., 'family') and 'family' must be in columns of 'taxonomy'
+	
+	phy=x
+	if(!rank%in%colnames(taxonomy)){
+		stop(paste(sQuote(rank), " does not appear as a column name in 'taxonomy'", sep=""))
+	}
+	
+	xx=match(phy$tip.label, rownames(taxonomy))
+	
+	new=as.matrix(cbind(tip=phy$tip.label, rank=taxonomy[xx,rank]))
+	drop=apply(new, 1, function(x) if( any(is.na(x)) | any(x=="")) return(TRUE) else return(FALSE))
+	if(any(drop)){
+		warning(paste("Information for some tips is missing from 'taxonomy'; offending tips will be left unpruned:\n\t", paste(phy$tip.label[drop], collapse="\n\t"), sep=""))
+#		phy=drop.tip(phy, phy$tip.label[drop])
+#		new=new[!drop,]
+	}
+	
+	tips=phy$tip.label
+	hphy=hashes.phylo(phy, tips=tips)
+	tax=as.data.frame(new, stringsAsFactors=FALSE)
+	stax=split(tax$tip,tax$rank)
+	rank_hashes=sapply(stax, function(ss) .hash.tip(ss, tips=tips))
+	
+	pruned=hphy
+	pruned$tip.label=ifelse(drop==TRUE, tax$tip, tax$rank)
+
+	if(!all(zz<-rank_hashes%in%hphy$hash)){
+		warning(paste(paste("non-monophyletic at level of ",rank,sep=""),":\n\t", paste(sort(nonmon<-names(rank_hashes)[!zz]), collapse="\n\t"), sep=""))
+#       for(j in 1:length(nonmon)){
+            vv=which(pruned$tip.label%in%nonmon)
+            pruned$tip.label[vv]=names(pruned$tip.label[vv])
+#       }
+#		pruned=drop.tip(pruned, nonmon)
+        
+	}
+		
+	rank_phy=unique.phylo(pruned)
+	rank_phy$tip.label=as.character(rank_phy$tip.label)
+	return(rank_phy)	
 }
 
 
@@ -404,10 +473,10 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 			if(length(unique(dat$parent_id))==1){
 				idx=min(idx)
 			} else {
-				if(within=="") {
-					warning(paste(sQuote(name), "does not appear to be a unique 'name'"))
-					return(NA)
-				}
+#				if(within=="") {
+#					warning(paste(sQuote(name), "does not appear to be a unique 'name'"))
+#					return(NA)
+#				}
 			}
 		}
 		
@@ -441,8 +510,9 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 		if(length(idx)>1){
 			tmp=lapply(idx, alltax)
 			ww=sapply(tmp, function(x) tolower(within)%in%tolower(x))
-			if(any(ww)){
-				if(sum(ww)>1){
+			if(any(ww) | within==""){
+                if(within=="") ww=sapply(tmp, length)>0
+				if(sum(ww)>1 | within==""){
 					uu=table(names(unlist(tmp[which(ww)])))
 					uu=names(uu[uu==sum(ww)])
 					x=sapply(tmp[which(ww)], function(y) digest(y[names(y)%in%uu]))
@@ -456,6 +526,9 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 					return(tmp[[which(ww)]])
 				}
 			} else {
+                if(within!="") {
+                    if(length(tmp)) warning(paste(sQuote(name), "was encountered in NCBI taxonomy but not found within", sQuote(within)))
+                }
 				return(NA)
 			}
 		} else {

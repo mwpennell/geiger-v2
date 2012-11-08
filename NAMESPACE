@@ -9,7 +9,6 @@ exportPattern("^[[:alpha:]]+")
 #export(sim.char)
 #export(tip.disparity)
 #export(bd.sim, treedata, tips)
-#export(ace)
 #export(print.bm, print.mkn)
 #export(transform.phylo)
 ## IN PROGRESS

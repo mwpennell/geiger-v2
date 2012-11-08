@@ -334,7 +334,7 @@ constrain.m=function(f, m){
 ## from vcv.phylo()
 	n <- length(phy$tip.label)
 	pp <- .cache_tree(phy)$adesc[-c(1:n)]
-	phy <- reorder(phy, "pruningwise")
+	phy <- reorder(phy, "postorder")
 	e1 <- phy$edge[, 1]
 	e2 <- phy$edge[, 2]
 	EL <- phy$edge.length

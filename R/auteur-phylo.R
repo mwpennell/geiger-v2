@@ -145,7 +145,7 @@ function(node,phy) {
 	N=as.integer(Ntip(phy))
 	n=as.integer(Nnode(phy))
 	
-	phy=reorder(phy, "pruningwise")
+	phy=reorder(phy, "postorder")
 	
 	zz=list( N=N,
 			MAXNODE=N+n,
@@ -513,6 +513,8 @@ function(node, phy, tips=FALSE){
 	}	
 	
 	if(!all(is.numeric(mm))) stop("Supply 'labels' as a character or integer vector")
+    
+    if(length(u<-unique(mm))==1) return(u)
 	
 	aa=unlist(lapply(mm, function(x) .get.ancestors.of.node(x, phy)))
 	tt=table(aa)
@@ -865,43 +867,6 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL){
 
 
 ## FUNCTIONS ##
-
-subset.phylo=function(x, taxonomy, rank="family", ...){
-## rank (e.g., 'family') and 'genus' must be in columns of 'taxonomy'
-	
-	phy=x
-	if(!rank%in%colnames(taxonomy)){
-		stop(paste(sQuote(rank), " does not appear as a column name in 'taxonomy'", sep=""))
-	}
-	
-	xx=match(phy$tip.label, rownames(taxonomy))
-	
-	new=as.matrix(cbind(tip=phy$tip.label, rank=taxonomy[xx,rank]))
-	drop=apply(new, 1, function(x) if( any(is.na(x)) | any(x=="")) return(TRUE) else return(FALSE))
-	if(any(drop)){
-		warning(paste("Information for some tips is missing from 'taxonomy'; offending tips will be pruned:\n\t", paste(phy$tip.label[drop], collapse="\n\t"), sep=""))
-		phy=drop.tip(phy, phy$tip.label[drop])
-		new=new[!drop,]
-	}
-	
-	tips=phy$tip.label
-	hphy=hashes.phylo(phy, tips=tips)
-	tax=as.data.frame(new, stringsAsFactors=FALSE)
-	stax=split(tax$tip,tax$rank)
-	rank_hashes=sapply(stax, function(ss) .hash.tip(ss, tips=tips))
-	
-	pruned=hphy
-	pruned$tip.label=tax$rank
-
-	if(!all(zz<-rank_hashes%in%hphy$hash)){
-		warning(paste(paste("non-monophyletic at level of ",rank,sep=""),":\n\t", paste(sort(nonmon<-names(rank_hashes)[!zz]), collapse="\n\t"), sep=""))
-		pruned=drop.tip(pruned, nonmon)
-	}
-		
-	rank_phy=unique.phylo(pruned)
-	
-	return(rank_phy)	
-}
 
 .TESTING_bind.phylo=function(phy, taxonomy){
 ## phy: a 'rank' level phylogeny (tips of 'phy' should be matchable to taxonomy[,rank])

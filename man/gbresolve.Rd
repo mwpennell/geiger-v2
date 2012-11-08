@@ -22,9 +22,10 @@ working with NCBI taxonomy}
 
 \details{
 	The functions access the NCBI taxonomy resource (\url{http://www.ncbi.nlm.nih.gov/Taxonomy/taxonomyhome.html}; see also \code{\link[geiger]{ncbi}}). 
-	\code{gbresolve} resolves the taxonomic hierarchy for queried taxa up to the given \code{rank}, and \code{gbcontain} resolves all taxa found within 
-	a given queried group and occurring at a specified \code{rank}.  The \code{rank} must be found within the object \code{Linnaean} (see \bold{Examples}). 
-	The argument \code{within} can restrict the group within which to conduct the search (see \bold{Examples}).  
+	\code{gbresolve} resolves the taxonomic hierarchy for queried taxa up to the given \code{rank} (or between the given \code{rank}s if two are given), 
+    and \code{gbcontain} resolves all taxa found within a given queried group and occurring at a specified \code{rank}.  The \code{rank} must be found 
+    within the object \code{Linnaean} (see \bold{Examples}). The argument \code{within} can restrict the group within which to conduct the search 
+    (see \bold{Examples}).  
 	
 	The local copy of the taxonomy resource (accessible in with \code{data(ncbi)}) can be updated with a call to \code{geiger:::.ncbi(update=TRUE)}.  
 }
@@ -42,7 +43,7 @@ gbresolve("Andrias japonicus")
 
 ## resolve taxa found in tree
 sal=get(data(caudata))
-x=gbresolve(sal$phy)
+x=gbresolve(sal$phy, rank=c("genus", "order"))
 plot(x$phy, show.node=TRUE, type="f", show.tip=FALSE, cex=0.3)
 
 ## find all genera within salamanders

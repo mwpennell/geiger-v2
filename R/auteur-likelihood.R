@@ -132,7 +132,7 @@ function(rphy, ic) {
     nb.node <- phy$Nnode
 	if(!is.binary.tree(phy)) stop("'phy' is not fully dichotomous.")
 	
-    phy <- reorder(phy, "pruningwise")
+    phy <- reorder(phy, "postorder")
 	
 	ans <- .C("pic_variance", as.integer(nb.tip), as.integer(nb.node),
               as.integer(phy$edge[, 1]), as.integer(phy$edge[, 2]),
@@ -144,16 +144,17 @@ function(rphy, ic) {
 }
 
 .make.bm.relaxed.vcv <- function(phy, dat, SE=NULL){
-	cache=.prepare.bm(phy, dat, SE)
+    ## NOT currently handling given node states
+    
+	cache=.prepare.bm.univariate(phy, dat, nodes=NULL, SE=SE, control=list(binary=FALSE))
 	
 	check.argn=function(rates, root){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
 	
-    adjvar = as.integer(cache$SE==-666)
+    adjvar = as.integer(attributes(cache$y)$adjse)
  
     if(any(adjvar==1)){ # adjustable SE
-        if(!all(cache$SE[adjvar==1]==-666)) stop("unexpected error when substituting 'SE'")
 		likSE <- function(rates, root, SE) {
 			check.argn(rates, root)
             tt=.scale.brlen(cache$phy, rates)
@@ -186,22 +187,24 @@ function(rphy, ic) {
 
 .make.bm.relaxed.pic <- function(phy, dat, SE=NULL){
     
-    ## NOT YET VERIFIED to work with .prepare.bm()
-	cache=.prepare.bm(phy, dat, SE)
+    ## NOT currently handling given node states
+	cache=.prepare.bm.univariate(phy, dat, nodes=NULL, SE=SE)
 	
-	ic=pic(dat, phy, scaled=FALSE)
+	ic=pic(cache$dat, cache$phy, scaled=FALSE)
 	cache$ic=ic
 	
 	check.argn=function(rates){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1)) stop("Supply 'rates' as a vector of rate scalars for each branch.")
 	}
 	
-    adjvar = as.integer(cache$SE==-666)
-    subSE=match(1:Ntip(cache$phy), cache$phy$edge[,2])
+    adjvar = as.integer(attributes(cache$y)$adjse)
+
     xSE=cache$SE
+    N=Ntip(cache$phy)
+    subSE=match(1:N, cache$phy$edge[,2])
+
     
     if(any(adjvar==1)){ # adjustable SE
-        if(!all(xSE[adjvar==1]==-666)) stop("unexpected error when substituting 'SE'")
 		likSE <- function(rates, SE) {
 			check.argn(rates)
             xSE[adjvar==1]=SE
@@ -231,51 +234,54 @@ function(rphy, ic) {
 
 .make.bm.relaxed.direct <- function (phy, dat, SE=NULL) 
 {
-	cache=.prepare.bm(phy, dat, SE)
+
+    ## NOT currently handling given node states
+    
+	cache=.prepare.bm.univariate(phy, dat, nodes=NULL, SE=SE)
+    N = cache$n.tip
+    n = cache$n.node
 	z = length(cache$len)
-    rr = numeric(z)
     rootidx = as.integer(cache$root)
-	adjvar = as.integer(cache$y$adjSE)
-	
-    datc_init = list(len = as.numeric(cache$len),
+    adjvar = as.integer(attributes(cache$y)$adjse)
+	given = as.integer(attributes(cache$y)$given)
+    given[rootidx]=1
+    
+    datc_init = list(
+                len = as.numeric(cache$len),
 				intorder = as.integer(cache$order[-length(cache$order)]), 
-				tiporder = as.integer(cache$y$target), 
+				tiporder = as.integer(1:N), 
 				root = rootidx, 
-				y = as.numeric(cache$y$y[1, ]), 
-				var = as.numeric(cache$y$y[2, ]),
-				n = as.integer(z), 
+                y = as.numeric(cache$y[1, ]),
+				n = as.integer(z),
+                given = as.integer(given),
 				descRight = as.integer(cache$children[, 1]),
 				descLeft = as.integer(cache$children[, 2]),
                 drift=0
     )
 	
-	ll.bm.direct <- function(pars, root = ROOT.MAX, root.x = NA, intermediates = FALSE, datc) {
+	ll.bm.direct <- function(pars, datc) {
         out = .Call("bm_direct", dat = datc, pars = pars, package = "geiger")
-        vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
-        loglik <- .root.bm.direct(vals, out$lq[-rootidx], root, root.x)
-        if (intermediates) {
-            attr(loglik, "intermediates") <- intermediates
-            attr(loglik, "vals") <- vals
-        }
+#       vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
+        loglik <- sum(out$lq)
+#       intermediates=FALSE
+#       if (intermediates) {
+#          attr(loglik, "intermediates") <- intermediates
+#          attr(loglik, "vals") <- vals
+#       }
         return(loglik)
     }
     class(ll.bm.direct) <- c("bm.direct", "bm", "function")
 	
-	N = cache$n.tip
-    n = cache$n.node
-    ord = 1:(N + n)
-	vv = numeric(length(ord))
-    mm = match(cache$phy$edge[, 2], ord)	
+	vv = numeric(N+n)
+    mm = match(cache$phy$edge[, 2], 1:(N+n))
 	check.argn=function(rates, root){
-		if(length(rates)!=(cache$n.node+cache$n.tip-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
+		if(length(rates)!=(N+n-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
-	
-    var=cache$y$SE
+	   
+    var = as.numeric(cache$y[2, ]^2)
     
 	## LIKELIHOOD FUNCTION
 	if(any(adjvar==1)){ # adjustable SE
-        if(!all(var[adjvar==1]==-666)) stop("unexpected error when substituting 'SE'")
-        var=var^2
 		likSE <- function(rates, root, SE) {
 			check.argn(rates, root)
 			vv[mm] = rates
@@ -283,7 +289,9 @@ function(rphy, ic) {
 			var[which(adjvar==1)]=SE^2
             datc_se$var=var
             
-			ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE, datc_se)
+            datc_se$y[rootidx]=root
+            
+			ll = ll.bm.direct(pars = vv,  datc_se)
 			return(ll)
 		}
 		attr(likSE, "cache") <- cache
@@ -291,12 +299,13 @@ function(rphy, ic) {
 		class(likSE)=c("rbm","bm","function")
 		return(likSE)
 	} else { # unadjustable SE
-        var=var^2
 		lik <- function(rates, root) {
 			check.argn(rates, root)
 			vv[mm] = rates
             datc_init$var=var
-			ll = ll.bm.direct(pars = vv, root = ROOT.GIVEN, root.x = root, intermediates = FALSE, datc_init)
+            datc_init$y[rootidx]=root
+
+			ll = ll.bm.direct(pars = vv,  datc_init)
 			return(ll)
 		}
 		attr(lik, "cache") <- cache
@@ -345,15 +354,108 @@ function(rphy, ic) {
 	
     len <- edge.length[mm<-match(idx, edge[, 2])]
 	
-	ans <- list(tip.label = phy$tip.label, node.label = phy$node.label, mm=mm,
+	ans <- list(tip.label = phy$tip.label, node.label = phy$node.label,
 				len = len, children = children, order = order, 
 				root = root, n.tip = n.tip, n.node = phy$Nnode, tips = tips, 
-				edge = edge, edge.length = edge.length, binary = binary, desc = desc)
+				edge = edge, edge.length = edge.length, nodes = phy$edge[,2], binary = binary, desc = desc)
     ans
 }
 
 
-## CHECK ##
+.prepare.bm.univariate=function(phy, dat, nodes=NULL, SE=NA, control=list(binary=TRUE, ultrametric=FALSE)){
+
+    ## CONTROL OBJECT
+    ct=list(binary=TRUE, ultrametric=FALSE)
+    ct[names(control)]=control
+
+    phy=reorder(phy, "postorder")
+    
+    ## MATCHING and major problems
+    td=treedata(phy, dat, sort=TRUE, warnings=FALSE)
+    phy=td$phy
+    if(ct$binary) if(!is.binary.tree(phy)) stop("'phy' should be a binary tree")
+    if(ct$ultrametric) if(!is.ultrametric(phy)) stop("'phy' should be an ultrametric tree")
+
+
+    if(ncol(td$data)>1) stop("'dat' should be univariate")
+    dat=td$data[,1]
+
+	## RESOLVE SE
+    seTMP=structure(rep(NA, length(dat)), names=names(dat))
+    
+	if(is.null(SE)) SE=NA
+    
+    if(length(SE)>1){
+        if(is.null(names(SE))) stop("'SE' should be a named vector")
+        if(!all(names(dat)%in%names(SE))) stop("names in 'SE' must all occur in names of 'dat'")
+        seTMP[names(SE[names(dat)])]=SE[names(dat)]
+        SE=seTMP
+    } else {
+        if(is.numeric(SE)){
+            seTMP[]=SE
+            SE=seTMP
+        } else {
+            SE=seTMP
+        }
+    }
+    
+    if(!all(is.na(SE) | SE >= 0)) stop("'SE' values should be positive (including 0) or NA")
+    
+    adjse=numeric(length(dat))
+    if(any(vv<-is.na(SE))) {
+        adjse[which(vv)]=1
+    }
+    
+    ## CACHE tree
+    cache=.cache.tree(phy)
+    N=cache$n.tip
+    n=cache$n.node
+    m<-s<-g<-numeric(N+n)
+    
+    ## RESOLVE data: given trait values (m and g) and SE (s) for every node (tips and internals)
+    g[1:N]=1
+    m[]=NA; m[1:N]=dat
+    s[1:N]=SE
+
+    ## RESOLVE nodes
+    if(!is.null(nodes)){
+        if(!all(c("taxon1", "taxon2", "mean", "SE")%in%colnames(nodes))){
+            stop("'nodes' must minimally have column names: 'taxon1', 'taxon2', 'mean', and 'SE'")
+        }
+        
+        nodes=as.data.frame(nodes)
+        if(!is.numeric(nodes$mean) | !is.numeric(nodes$SE)){
+            stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
+        }
+        
+        if(!all(zz<-unique(c(as.character(nodes$taxon1), as.character(nodes$taxon2)))%in%phy$tip.label)){
+            stop(paste("Some taxa appear missing from 'phy':\n\t", paste(zz[!zz%in%phy$tip.label], collapse="\n\t", sep=""), sep=""))
+        }
+                    
+        nodes$node=apply(nodes[,c("taxon1", "taxon2")], 1, .mrca, phy=phy)
+        if(!length(unique(nodes$node))==nrow(nodes)) {
+            stop("Some nodes multiply constrained:\n\t", paste(nodes$node[duplicated(nodes$node)], collapse="\n\t", sep=""), sep="")
+        }
+        
+        m[nodes$node]=nodes$mean
+        s[nodes$node]=nodes$SE
+        g[nodes$node]=1
+    } 
+
+    vec=rbind(m=m, s=s)
+    attr(vec, "given")=g
+    attr(vec, "adjse")=adjse
+    	
+	cache$SE=SE
+	cache$dat=dat[match(phy$tip.label, names(dat))]
+	cache$phy=phy
+    
+    cache$y=vec
+
+    return(cache)
+}
+
+## CHECK -- DEFUNCT ##
 .prepare.bm <- function(phy, dat, SE=NA) {
 
 	## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species) 
@@ -395,6 +497,7 @@ function(rphy, ic) {
 }
 
 
+## DEFUNCT
 .cache.data.bm <- function (phy, dat, SE=NULL) 
 {
 	cache=.cache.tree(phy)

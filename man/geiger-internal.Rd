@@ -26,6 +26,7 @@
 \alias{edges.phylo}
 \alias{edgelabels.auteur}
 \alias{ess}
+\alias{exemplar.phylo}
 \alias{fitDiversification}
 \alias{fitSplitModel}
 \alias{gbresolve.default}
@@ -69,7 +70,6 @@
 \alias{root.phylo}
 \alias{sem}
 \alias{splitEdgeMatrixGeiger}
-\alias{subset.phylo}
 \alias{transform}
 \alias{ultrametricize.phylo}
 \alias{unique.multiPhylo}

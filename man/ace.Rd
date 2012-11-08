@@ -6,7 +6,7 @@
 	a Brownian motion model
 }
 \usage{
-ace(dat, phy) 
+.ace(dat, phy) 
 }
 \arguments{
   \item{dat}{a named vector of continuous trait values, associated with each species in \code{phy}}
@@ -38,9 +38,9 @@ ace(dat, phy)
 
 geo=get(data(geospiza))
 
-ace(geo$dat[,1], geo$phy)
+geiger:::.ace(geo$dat[,1], geo$phy)
 
-ace(geo$dat, geo$phy)
+geiger:::.ace(geo$dat, geo$phy)
  
 
 }

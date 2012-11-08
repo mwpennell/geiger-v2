@@ -51,7 +51,9 @@
 	return(df[,-which(names(df)=="valid")])
 }
 
-congruify.phylo=function(stock, scion, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8")){
+congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8")){
+    stock=reference
+    scion=target
 #	stock: a time-calibrated phylogeny with tip-labels that can be treated as an exemplar for clades in 'scion'
 #		-- e.g., tip.label in 'stock' might be "Pinus" while in 'scion' we might have "Pinus_cembra"
 #		-- tips in 'stock' can be contained in 'scion' (FIXME: is this true?)
@@ -116,7 +118,7 @@ congruify.phylo=function(stock, scion, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8
 		stock$hash=stock_dat$hash[match(1:(Ntip(stock)+Nnode(stock)), stock_dat$des)]
 		stock$node.label=stock$hash[(Ntip(stock)+1):max(stock$edge)]
 		stock$node.label[is.na(stock$node.label)]=""
-		return(list(phy=phy, calibrations=calibration, stock=stock))
+		return(list(phy=phy, calibrations=calibration, reference=stock))
 	}
 	
 	## end functions

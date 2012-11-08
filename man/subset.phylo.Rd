@@ -1,18 +1,20 @@
-\name{exemplar.phylo}
-\alias{exemplar.phylo}
+\name{subset.phylo}
+\alias{subset.phylo}
 \title{
 blending information from taxonomies and trees }
 \description{
 working with systematic reference tables and phylogenies}
 \usage{
-exemplar.phylo(phy, taxonomy=NULL, ...)
+
+    \method{subset}{phylo}(x, taxonomy, rank="", ...)
 }
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{phy}{a phylogenetic tree of class 'phylo'}
+  \item{x}{a phylogenetic tree of class 'phylo'}
   \item{taxonomy}{a ('matrix') linkage table between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
-  \item{...}{additional arguments to be passed to \code{\link[geiger]{gbresolve}} (if \code{taxonomy} is NULL)} 
+  \item{rank}{a column name in 'taxonomy' at which to resample the tree (see \bold{Examples})}
+  \item{...}{arguments to be passed to other functions (has no effect in the present context)}
 }
 
 \author{JM Eastman}
@@ -21,7 +23,7 @@ exemplar.phylo(phy, taxonomy=NULL, ...)
 sal=get(data(caudata))
 print(head(sal$tax))
 
-nphy=exemplar.phylo(sal$phy, sal$tax)
+nphy=subset.phylo(sal$phy, sal$tax, "genus")
 plot(nphy, type="fan", cex=0.15)
 
 }

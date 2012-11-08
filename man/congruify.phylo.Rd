@@ -7,23 +7,23 @@ ultrametricization of trees from a supplied timetree}
 \description{
 automagically generating secondary calibrations}
 \usage{
-congruify.phylo(stock, scion, taxonomy = NULL, tol = 0, scale=c(NA, "PATHd8"))
+congruify.phylo(reference, target, taxonomy = NULL, tol = 0, scale=c(NA, "PATHd8"))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{stock}{an ultrametric tree used to time-scale the \code{scion}}
-  \item{scion}{a phylogram that is sought to be ultrametricized based on the \code{stock} phylogeny}
+  \item{reference}{an ultrametric tree used to time-scale the \code{target}}
+  \item{target}{a phylogram that is sought to be ultrametricized based on the \code{reference} phylogeny}
   \item{taxonomy}{a linkage table between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
-  \item{tol}{branching time in \code{stock} above which secondary constraints will be applied to \code{scion}}
+  \item{tol}{branching time in \code{reference} above which secondary constraints will be applied to \code{target}}
   \item{scale}{either \code{NA} or \code{"PATHd8"} (if \code{PATHd8} is available in the R \code{PATH})}
 }
 \details{
-	This function uses the \code{stock} to inform secondary calibrations in the \code{scion}. The primary output is a table of 'congruent' nodes between the \code{stock} 
-	and \code{scion} with associated dates given by the \code{stock}.  
+	This function uses the \code{reference} to inform secondary calibrations in the \code{target}. The primary output is a table of 'congruent' nodes between the \code{reference} 
+	and \code{target} with associated dates given by the \code{reference}.  
 	
-	If multiple trees are supplied as the \code{stock}, a 'congruification' table is generated for each.  
+	If multiple trees are supplied as the \code{reference}, a 'congruification' table is generated for each.  
 	
-	If \code{scale="PATHd8"}, the \code{scion} will be smoothed by \code{PATHd8} using the "d8 calculation" (see \url{http://www2.math.su.se/PATHd8/PATHd8manual.pdf}). 
+	If \code{scale="PATHd8"}, the \code{target} will be smoothed by \code{PATHd8} using the "d8 calculation" (see \url{http://www2.math.su.se/PATHd8/PATHd8manual.pdf}). 
 	This scaling method requires that \code{PATHd8} is available on the user's \code{PATH} variable that can be accessed by \code{\link[base]{Sys.getenv}("PATH")}.
 }
 

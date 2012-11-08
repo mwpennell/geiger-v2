@@ -1,5 +1,5 @@
 .deprecate=function(prev, curr){
-	warning(paste(sQuote(prev), "has being deprecated: use", paste(sQuote(curr), collapse=" or "), sep=" "))
+	warning(paste(sQuote(prev), "is being deprecated: use", paste(sQuote(curr), collapse=" or "), sep=" "))
 }
 
 

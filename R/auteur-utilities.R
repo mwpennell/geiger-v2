@@ -596,22 +596,22 @@ hashes.rjmcmc=function(obj, phy){
 }
 
 ## RUN CONTROL ##
-cache=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...){
+make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...){
 	type=match.arg(type, c("rbm","bm","jump-rbm","jump-bm"))
 	if(type%in%c("bm", "rbm", "jump-bm", "jump-rbm")){
 		flavor="gbm"
 	}
 	switch(flavor, 
-		   gbm=.cache.gbm(phy, dat, SE=SE, type=type, ...)
+		   gbm=.prepare.gbm.univariate(phy, dat, SE=SE, type=type, ...)
 		   )
 }
 
-.cache.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...){
+.prepare.gbm.univariate=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...){
 		
 	type=match.arg(type, c("rbm","bm","jump-rbm","jump-bm"))
 	
 	con=list(
-			 method="direct",												# likelihood method: direct - pruning algorithm; vcv - variance-covariance matrix; reml - REML (pic)
+			 method="direct",												# likelihood method: direct - pruning algorithm
 			 rate.lim=list(min=0, max=Inf),									# limits on rates
 			 root.lim=list(min=-10^3, max=10^3),							# limits on root
 			 se.lim=list(min=0, max=Inf),									# limits on SE
@@ -627,7 +627,7 @@ cache=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...)
 			 excludeSHIFT=c(),												# edges to exclude for shifts
 			 excludeJUMP=c(),												# edges to exclude for jumps
 			 bm.jump=0.5,													# proposal density of 'bm' updates versus 'jump' updates
-			 mergesplit.shift=0.5,											# proposal density for 'mergesplit' (merging or splitting of) rate classes versus proposals that 'shift' a rate class in tree
+			 mergesplit.shift=0.5,											# proposal density for 'mergesplit' (merging or splitting of rate classes) versus proposals that 'shift' a rate class in tree
 			 tune.scale=0.65,												# proposal density for 'tune' a single rate class or 'scale' all rate classes
 			 slide.mult=0.25,												# proposal density for 'slide' (sliding window) proposals versus 'mult' (multiplier) proposals
 			 prob.dimension=0.65,											# proposals for dimensionality: involves 'bm.jump', 'mergesplit.shift'
@@ -646,11 +646,11 @@ cache=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...)
 	if(missing(phy) & missing(dat)) {
 		# print direction to user if controller() called without data
 		cat(paste(toupper("\n*** default priors and control parameters are as follows ***"),"\n\n",sep=""))
-		cat("\n\nNOTE: settings within the control object can be adjusted through the additional arguments (...) of controller()\n\n") 
+		cat("\n\nNOTE: settings within the control object can be adjusted through the additional arguments (...) of make.gbm()\n\n") 
 		
 		print(con)
 		
-		cat("\n\nNOTE: settings within the control object can be adjusted through the additional arguments (...) of controller()\n\n") 
+		cat("\n\nNOTE: settings within the control object can be adjusted through the additional arguments (...) of make.gbm()\n\n") 
 		stop("'phy' and 'dat' must minimally be supplied to this function")
 	}
 	
@@ -664,11 +664,11 @@ cache=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...)
 	## FINALIZE control-object
 	# create cache
 	con$method=match.arg(con$method, c("direct"))
-	tmp=make.bm.relaxed(phy, dat, SE, method=con$method)
-	cache=attributes(tmp)$cache
-	attr(tmp,"cache")=NULL
+	lltmp=make.bm.relaxed(phy, dat, SE, method=con$method)
+	cache=attributes(lltmp)$cache
+	attr(lltmp,"cache")=NULL
 	cache$edge.length.cs=cumsum(cache$edge.length)
-	con$lik=tmp
+	con$lik=lltmp
 	
 	# check (or create) prior distributions
 	nn=length(cache$edge.length)
@@ -732,7 +732,11 @@ cache=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...)
 	}
 	
 	# proposal distributions
-	if(sum(cache$y$SE)==0) con$prob.SE=0
+	if(sum(attributes(cache$y)$adjse)==0) {
+        con$prob.SE=0
+    } else {
+        if(con$prob.SE==0) stop("'prob.SE' should be non-zero")
+    }
 	proposals=c(dim=con$prob.dimension, effect=con$prob.effect, root=con$prob.root, se=con$prob.SE)
 	if(con$method=="reml") proposals=proposals[c("dim","effect")]
 	prop.cs=cumsum(proposals*(1/sum(proposals)))		
@@ -901,7 +905,7 @@ function(phy, dat){
 	} else {
 		root=.proposal.slidingwindow(root, control$prop.width, control$root.lim)$v
 	}
-	if(sum(cache$y$SE)==0) {
+	if(sum(attributes(cache$y)$adjse)==0) {
 		se=NA 
 	} else {
 		se=runif(1)

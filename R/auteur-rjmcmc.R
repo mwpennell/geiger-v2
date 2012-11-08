@@ -1,4 +1,4 @@
-.rjmcmc.bm.multi=function(phy, dat, SE, ngen, sample.freq, type=c("jump-rbm", "rbm", "jump-bm", "bm"),...){
+.rjmcmc.bm.multi=function(phy, dat, SE, ngen, samp, type=c("jump-rbm", "rbm", "jump-bm", "bm"),...){
 	con=list(...)
 	trees=phy
 	fb=con$filebase
@@ -8,7 +8,7 @@
 	if(!is.null(fb)) files=paste(fb, nm, sep="_") else files=nm
 	FUN=lapply
 	FUN(1:length(trees), function(idx){
-		rjmcmc.bm(phy=trees[[idx]], dat=dat, SE=SE, ngen=ngen, sample.freq=sample.freq, type=type, filebase=files[idx], ...)
+		rjmcmc.bm(phy=trees[[idx]], dat=dat, SE=SE, ngen=ngen, samp=samp, type=type, filebase=files[idx], ...)
 	})
 }
 
@@ -37,24 +37,22 @@
     }
 }
 
-rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("jump-rbm", "rbm", "jump-bm", "bm"), ... )
+rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, samp=100, type=c("jump-rbm", "rbm", "jump-bm", "bm"), ... )
 {
     
-#   SE=NA; ngen=50000; sample.freq=100; type=c("jump-rbm")
+#   SE=NA; ngen=50000; samp=100; type=c("jump-rbm")
+
+    # method
 	typs=c("jump-rbm", "rbm", "jump-bm", "bm")
-	if((tolower(type)->tt)%in%(tolower(c("jump-relaxedBM", "relaxedBM", "jump-BM", "BM"))->vv)){
-		type=typs[which(vv==tt)]
-	}
-	
 	type=match.arg(type, typs)
 	
-	if(sample.freq>ngen) stop("increase 'ngen' or decrease 'sample.freq'")
-	if("multiPhylo"%in%class(phy)) return(.rjmcmc.bm.multi(phy, dat, SE, ngen, sample.freq, type, ...))
+	if(samp>ngen) stop("increase 'ngen' or decrease 'samp'")
+	if("multiPhylo"%in%class(phy)) return(.rjmcmc.bm.multi(phy, dat, SE, ngen, samp, type, ...))
 	
 	# controller objects 
-	tmp=cache(phy, dat, SE=SE, type=type, ...)
+	tmp=make.gbm(phy, dat, SE=SE, type=type, ...)
 	ct=tmp$control
-	ct$thin=sample.freq
+	ct$thin=samp
 	ct$ngen=ngen
 	cache=tmp$cache
 	sp=tmp$start
@@ -263,7 +261,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, sample.freq=100, type=c("ju
 			if(i==tickerFreq) cat("|",rep(" ",9),toupper("generations complete"),rep(" ",9),"|","\n")
 			cat(". ")
 		}
-		if(i%%sample.freq==0 & ct$summary) {
+		if(i%%samp==0 & ct$summary) {
 			pr=.gbm.prior.lik(cur.scalars, cur.jumpvar, cur.nJ, cur.nR, cur.root, ct)
 
 			parms=list(principal=list(shifts=list(delta=cur.delta, shifts=cur.rates), jumps=list(delta=cur.jumps)), gen=i, lnL=cur.mod, 

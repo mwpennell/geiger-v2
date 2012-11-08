@@ -1,11 +1,11 @@
-\name{cache}
-\alias{cache}
+\name{make.gbm}
+\alias{make.gbm}
 \title{
 tailor reversible-jump Markov chain Monte Carlo sampling}
 \description{
 controlling reversible-jump Markov chain Monte Carlo sampling}
 \usage{
-cache(phy, dat, SE=NA, type = c("bm", "rbm", "jump-bm", "jump-rbm"), ...)
+make.gbm(phy, dat, SE=NA, type = c("bm", "rbm", "jump-bm", "jump-rbm"), ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -20,7 +20,7 @@ cache(phy, dat, SE=NA, type = c("bm", "rbm", "jump-bm", "jump-rbm"), ...)
 	Currently, the only \code{type} possible is for the generalized model for continuous traits (i.e., \code{type="rbm"}).  
 	
 	The argument \code{...} controls the substitution of default settings for Markov-chain Monte Carlo sampling. Below are the settings that are controllable by the user. 
-	These parameters and their default settings can be found with an \emph{empty} call to the function (e.g., \code{cache()}). 
+	These parameters and their default settings can be found with an \emph{empty} call to the function (e.g., \code{make.gbm()}).
 	
 	\bold{measurement error (SE)}: one of the arguments necessary for running \code{\link[geiger]{rjmcmc.bm}} is \code{SE}, which is a statement about the error associated with the values 
 	given in \code{dat}.  Measurement error (whose argument is \code{SE}) can be a named vector of numeric values (including \code{NA}) or a single value (including \code{NA}).  If given as 

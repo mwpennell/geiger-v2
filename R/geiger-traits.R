@@ -271,13 +271,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	
 	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
 	
-    # cache object for likelihood computation
-	if(!is.binary.tree(phy)){
-        warning("'phy' randomly resolved to be binary")
-		phy=multi2di(phy)
-	}
-	phy=reorder(phy)
-    cache=.prepare.bm(phy,dat,SE)
+    cache=.prepare.bm.univariate(phy,dat,nodes=NULL, SE=SE)
     cache$ordering=attributes(cache$phy)$order
 
 	# function for reshaping tree by model
@@ -293,35 +287,41 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			   white=.white.cache(cache)
 			   )
 	
-    z = length(cache$len)
-    rr = numeric(z)
+    N = cache$n.tip
+    n = cache$n.node
+	z = length(cache$len)
     rootidx = as.integer(cache$root)
-	nn = length(cache$len)
-	adjSE = any(cache$y$adjSE==1)
+    adjvar = as.integer(attributes(cache$y)$adjse)
+	given = as.integer(attributes(cache$y)$given)
+    given[rootidx]=1
     adjDRIFT=model=="drift"
+    adjSE=any(adjvar==1)
     
     # cache object needed for 'bm_direct'
-    datc = list(intorder = as.integer(cache$order[-length(cache$order)]), 
-				tiporder = as.integer(cache$y$target), 
+    datc = list(
+                intorder = as.integer(cache$order[-length(cache$order)]),
+				tiporder = as.integer(1:N), 
 				root = rootidx, 
-				y = as.numeric(cache$y$y[1, ]), 
-				n = as.integer(z), 
+                y = as.numeric(cache$y[1, ]),
+                var = as.numeric(cache$y[2, ]),
+				n = as.integer(z),
+                given = as.integer(given), 
 				descRight = as.integer(cache$children[ ,1]), 
 				descLeft = as.integer(cache$children[, 2]),
                 drift = 0
     )
 	
-    ll.bm.direct = function(q, sigsq, se, root = ROOT.MAX, root.x = NA, intermediates = FALSE, drft, datc) {
+    ll.bm.direct = function(q, sigsq, se, drft, datc) {
 		
 		if(is.null(argn(FUN))) new=FUN() else new=FUN(q)
         if(adjDRIFT) datc$drift=drft 
         
 		datc$len=as.numeric(new$len)
 		.xxSE=function(cache){
-			vv=cache$y$SE^2
-			ff=function(x){
-				if(any(cache$y$adjSE==1->ww)){
-					vv[ww]=x^2
+            vv=cache$y[2,]^2
+            ff=function(x){
+				if(any(adjvar==1->ww)){
+					vv[which(ww)]=x^2
 					return(vv)
 				} else {
 					return(vv)
@@ -333,9 +333,12 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 		
 		datc$var=as.numeric(modSE(se))
 		
-        out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, nn)), package = "geiger")
-        vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
-        loglik <- .root.bm.direct(vals, out$lq[-rootidx], root, root.x)
+        out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, z)), package = "geiger")
+#       vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
+        loglik <- sum(out$lq)
+        #        rlq=loglik-sum(out$lq[-rootidx])
+        #        print(list(rlq, vals, out))
+        intermediates=FALSE
         if (intermediates) {
             attr(loglik, "intermediates") <- intermediates
             attr(loglik, "vals") <- vals
@@ -357,7 +360,8 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
                 if(adjDRIFT) drft=-pars[3] else drft=0
-				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], root = ROOT.GIVEN, root.x = pars[3], intermediates = FALSE, drft, datc)
+                datc$y[rootidx]=pars[3]
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb
@@ -367,8 +371,9 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
-                if(adjDRIFT) drft=-pars[2] else drft=0
-				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, root = ROOT.GIVEN, root.x = pars[2], intermediates = FALSE, drft, datc)
+                if(adjDRIFT) drft=-pars[3] else drft=0
+                datc$y[rootidx]=pars[2]
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb
@@ -381,8 +386,9 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
-                if(adjDRIFT) drft=-pars[4] else drft=0
-				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], root = ROOT.GIVEN, root.x = pars[4], intermediates = FALSE, drft=drft, datc)
+                if(adjDRIFT) drft=-pars[5] else drft=0
+                datc$y[rootidx]=pars[4]
+				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], drft=drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb			
@@ -393,7 +399,8 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
                 if(adjDRIFT) drft=-pars[3] else drft=0
-				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, root = ROOT.GIVEN, root.x = pars[3], intermediates = FALSE, drft=drft, datc)
+                datc$y[rootidx]=pars[3]
+				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, drft=drft, datc)
 				return(ll)
 			}
 			attr(lik, "argn") = attb			
@@ -854,13 +861,13 @@ control=list(root=ROOT.OBS),
 
 
 
-ace<-function(dat, phy) {
+.ace<-function(dat, phy) {
 	
 	td=treedata(phy, dat)
 	dat=td$data
 	phy=td$phy
 	
-	if(ncol(dat)>1) return(apply(dat, 2, ace, phy))	
+	if(ncol(dat)>1) return(apply(dat, 2, .ace, phy))
 	
 	nn<-phy$Nnode
 	nt<-length(phy$tip.label)
