@@ -272,7 +272,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
 	
     cache=.prepare.bm.univariate(phy,dat,nodes=NULL, SE=SE)
-    cache$ordering=attributes(cache$phy)$order
+    cache$ordering=attributes(cache$phy)$order ## SHOULD BE POSTORDER
 
 	# function for reshaping tree by model
 	FUN=switch(model, 
@@ -336,14 +336,14 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
         out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, z)), package = "geiger")
 #       vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
         loglik <- sum(out$lq)
-        #        rlq=loglik-sum(out$lq[-rootidx])
-        #        print(list(rlq, vals, out))
-        intermediates=FALSE
-        if (intermediates) {
-            attr(loglik, "intermediates") <- intermediates
-            attr(loglik, "vals") <- vals
-        }
-        #        attr(loglik, "ROOT.MAX")=vals[1]
+#        rlq=loglik-sum(out$lq[-rootidx])
+#        print(list(rlq, vals, out))
+#       intermediates=FALSE
+#       if (intermediates) {
+#         attr(loglik, "intermediates") <- intermediates
+#         attr(loglik, "vals") <- vals
+#       }
+#       attr(loglik, "ROOT.MAX")=vals[1]
 		if(is.na(loglik)) loglik=-Inf
         return(as.numeric(loglik))
     }

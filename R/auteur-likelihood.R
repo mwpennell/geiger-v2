@@ -456,7 +456,7 @@ function(rphy, ic) {
 }
 
 ## CHECK -- DEFUNCT ##
-.prepare.bm <- function(phy, dat, SE=NA) {
+.DEFUNCT_prepare.bm <- function(phy, dat, SE=NA) {
 
 	## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species) 
 	# resolve estimation of SE
@@ -491,14 +491,14 @@ function(rphy, ic) {
 	# cache object
     if(!setequal(names(SE),td$phy$tip.label)) stop("'phy', 'dat', and 'SE' are not matchable")
     SE=SE[match(td$phy$tip.label, names(SE))]
-	cache=.cache.data.bm(td$phy, td$data[,1], SE)
+	cache=.DEFUNCT_cache.data.bm(td$phy, td$data[,1], SE)
 	cache$nodes=cache$phy$edge[,2]
 	return(cache)
 }
 
 
 ## DEFUNCT
-.cache.data.bm <- function (phy, dat, SE=NULL) 
+.DEFUNCT_cache.data.bm <- function (phy, dat, SE=NULL) 
 {
 	cache=.cache.tree(phy)
 	

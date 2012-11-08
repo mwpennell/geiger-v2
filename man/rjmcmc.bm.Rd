@@ -12,7 +12,7 @@ rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, samp = 100, type = c("jump-rbm", "rbm",
   \item{ngen}{number of sampling generations}
   \item{samp}{frequency with which Markov samples are retained (e.g., \code{samp=10} retains every tenth sample in the chain)}
   \item{type}{the class of model to use (see \bold{Details})}
-  \item{...}{arguments passed to \code{\link[geiger]{cache}}}
+  \item{...}{arguments passed to \code{\link[geiger]{make.gbm}}}
 }
 
 \details{
@@ -25,7 +25,7 @@ Estimates are stored as an MCMC-generations-by-branches matrix (see \bold{Exampl
 differing in topology (see \code{\link[digest]{digest}}). 
 
 Note that default settings (as the user assumes if nothing is specified in \code{...}) provide absolutely no guarantee of the chain achieving convergence.  The user is 
-emphatically encouraged to supply informed arguments for what are the most critical aspects of this MCMC sampler (see \code{\link[geiger]{cache}} for more information on 
+emphatically encouraged to supply informed arguments for what are the most critical aspects of this MCMC sampler (see \code{\link[geiger]{make.gbm}} for more information on 
 permissible modifications to the MCMC sampler). Finding reasonable run parameters will likely require much trial and error.  Run diagnosis and inspection of chain mixing is 
 facilitated by the R-package \pkg{coda} or by the Java application, Tracer (\url{http://tree.bio.ed.ac.uk/software/tracer/}).
 
@@ -34,7 +34,7 @@ In the \bold{Examples} below, do \emph{not} expect such short chains to reach st
 }
 \value{
 After a run has completed, acceptance rates for the primary proposal mechanisms are printed to the console, along with 
-settings of control parameters for the run (see \code{\link[geiger]{cache}}).  
+settings of control parameters for the run (see \code{\link[geiger]{make.gbm}}).  
 
 Posterior results are written to several files within a base directory, the contents of which are as follows:
   \item{\bold{log} }{is a logfile including the following for each Markov chain: the generations at which samples were retained (\code{state}), the \code{min}, \code{max}, and \code{median} rate of the 

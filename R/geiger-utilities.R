@@ -305,7 +305,11 @@ constrain.m=function(f, m){
 
 # compute path length from root to tip
 .paths.cache=function(cache){
-	cache=.reorder.cache.pruningwise(cache)
+	
+    if(is.null(cache$ordering) || cache$ordering!="postorder"){
+        stop("'cache' should be postordered")
+    }
+
 	n <- cache$n.tip
 	pp <- cache$adesc[-c(1:n)]
 	e1 <- cache$edge[, 1]
@@ -332,9 +336,10 @@ constrain.m=function(f, m){
 # compute path length from root to tip
 .paths.phylo=function(phy){
 ## from vcv.phylo()
+	phy <- reorder(phy, "postorder")
+
 	n <- length(phy$tip.label)
 	pp <- .cache_tree(phy)$adesc[-c(1:n)]
-	phy <- reorder(phy, "postorder")
 	e1 <- phy$edge[, 1]
 	e2 <- phy$edge[, 2]
 	EL <- phy$edge.length
@@ -358,8 +363,8 @@ constrain.m=function(f, m){
 
 
 
-
-.reorder.cache.pruningwise=function(cache){
+## DEFUNCT
+.DEFUNCT_reorder.cache.pruningwise=function(cache){
 	if(cache$ordering!="pruningwise") {
 		nb.node <- cache$n.node
 		if (nb.node != 1) {
@@ -376,7 +381,8 @@ constrain.m=function(f, m){
 	cache
 }
 
-.reorder.cache.cladewise=function(cache){
+## DEFUNCT
+.DEFUNCT_reorder.cache.cladewise=function(cache){
 	if(cache$ordering!="cladewise") {
 		nb.node <- cache$n.node
 		if (nb.node != 1) {
@@ -394,11 +400,14 @@ constrain.m=function(f, m){
 
 .heights.cache=function (cache) 
 {
-	cache=.reorder.cache.cladewise(cache)
+    if(is.null(cache$ordering) || cache$ordering!="postorder"){
+        stop("'cache' should be postordered")
+    }
+        
 	n <- cache$n.tip
 	n.node <- cache$n.node
 	xx <- numeric(n + n.node)
-	for (i in 1:nrow(cache$edge)) xx[cache$edge[i, 2]] <- xx[cache$edge[i, 1]] + cache$edge.length[i]
+	for (i in nrow(cache$edge):1) xx[cache$edge[i, 2]] <- xx[cache$edge[i, 1]] + cache$edge.length[i]
 	root = ifelse(is.null(cache$root.edge), 0, cache$root.edge)
 	depth = max(xx)
 	tt = depth - xx

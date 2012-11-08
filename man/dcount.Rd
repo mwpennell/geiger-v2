@@ -15,7 +15,7 @@ dcount(x, FUN, ...)
   \item{\dots}{additional arguments to be passed to \code{FUN}}
 }
 
-\seealso{\code{\link[geiger]{cache}}}
+\seealso{\code{\link[geiger]{make.gbm}}}
 
 \author{JM Eastman}
 

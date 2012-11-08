@@ -5,11 +5,11 @@ UseMethod("heights")
 
 
 heights.phylo=function(phy){
-	phy <- reorder(phy)
+	phy <- reorder(phy, "postorder")
 	n <- length(phy$tip.label)
 	n.node <- phy$Nnode
 	xx <- numeric(n + n.node)
-	for (i in 1:nrow(phy$edge)) xx[phy$edge[i, 2]] <- xx[phy$edge[i, 1]] + phy$edge.length[i]
+	for (i in nrow(phy$edge):1) xx[phy$edge[i, 2]] <- xx[phy$edge[i, 1]] + phy$edge.length[i]
 	root = ifelse(is.null(phy$root.edge), 0, phy$root.edge)
 	labs = c(phy$tip.label, phy$node.label)
 	depth = max(xx)
