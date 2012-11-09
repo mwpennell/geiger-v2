@@ -98,10 +98,10 @@ gb<-round(geo$dat[,5])
 names(gb)<-rownames(geo$dat)
 mm=rbind(c(NA, 0, 0), c(1, NA, 2), c(0, 2, NA))
 
-fitDiscrete(geo$phy, gb, model="ER")
-fitDiscrete(geo$phy, gb, model="ARD")
-fitDiscrete(geo$phy, gb, model=mm)
-fitDiscrete(geo$phy, gb, model=mm, transform="delta")
+fitDiscrete(geo$phy, gb, model="ER") #-7.119792
+fitDiscrete(geo$phy, gb, model="ARD") #-6.064573
+fitDiscrete(geo$phy, gb, model=mm) #-7.037944
+fitDiscrete(geo$phy, gb, model="SYM", transform="kappa") #-6.822943
 
 }
 \keyword{ arith }

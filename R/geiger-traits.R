@@ -634,6 +634,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 			mm[i, ]=c(op$par, op$lnL, op$convergence)
 			mt[i]=op$method
 		} else {
+            print(start)
 			mt[i]="FAIL"
 		}
 	}
@@ -751,6 +752,7 @@ transform=c("none", "EB","lambda", "kappa", "delta", "white"),
 control=list(root=ROOT.OBS),
 ...)
 {
+    phy=reorder(phy, "postorder")
 	
 # control object for make.mkn()
 	ct = list(method="exp", root=ROOT.OBS)
@@ -759,6 +761,7 @@ control=list(root=ROOT.OBS),
 	
 # primary cache
 	k<-nlevels(as.factor(dat))
+    if(k==2 & constrain=="SYM") constrain="ER"
     control <- .check.control.mkn(ct, k)
     cache <- .make.cache.mkn(phy, dat, k, strict=TRUE, control=ct)
 	cache$ordering=attributes(cache$info$phy)$order
@@ -776,7 +779,6 @@ control=list(root=ROOT.OBS),
 	
 	if(trns=="white") return(FUN)	
 	
-	## KIND OF WORKING
 	ll.mkn=function(cache, control) {
 		k <- cache$info$k
 		f.pars <- .make.pars.mkn(k)
@@ -813,7 +815,7 @@ control=list(root=ROOT.OBS),
 			list(init = ans$init, base = ans$base, lq = ans$lq, vals = ans$init[, cache$root], pij = pij)
 		}
 		
-# build likelihood function
+    # build likelihood function
 		attb=c(argn(FUN), cache$info$argn)
 		if(is.null(argn(FUN))){ # NO TRANSFORM
 			ll=function(pars){
@@ -836,7 +838,7 @@ control=list(root=ROOT.OBS),
 	
 	tmp=ll.mkn(cache, control)
 	
-## CONSTRAINTS
+    ## CONSTRAINTS
 	if(!all(constrain=="ARD")){
 		if(is.character(constrain)){
 			cc=match.arg(constrain, c("ER","SYM","ARD","meristic"))
