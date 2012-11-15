@@ -53,8 +53,8 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	
 	
 ## CONSTRUCT BOUNDS ##
-	mn=c(-500, -500, -10, -100, -100, -500, -500, -500, -500, -1e6)
-	mx=c(100, 5, 10, 100, 100, 0, 0, log(2.999999), 100, 1e6)
+	mn=c(-500, -500, -1, -100, -100, -500, -500, -500, -500, -1e6)
+	mx=c(100, 5, 1, 100, 100, 0, 0, log(2.999999), 100, 1e6)
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("exp", "exp", "nat", "nat", "nat", "exp", "exp", "exp", "exp", "nat")
 	rownames(bnds)=c("sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE", "z0")
@@ -262,7 +262,6 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	
 }
 
-
 ## WORKHORSE -- built from diversitree:::make.bm by tricking models into multivariate normal 
 # likelihood function creation
 bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white")) 
@@ -285,8 +284,8 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			   delta=.delta.cache(cache),
                drift=.null.cache(cache),
 			   white=.white.cache(cache)
-			   )
-	
+    )
+               	
     N = cache$n.tip
     n = cache$n.node
 	z = length(cache$len)
@@ -294,8 +293,16 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
     adjvar = as.integer(attributes(cache$y)$adjse)
 	given = as.integer(attributes(cache$y)$given)
     given[rootidx]=1
-    adjDRIFT=model=="drift"
     adjSE=any(adjvar==1)
+    if(model=="drift"){
+        adjDRIFT=TRUE
+        if(is.ultrametric(cache$phy)){
+            warning("likelihoods under 'drift' and 'BM' models will be indistinguishable with an ultrametric 'phy'")
+        }
+    } else {
+        adjDRIFT=FALSE
+    }
+
     
     # cache object needed for 'bm_direct'
     datc = list(
@@ -359,7 +366,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
-                if(adjDRIFT) drft=-pars[3] else drft=0
+                if(adjDRIFT) drft=-pars[4] else drft=0
                 datc$y[rootidx]=pars[3]
 				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], drft, datc)
 				return(ll)
@@ -398,7 +405,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 
 			lik <- function(pars) {
 				pars=.repars(pars, attb)
-                if(adjDRIFT) drft=-pars[3] else drft=0
+                if(adjDRIFT) drft=-pars[4] else drft=0
                 datc$y[rootidx]=pars[3]
 				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, drft=drft, datc)
 				return(ll)
