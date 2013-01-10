@@ -84,6 +84,163 @@
     res
 }
 
+## WORKHORSE -- built from diversitree:::make.bm by tricking models into multivariate normal
+# likelihood function creation
+bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"), ...)
+{
+    ## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species)
+	
+	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
+	
+    cache=.prepare.bm.univariate(phy, dat, SE=SE, ...)
+    cache$ordering=attributes(cache$phy)$order ## SHOULD BE POSTORDER
+    
+	# function for reshaping tree by model
+	FUN=switch(model,
+    BM=.null.cache(cache),
+    OU=.ou.cache(cache),
+    EB=.eb.cache(cache),
+    trend=.trend.cache(cache),
+    lambda=.lambda.cache(cache),
+    kappa=.kappa.cache(cache),
+    delta=.delta.cache(cache),
+    drift=.null.cache(cache),
+    white=.white.cache(cache)
+    )
+    
+    N = cache$n.tip
+    n = cache$n.node
+	z = length(cache$len)
+    rootidx = as.integer(cache$root)
+    adjvar = as.integer(attributes(cache$y)$adjse)
+	given = as.integer(attributes(cache$y)$given)
+    given[rootidx]=1
+    adjSE=any(adjvar==1)
+    if(model=="drift"){
+        adjDRIFT=TRUE
+        if(is.ultrametric(cache$phy)){
+            warning("likelihoods under 'drift' and 'BM' models will be indistinguishable with an ultrametric 'phy'")
+        }
+    } else {
+        adjDRIFT=FALSE
+    }
+    
+    
+    # cache object needed for 'bm_direct'
+    datc = list(
+    intorder = as.integer(cache$order[-length(cache$order)]),
+    tiporder = as.integer(1:N),
+    root = rootidx,
+    y = as.numeric(cache$y[1, ]),
+    var = as.numeric(cache$y[2, ]),
+    n = as.integer(z),
+    given = as.integer(given),
+    descRight = as.integer(cache$children[ ,1]),
+    descLeft = as.integer(cache$children[, 2]),
+    drift = 0
+    )
+	
+    ll.bm.direct = function(q, sigsq, se, drft, datc) {
+		
+		if(is.null(argn(FUN))) new=FUN() else new=FUN(q)
+        if(adjDRIFT) datc$drift=drft
+        
+		datc$len=as.numeric(new$len)
+		.xxSE=function(cache){
+            vv=cache$y[2,]^2
+            ff=function(x){
+				if(any(adjvar==1->ww)){
+					vv[which(ww)]=x^2
+					return(vv)
+				} else {
+					return(vv)
+				}
+			}
+			return(ff)
+		}
+		modSE=.xxSE(cache)
+		
+		datc$var=as.numeric(modSE(se))
+		
+        out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, z)), package = "geiger")
+        #       vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
+        loglik <- sum(out$lq)
+        #        rlq=loglik-sum(out$lq[-rootidx])
+        #        print(list(rlq, vals, out))
+        #       intermediates=FALSE
+        #       if (intermediates) {
+        #         attr(loglik, "intermediates") <- intermediates
+        #         attr(loglik, "vals") <- vals
+        #       }
+        #       attr(loglik, "ROOT.MAX")=vals[1]
+		if(is.na(loglik)) loglik=-Inf
+        return(as.numeric(loglik))
+    }
+    class(ll.bm.direct) <- c("bm", "dtlik", "function")
+	
+	
+    ## EXPORT LIKELIHOOD FUNCTION
+	if(is.null(argn(FUN))){
+		
+		if(adjSE){
+			attb=c("sigsq", "SE", "z0")
+            if(adjDRIFT) attb=c(attb, "drift")
+            
+			lik <- function(pars) {
+				pars=.repars(pars, attb)
+                if(adjDRIFT) drft=-pars[4] else drft=0
+                datc$y[rootidx]=pars[3]
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=pars[2], drft, datc)
+				return(ll)
+			}
+			attr(lik, "argn") = attb
+		} else {
+			attb=c("sigsq", "z0")
+            if(adjDRIFT) attb=c(attb, "drift")
+            
+			lik <- function(pars) {
+				pars=.repars(pars, attb)
+                if(adjDRIFT) drft=-pars[3] else drft=0
+                datc$y[rootidx]=pars[2]
+				ll = ll.bm.direct(q=NULL, sigsq = pars[1], se=NULL, drft, datc)
+				return(ll)
+			}
+			attr(lik, "argn") = attb
+		}
+		
+	} else {
+		if(adjSE){
+			attb=c(argn(FUN), "sigsq", "SE", "z0")
+            if(adjDRIFT) attb=c(attb, "drift")
+            
+			lik <- function(pars) {
+				pars=.repars(pars, attb)
+                if(adjDRIFT) drft=-pars[5] else drft=0
+                datc$y[rootidx]=pars[4]
+				ll = ll.bm.direct(q=pars[1], sigsq = pars[2], se=pars[3], drft=drft, datc)
+				return(ll)
+			}
+			attr(lik, "argn") = attb
+		} else {
+			attb=c(argn(FUN), "sigsq", "z0")
+            if(adjDRIFT) attb=c(attb, "drift")
+            
+			lik <- function(pars) {
+				pars=.repars(pars, attb)
+                if(adjDRIFT) drft=-pars[4] else drft=0
+                datc$y[rootidx]=pars[3]
+				ll = ll.bm.direct(pars[1], sigsq = pars[2], se=NULL, drft=drft, datc)
+				return(ll)
+			}
+			attr(lik, "argn") = attb
+		}
+	}
+	
+    attr(lik, "cache") <- cache
+    class(lik) = c("bm", "function")
+    lik
+}
+
 ## replacing prepare.data.bm
 make.bm.relaxed <- function(phy, dat, SE=NA, method=c("direct","vcv","reml")){
 #   method=match.arg(method, c("direct","vcv","reml"))
@@ -375,6 +532,7 @@ function(rphy, ic) {
     phy=td$phy
     if(ct$binary) if(!is.binary.tree(phy)) stop("'phy' should be a binary tree")
     if(ct$ultrametric) if(!is.ultrametric(phy)) stop("'phy' should be an ultrametric tree")
+    if(is.null(phy$edge.length)) stop("'phy' must include branch lengths in units of time")
 
 
     if(ncol(td$data)>1) stop("'dat' should be univariate")

@@ -38,7 +38,7 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 		std::vector<double> lq;
 		lq.assign(n,0.0);
 
-		double yi, ri, li, m1, m2, v1, v2, v12, m12, n12, nm, nv, m, v, k;
+		double yi, ri, li, m1, m2, v1, v2, v12, m12, n12, nm, nv, m, mm, v, k;
 		
 		double const PIx = 4.0*atan(1.0);
 		
@@ -77,31 +77,38 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 			m2=branchbaseM[d2];
 			v1=branchbaseV[d1];
 			v2=branchbaseV[d2];
-			v12=v1+v2;
-			
-			m = (((m1*v2) + (m2*v1))/v12); // model-specific -- assumes mean 0 model
-			branchinitM[cur] = m;
+            
+            v12=v1+v2;
+            
+            m = (((m1*v2) + (m2*v1))/v12);                  // phylogenetic mean expectation
+            branchinitM[cur] = m;
             
             v = ((v1*v2)/v12);
-			branchinitV[cur] = v;
+            branchinitV[cur] = v;
             
-			m12=pow((m1-m2),2);
-			lq[cur] = ((-m12/(2*v12)) - (log(2*PIx*v12)/2));
-			
-            li=len[cur];
+            m12=pow((m1-m2),2);
+            lq[cur] = ((-m12/(2*v12)) - (log(2*PIx*v12)/2));
+            
+            k=known[cur];                                   
+            
+            if( k == (signed)1 )                            // resolve whether node state is given (k==1)
+            {
+                nm=y[cur];
+                nv=var[cur];
+                mm=m;
+                
+                v12=v+nv;
+                m = ((mm*nv) + (nm*v))/v12;
+                branchinitM[cur] = m;
 
-            k=known[cur];                                       //
-
-            if(k == (signed)1 )                                 // internal node state given
-            {                                                   //
-                nm=y[cur];                                      //
-                nv=var[cur];                                    //
-                n12=pow((nm-m),2);                              //
-                lq[cur] += ((-n12/(2*v)) - (log(2*PIx*v)/2));   //
-                v += nv;                                        //
-                m=nm;                                           //
+                v = (v*nv)/v12;
+                branchinitV[cur] = v;
+                
+                m12=pow((mm-nm),2);
+                lq[cur]+=((-m12/(2*v12)) - (log(2*PIx*v12)/2));
             }
             
+            li=len[cur];            
             branchbaseM[cur] = m + drift*li;
             branchbaseV[cur] = v + rates[cur]*li;
 		}

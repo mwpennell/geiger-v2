@@ -21,6 +21,19 @@ function(phy, data)
 	else return(r)
 }
 
+cherries <- function(phy){
+    cache=.cache_tree(phy)
+	N=Ntip(phy)
+	nds=which(tabulate(phy$edge[phy$edge[,2]<=N,1])==2)
+    if(length(nds)){
+        mat=matrix(NA, nrow=length(nds), ncol=2)
+        for(i in 1:length(nds)) mat[i, ]=phy$tip.label[cache$tips[[nds[i]]]]
+        rownames(mat)=nds
+    } else {
+        mat=NULL
+    }
+    return(mat)
+}
 
 
 # Treedata is a function internal to GEIGER

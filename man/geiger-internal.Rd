@@ -17,6 +17,7 @@
 \alias{argn<-.bm}
 \alias{bf}
 \alias{bm.lik}
+\alias{cherries}
 \alias{constrain}
 \alias{constrain.k}
 \alias{constrain.m}

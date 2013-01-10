@@ -264,15 +264,10 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
     
     tmp=lapply(1:length(tmp), function(idx) {
         x=tmp[[idx]]
-        y=x[1:which(names(x)==rank[1])]
-        if(length(rank)==2){
-            wx=which(names(y)==rank[2])
-            if(!length(wx)) {
-                warning(paste(sQuote(rank[2]), "appears to be a rank inconsistent with NCBI taxonomy for", sQuote(tt[idx])))
-                return(NA)
-            }
-            y=y[wx:length(y)]
-        }
+        mm=match(names(x), Linnaean)
+        if(length(ridx)==2) ss = mm>=ridx[1] & mm<=ridx[2] else ss = mm>=ridx[1]
+        if(!any(ss)) return(NA)
+        y=x[ss]
         y
     })
     
@@ -521,6 +516,7 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 						return(tmp[[which(ww)[min(which(ll==max(ll)))]]])
 					} else {
 						warning(paste("Attempt one of the following:\n\t", paste(sapply(tmp[which(ww)], function(x) x[[1]]), collapse="\n\t"), sep=""))
+                        return(NA)
 					}
 				} else {
 					return(tmp[[which(ww)]])

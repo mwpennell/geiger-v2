@@ -96,13 +96,15 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 		dat=data.frame(time=tmp[,"end"], hash=stock$hash, stringsAsFactors=FALSE)
 		dat$hash[1:Ntip(stock)]=NA 	# destroy keys that are associated with tips
 
-		return(dat)
+		return(list(stock=stock,dat=dat))
 	}
 	
 	smooth_scion=function(stock, scion, scion_desc, taxa, spp, tol=0.01, method=c("PATHd8", NA)){
 		method=match.arg(toString(method), c("NA", "PATHd8"))
 		if(!is.ultrametric(stock)) warning("Supplied 'stock' is non-ultrametric.")
-		stock_dat=times.mapping(stock, taxa, spp)
+		stock_tmp=times.mapping(stock, taxa, spp)
+        stock=stock_tmp$stock
+        stock_dat=stock_tmp$dat
 		calibration=.build_calibrations(stock_dat, scion, scion_desc, tol=tol)
 		if(!nrow(calibration)) {
 			warning("No concordant branches reconciled between 'stock' and 'scion'; ensure that 'tax' involves rownames found as tip labels in 'scion'")
@@ -115,10 +117,10 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 		} else if(method=="NA"){
 			phy=NULL
 		}
-		stock$hash=stock_dat$hash[match(1:(Ntip(stock)+Nnode(stock)), stock_dat$des)]
+		
 		stock$node.label=stock$hash[(Ntip(stock)+1):max(stock$edge)]
 		stock$node.label[is.na(stock$node.label)]=""
-		return(list(phy=phy, calibrations=calibration, reference=stock))
+		return(list(phy=phy, calibrations=calibration, reference=stock, target=scion))
 	}
 	
 	## end functions
