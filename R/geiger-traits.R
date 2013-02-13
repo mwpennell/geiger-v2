@@ -7,7 +7,7 @@ dat,
 SE = 0,
 model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"), 
 bounds=list(), 
-control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessianCI=0.95)
+control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessianCI=0.95), ...
 )
 {
 		
@@ -15,6 +15,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 # opt: a list with elements 'method', 'niter', 'FAIL'; 'method' may include several optimization methods
 # bounds: a list with elements specifying constraint(s): e.g., bounds=list(alpha=c(0,1))
 # control: a list with elements specifying method to compute likelihood
+# ...: node state dataframe
 	
 # data matching
 	td=treedata(phy, dat)
@@ -48,7 +49,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 # CONTROL OBJECT for likelihood
 	con=list(method="pruning",backend="C")
 	con[names(control)]=control
-	lik=bm.lik(phy,dat,SE,model)
+	lik=bm.lik(phy,dat,SE,model,...)
 	argn=argn(lik)
 	
 	
@@ -208,7 +209,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	mm=as.list(mm)
 
 	mm$method=ifelse(is.na(z), NA, mt[z])
-	mm$k=length(argn)+1
+	mm$k=length(argn)
 	
     ## HESSIAN-based CI of par estimates
 	if(ct$hessian){
@@ -459,11 +460,11 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		if(length(argn)==1) {
 			method="Brent" 
 		} else {
-			if(runif(1)<0.5){  ### FIXME ###
-				method="subplex"
-			} else {
+#			if(runif(1)<0.5){  ### FIXME ###
+#				method="subplex"
+#			} else {
 				method=sample(ct$method,1)
-			}
+#			}
 		}
 		
 		if(method=="subplex"){

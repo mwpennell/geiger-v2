@@ -1,7 +1,3 @@
-##FIXME: identify monophyletic lineages in a densely sampled tree (if attempting to congruify a higher-order tree)
-#		-- prune densely-sampled tree to find greatest overlap with the scion tips
-
-
 .build_classification=function(species){
 	.split_lab=function(label){
 		lab=gsub(".", "_", label, fixed=TRUE)
@@ -147,6 +143,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 	
 	scion=hashes.phylo(scion, taxa)
 	scion_desc=.cache_tree(scion)$tips
+    if(is.null(scion$edge.length)) scion$edge.length=numeric(nrow(scion$edge)) ## JME 01302013
 	
 	f=lapply
 	results=f(1:length(stock), function(i) {

@@ -155,7 +155,7 @@ crown.limits <-  function(phy=NULL, time, r, epsilon, prob=c(0.025, 0.975))
 
 
 rc <-
-function(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, cex = par("cex"))
+function(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, ...)
 {
 	
 	
@@ -225,7 +225,7 @@ function(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, cex = par("cex"))
 		}
 		labels[mark]<-"*"
 		phy$node.label<-labels
-		plot.phylo(phy, show.node.label=T, cex=cex, no.margin=T)
+		plot.phylo(phy, show.node.label=TRUE, no.margin=TRUE, ...)
 	}
 	return(res)
 }

@@ -60,7 +60,7 @@ Linnaean=c(
 	if(build){
 		if(file.exists("taxdump.tar.gz")) unlink("taxdump.tar.gz")
 		cat("Please be patient as 'taxdump' is built from NCBI; download may take several minutes...\n")
-		if(!system("which curl", ignore.stdout=TRUE)==0) stop("Install 'wget' before proceeding.")
+		if(!system("which curl", ignore.stdout=TRUE)==0) stop("Install 'curl' before proceeding.")
 		if(!system("which gunzip", ignore.stdout=TRUE)==0) stop("Install 'gunzip' before proceeding.")
 		if(!system("which tar", ignore.stdout=TRUE)==0) stop("Install 'tar' before proceeding.")
 		if(!system("which perl", ignore.stdout=TRUE)==0) stop("Install 'perl' before proceeding.")

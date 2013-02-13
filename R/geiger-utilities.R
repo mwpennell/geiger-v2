@@ -50,7 +50,22 @@ function(phy, node)
 	phy$tip.label[dd]
 }
 
-
+span=function(phy){
+    desc=.cache_tree(phy)
+    N=Ntip(phy)
+    labs=c(phy$tip.label, phy$node.label)
+    
+    ff=function(node){
+        if(length(node)>1) stop("Supply 'node' as a single value")
+        if(!is.numeric(node)) node=which(labs==node)
+        
+        if(node<=N) return(NULL)
+        dd=desc$fdesc[[node]]
+        labs[sapply(dd, function(x) desc$tips[[x]][1])]
+    }
+    ff
+    
+}
 
 # data.names is optional, and will replace the names or rownames
 # of data when matching data to the tree

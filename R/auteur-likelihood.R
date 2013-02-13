@@ -524,12 +524,10 @@ function(rphy, ic) {
     ## CONTROL OBJECT
     ct=list(binary=TRUE, ultrametric=FALSE)
     ct[names(control)]=control
-
-    phy=reorder(phy, "postorder")
     
     ## MATCHING and major problems
     td=treedata(phy, dat, sort=TRUE, warnings=FALSE)
-    phy=td$phy
+    phy=reorder(td$phy, "postorder")
     if(ct$binary) if(!is.binary.tree(phy)) stop("'phy' should be a binary tree")
     if(ct$ultrametric) if(!is.ultrametric(phy)) stop("'phy' should be an ultrametric tree")
     if(is.null(phy$edge.length)) stop("'phy' must include branch lengths in units of time")

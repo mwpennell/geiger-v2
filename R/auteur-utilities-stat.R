@@ -7,8 +7,9 @@ ess=function(x){
 }
 
 sem=function(x){
-	val=x
-	sd(val, na.rm=TRUE)/sqrt(length(val))
+	val=x[!is.na(x)]
+    if(!length(val)) return(NA)
+	sd(val)/sqrt(length(val))
 }
 
 
@@ -108,7 +109,6 @@ bf=function(x, scale=c("lnL","logL")){
 
 	} else if(scale=="logL") {
 		out=apply(combn, 2, function(x) {a=hm[[x[1]]]; b=hm[[x[2]]]; h=hm[[x[1]]]-hm[[x[2]]]; return(c(a,b,h))})
-		ss=order(colSums(out[1:2,]), decreasing=TRUE)
 		res=cbind(t, logBF=t(out))
 		names(res)=c("m1", "m2", "logL_m1", "logL_m2", "logBF")
 		interp=data.frame(logBF=c(1/2, 1, 2, Inf), interp=c("bare mention", "substantial", "strong", "decisive"))
@@ -144,7 +144,7 @@ print.bayesfactor=function(x, ...){
 	cat("Bayes factor summary:\n\t")
 	cat(attributes(x)$txt)
 	cat("\n\n\n")
-	cat(paste("Interpretation uses ", sQuote(attributes(attributes(x)$interpretation)$reference)), ":\n", sep="")
+	cat(paste("Interpretation uses", sQuote(attributes(attributes(x)$interpretation)$reference)), ":\n", sep="")
 	print(attributes(x)$interpretation)
 	cat("\n\n")
 	class(x)=class(x)[-which(class(x)=="bayesfactor")]

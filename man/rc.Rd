@@ -5,7 +5,7 @@
 	conducting the relative cladogenesis test for all slices through a tree	
 }
 \usage{
-rc(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, cex=par("cex"))
+rc(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, ...)
 
 }
 \arguments{
@@ -13,7 +13,7 @@ rc(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, cex=par("cex"))
   \item{plot}{ whether to plot tree with significant branches highlighted}
   \item{bonf}{ whether to use bonferroni correction when highlighting significant branches on the tree (see \bold{Details})}
   \item{p.cutoff}{cutoff for significant p-values (used only when plotting)}
-  \item{cex}{ a numeric value giving the factor scaling of the tip and node labels (see \code{\link[graphics]{par}})}
+  \item{...}{arguments passed to \code{\link[ape]{plot.phylo}}}
 }
 \details{
 	A list of nodes is returned, along with the number of lineages alive just before that node, the 
