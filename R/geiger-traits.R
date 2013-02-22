@@ -55,7 +55,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	
 ## CONSTRUCT BOUNDS ##
 	mn=c(-500, -500, -1, -100, -100, -500, -500, -500, -500, -1e6)
-	mx=c(100, 5, 1, 100, 100, 0, 0, log(2.999999), 100, 1e6)
+	mx=c(100, 1, 1, 100, 100, 0, 0, log(2.999999), 100, 1e6)
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("exp", "exp", "nat", "nat", "nat", "exp", "exp", "exp", "exp", "nat")
 	rownames(bnds)=c("sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE", "z0")
@@ -508,7 +508,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		mm=c(rep(NA, length(argn)), -Inf)
 		names(mm)=c(argn,"lnL")
 	}
-	k=length(argn)+1
+	k=length(argn)
 	llx=which(names(mm)=="lnL")
 	ll=mm[[llx]]
 	mm=mm[-llx]
@@ -597,7 +597,7 @@ mkn.lik=function(
 phy, 
 dat, 
 constrain=c("ER","SYM","ARD","meristic"),
-transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
+transform=c("none", "EB", "lambda", "kappa", "delta", "white"), 
 control=list(root=ROOT.OBS),
 ...)
 {
