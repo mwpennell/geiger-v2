@@ -3,6 +3,12 @@
 }
 
 
+name.check=function(phy, data){
+    if(is.null(names(data))) stop("'data' must be given as a vector or matrix with names")
+	.deprecate("name.check", "geiger:::.treedata")
+	.treedata(phy, data)
+}
+
 BDsim=function(nStart, b, d, times){
 	.deprecate("BDsim", "sim.bd")
 	sim.bd(b=b, d=d, n0=nStart, times=times)
@@ -39,4 +45,9 @@ node.leaves=function(phy, node){
 	.deprecate("node.leaves", "tips")
 	tips(phy, node)
 
+}
+
+getAncStates=function(x, phy){
+    .deprecate("getAncStates", "asr")
+    asr(phy, x)
 }

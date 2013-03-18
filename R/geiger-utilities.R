@@ -175,7 +175,11 @@ print.mkn=
 function (x, printlen = 3, ...) 
 {
     cat("likelihood function for univariate discrete trait evolution\n")
-    cat("\targument names:", paste(argn(x), collapse = ", "))		 
+    cat("\targument names:", paste(argn(x), collapse = ", "))	
+    if(!is.null(al<-attr(x, "levels"))) {
+        fmt=.format.levels.print(length(al))
+        cat("\n\n\tmapping\n\t\t", paste(sprintf(fmt, 1:length(al)), al, collapse="\n\t\t", sep=": "), sep="")
+    }
 	cat("\n\n")
 	f=x
 	attributes(f)=NULL
@@ -311,9 +315,23 @@ constrain.m=function(f, m){
 }
 
 # (smart) starting pt for optimization
-.ou.smartstart=function(sigsq, var){
-	alpha=(2*sigsq)/var
-	alpha
+.ou.smartstart=function(dat, bounds){
+	vv=var(dat)
+    xb=max(bounds)
+    nb=min(bounds)
+    atry=seq(-8,4,by=2)
+    s=sample(1:length(atry),1)
+    if(s==1) {
+        aa=nb
+    } else if(s==length(atry)) {
+        aa=xb
+    } else {
+        aa=vv*2*exp(atry[s])
+        if(aa>xb) aa=xb
+        if(aa<nb) aa=nb
+    }
+    if(is.na(aa)) aa=0.1
+    aa
 }
 
 # (smart) starting pt for optimization

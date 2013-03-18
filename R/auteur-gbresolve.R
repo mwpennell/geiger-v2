@@ -342,7 +342,7 @@ subset.phylo=function(x, taxonomy, rank="", ...){
 		warning(paste(paste("non-monophyletic at level of ",rank,sep=""),":\n\t", paste(sort(nonmon<-names(rank_hashes)[!zz]), collapse="\n\t"), sep=""))
 #       for(j in 1:length(nonmon)){
             vv=which(pruned$tip.label%in%nonmon)
-            pruned$tip.label[vv]=names(pruned$tip.label[vv])
+            pruned$tip.label[vv]=tax$tip[vv]
 #       }
 #		pruned=drop.tip(pruned, nonmon)
         

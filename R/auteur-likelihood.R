@@ -532,7 +532,6 @@ function(rphy, ic) {
     if(ct$ultrametric) if(!is.ultrametric(phy)) stop("'phy' should be an ultrametric tree")
     if(is.null(phy$edge.length)) stop("'phy' must include branch lengths in units of time")
 
-
     if(ncol(td$data)>1) stop("'dat' should be univariate")
     dat=td$data[,1]
 
@@ -575,26 +574,32 @@ function(rphy, ic) {
 
     ## RESOLVE nodes
     if(!is.null(nodes)){
-        if(!all(c("taxon1", "taxon2", "mean", "SE")%in%colnames(nodes))){
-            stop("'nodes' must minimally have column names: 'taxon1', 'taxon2', 'mean', and 'SE'")
+        if(is.numeric(nodes)){
+            nn=(N+1):(N+n)
+            if(!all(names(nodes)%in%nn)) stop("'nodes' must have (integer) names corresponding to the internal nodes of 'phy'") ## FI
+            nodes=data.frame(cbind(node=as.integer(names(nodes)), mean=nodes, SE=0), stringsAsFactors=FALSE)
+        } else {
+            if(!all(c("taxon1", "taxon2", "mean", "SE")%in%colnames(nodes))){
+                stop("'nodes' must minimally have column names: 'taxon1', 'taxon2', 'mean', and 'SE'")
+            }
+            
+            nodes=as.data.frame(nodes)
+            if(!is.numeric(nodes$mean) | !is.numeric(nodes$SE)){
+                stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
+            }
+            
+            if(!all(zz<-unique(c(as.character(nodes$taxon1), as.character(nodes$taxon2)))%in%phy$tip.label)){
+                stop(paste("Some taxa appear missing from 'phy':\n\t", paste(zz[!zz%in%phy$tip.label], collapse="\n\t", sep=""), sep=""))
+            }
+            
+            nodes$node=apply(nodes[,c("taxon1", "taxon2")], 1, .mrca, phy=phy)
+            if(!length(unique(nodes$node))==nrow(nodes)) {
+                stop("Some nodes multiply constrained:\n\t", paste(nodes$node[duplicated(nodes$node)], collapse="\n\t", sep=""), sep="")
+            }
         }
-        
-        nodes=as.data.frame(nodes)
-        if(!is.numeric(nodes$mean) | !is.numeric(nodes$SE)){
-            stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
-        }
-        
-        if(!all(zz<-unique(c(as.character(nodes$taxon1), as.character(nodes$taxon2)))%in%phy$tip.label)){
-            stop(paste("Some taxa appear missing from 'phy':\n\t", paste(zz[!zz%in%phy$tip.label], collapse="\n\t", sep=""), sep=""))
-        }
-                    
-        nodes$node=apply(nodes[,c("taxon1", "taxon2")], 1, .mrca, phy=phy)
-        if(!length(unique(nodes$node))==nrow(nodes)) {
-            stop("Some nodes multiply constrained:\n\t", paste(nodes$node[duplicated(nodes$node)], collapse="\n\t", sep=""), sep="")
-        }
-        
-        m[nodes$node]=nodes$mean
-        s[nodes$node]=nodes$SE
+    
+        m[nodes$node]=as.numeric(nodes$mean)
+        s[nodes$node]=as.numeric(nodes$SE)
         g[nodes$node]=1
     } 
 

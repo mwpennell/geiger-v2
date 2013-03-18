@@ -104,14 +104,14 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 			if (any(x < lower | x > upper)) fail.value else f(x)
 		}
 	}
-	f=boxconstrain(xx, min, max, fail.value=ct$FAIL)
+	f=boxconstrain(xx, bnds[argn,"mn"], bnds[argn,"mx"], fail.value=ct$FAIL)
 	
 	
 ## STARTING POINT -- problematic models ##
 	if(par%in%c("alpha","lambda","delta","kappa")){
 		bmstart=try(.bm.smartstart(phy,dat),silent=TRUE)
-		if(inherits(bmstart, "try-error")) bmstart=0.01 
-		if(par=="alpha") oustart=.ou.smartstart(bmstart,var(dat))
+		if(inherits(bmstart, "try-error")) bmstart=0.01
+        bmstart=log(bmstart) 
 	}
     rt=max(abs(dat))
 	
@@ -127,6 +127,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		
         ## OU ##
 		if(par=="alpha"){
+            oustart=log(.ou.smartstart(dat, unlist(exp(bnds["alpha",c("mx","mn")]))))
 			if(i==1 | runif(1)<0.25) start[match(c("sigsq", par), argn)]=c(bmstart, oustart)
 			if(runif(1) < 0.5) start[match(c("sigsq", par), argn)]=c(0,oustart)
 		}
@@ -343,10 +344,10 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 		names(res)=nm
 		return(res)
 	} else {
-		tmp=as.integer(dat[,1])
+		tmp=dat[,1]
 		names(tmp)=rownames(dat)
 		dat=tmp
-		if(!all(is.integer(dat))) stop("supply 'dat' as a vector (or matrix) of positive integers")
+		#if(!all(is.integer(dat))) stop("supply 'dat' as a vector (or matrix) of positive integers")
 		
 	}
 	
@@ -610,6 +611,13 @@ control=list(root=ROOT.OBS),
 	
 # primary cache
 	k<-nlevels(as.factor(dat))
+    if(is.character(dat)) dat=structure(as.factor(dat), names=names(dat))
+    if(is.factor(dat)){
+        levels=levels(dat)
+        dat=structure(as.integer(dat), names=names(dat))
+    } else {
+        levels=NULL
+    }
     if(k==2) if(all(constrain=="SYM")) constrain="ER"
     control <- .check.control.mkn(ct, k)
     cache <- .make.cache.mkn(phy, dat, k, strict=TRUE, control=ct)
@@ -682,6 +690,7 @@ control=list(root=ROOT.OBS),
 		}
 		class(ll) <- c("mkn", "dtlik", "function")
 		attr(ll,"argn") <- attb
+        if(!is.null(levels)) attr(ll, "levels")=levels
 		return(ll)
 	}
 	
@@ -712,13 +721,19 @@ control=list(root=ROOT.OBS),
 
 
 
-.ace<-function(dat, phy) {
+asr<-function(phy, dat) {
 	
-	td=treedata(phy, dat)
-	dat=td$data
-	phy=td$phy
-	
-	if(ncol(dat)>1) return(apply(dat, 2, .ace, phy))
+	gg=.treedata(phy,dat)
+    if(!gg=="OK") stop("'dat' and 'phy' must match: use 'treedata()'")
+    
+    td=treedata(phy,dat)
+    dat=td$data
+    phy=td$phy
+
+	if(ncol(dat)>1) return(apply(dat, 2, function(x) asr(phy, x)))
+    
+    if(length(dat[,1])!=length(unique(dat[,1]))) warning("'asr' is not yet implemented for discrete characters")
+
 	
 	nn<-phy$Nnode
 	nt<-length(phy$tip.label)
@@ -728,7 +743,7 @@ control=list(root=ROOT.OBS),
 		node<-nt+i
 		rp<-root(phy, node=node)
 		rp<-multi2di(rp)
-		pp<-.pic.ace(dat, rp)
+		pp<-.pic.asr(dat, rp)
 		mm<-match(rp$edge[,1], rp$edge[,2])
 		rr<-which(is.na(mm))[1]
 		root<-rp$edge[rr,1]
@@ -742,7 +757,7 @@ control=list(root=ROOT.OBS),
 
 
 
-.pic.ace<-function(x,phy,sd=NULL,n=NULL,se=NULL,scaled=TRUE,var.contrasts=FALSE)
+.pic.asr<-function(x,phy,sd=NULL,n=NULL,se=NULL,scaled=TRUE,var.contrasts=FALSE)
 {
 	
     if (is.null(phy$edge.length)) 
@@ -841,3 +856,4 @@ phy.manova<-function(phy, data, group, nsim=1000, test=c("Wilks", "Pillai", "Hot
 #	return(mod)
 	
 }
+

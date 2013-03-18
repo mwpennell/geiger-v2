@@ -24,6 +24,12 @@ function(x, ...) {
 			unlist(lapply(1:k, function(i) (1:k)[-i])))
 }
 
+.format.levels.print=function(levels){
+    base <- ceiling(log10(levels + .5))
+	fmt <- sprintf("%%0%dd", base)
+    fmt
+}
+
 .default.argn.bm <- function() "sigsq"
 
 
@@ -644,6 +650,8 @@ constrain <- function(f, ..., formulae=NULL, names=argn(f), extra=NULL) {
 		formulae <- c(attr(f, "formulae"), formulae)
 		f <- attr(f, "func")
 	}
+    
+    levels=attr(f, "levels")
 	
 	formulae <- c(formulae, list(...))
 	names.lhs <- names.rhs <- names
@@ -705,6 +713,7 @@ constrain <- function(f, ..., formulae=NULL, names=argn(f), extra=NULL) {
 	attr(g, "formulae") <- formulae
 	attr(g, "extra") <- extra
 	attr(g, "func") <- f
+    attr(g, "levels") <- levels ## JME
 	g
 }
 

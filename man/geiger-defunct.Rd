@@ -45,7 +45,7 @@
 		\item{\code{dtt.full}}: use \code{\link[geiger]{dtt}}
 		\item{\code{exponentialchangeTree}}: \code{\link[geiger]{transform.phylo}}
 		\item{\code{get.simulation.matrix}}: use \code{geiger:::.get.simulation.matrix}
-		\item{\code{getAncStates}}: use \code{geiger:::.ace}
+		\item{\code{getAncStates}}: use \code{\link[geiger]{asr}}
 		\item{\code{ic.sigma}}: use \code{\link[geiger]{vcv.phylo}}
 		\item{\code{intercalate.samples}}: use \code{geiger:::.intercalate.rjmcmc}
 		\item{\code{kappaTree}}: use \code{\link[geiger]{transform.phylo}}
