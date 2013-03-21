@@ -1,8 +1,8 @@
 Package: geiger
 Type: Package
 Title: Analysis of evolutionary diversification
-Version: 1.5-1.666
-Date: 2013-02-15
+Version: 1.5-2.666
+Date: 2013-03-15
 Author: Luke Harmon <lukeh@uidaho.edu>, Jason Weir, Chad Brock, Rich
         Glor, Wendell Challenger, Gene Hunt, Rich FitzJohn, Jon Eastman <jonathan.eastman@gmail.com>
 Maintainer: Jonathan Eastman <jonathan.eastman@gmail.com>
@@ -14,5 +14,5 @@ Description: Running macroevolutionary simulation and estimating
         phylogenetic data
 License: GPL (>= 2)
 URL: http://www.webpages.uidaho.edu/~lukeh/index.html
-Packaged: 2013-02-15 13:30:17 UTC; jeastman
+Packaged: 2013-03-15 13:30:17 UTC; jeastman
 LazyLoad: yes

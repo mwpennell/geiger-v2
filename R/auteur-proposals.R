@@ -277,7 +277,6 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 		new.vv[ms]=nr.desc
 		
 		lnHastingsRatio = log((K+1)/(Nk-K)) ### from Drummond and Suchard 2010: where N is tips, K is number of local parms in tree
-		
 	} else {							## drop transition: MERGE
 		decision="merge"
 		ca.vv=length(which(vv==cur.vv))

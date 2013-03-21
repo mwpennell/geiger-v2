@@ -22,7 +22,7 @@ function(phy, data)
 }
 
 cherries <- function(phy){
-    cache=.cache_tree(phy)
+    cache=.cache.descendants(phy)
 	N=Ntip(phy)
 	nds=which(tabulate(phy$edge[phy$edge[,2]<=N,1])==2)
     if(length(nds)){
@@ -51,7 +51,7 @@ function(phy, node)
 }
 
 span=function(phy){
-    desc=.cache_tree(phy)
+    desc=.cache.descendants(phy)
     N=Ntip(phy)
     labs=c(phy$tip.label, phy$node.label)
     
@@ -385,7 +385,7 @@ constrain.m=function(f, m){
 	phy <- reorder(phy, "postorder")
 
 	n <- length(phy$tip.label)
-	pp <- .cache_tree(phy)$adesc[-c(1:n)]
+	pp <- .cache.descendants(phy)$adesc[-c(1:n)]
 	e1 <- phy$edge[, 1]
 	e2 <- phy$edge[, 2]
 	EL <- phy$edge.length

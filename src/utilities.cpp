@@ -487,7 +487,7 @@ RcppExport SEXP binary_edges (SEXP tree)
     return R_NilValue; 
 }
 
-RcppExport SEXP cache_tree (SEXP phy)
+RcppExport SEXP cache_descendants (SEXP phy)
 {
     /* requires preorder (pruningwise ordering) of 'phylo' object */
 	try {

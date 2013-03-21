@@ -27,7 +27,7 @@
 		return(phy$tip.label[sort(tt)])		  
 	}
 	
-	if(is.null(scion_desc)) scion_desc=.cache_tree(scion)$tips
+	if(is.null(scion_desc)) scion_desc=.cache.descendants(scion)$tips
 
 	N=Ntip(scion)
 	stock_times=dat
@@ -71,7 +71,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 		if(!all(names(mapping)%in%phy$tip.label)) stop("'mapping' must be named list with names in tip labels of 'phy'.")
 		
 		mapping=mapping[match(names(mapping), phy$tip.label)]
-		descendants <- .cache_tree(phy)$tips
+		descendants <- .cache.descendants(phy)$tips
 		hashes <- sapply(descendants, function(desc) .hash.tip(unlist(mapping[desc]), taxa))
 		empty=.md5(integer(length(taxa)))
 		hashes[hashes==empty]=NA
@@ -142,7 +142,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 	taxa=unique(unlist(spp))
 	
 	scion=hashes.phylo(scion, taxa)
-	scion_desc=.cache_tree(scion)$tips
+	scion_desc=.cache.descendants(scion)$tips
     if(is.null(scion$edge.length)) scion$edge.length=numeric(nrow(scion$edge)) ## JME 01302013
 	
 	f=lapply

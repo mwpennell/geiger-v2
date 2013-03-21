@@ -139,7 +139,7 @@ function(node,phy) {
 	}
 }
 
-.cache_tree=function(phy){
+.cache.descendants=function(phy){
 # fetches all tips subtended by each internal node
 	
 	N=as.integer(Ntip(phy))
@@ -153,7 +153,7 @@ function(node,phy) {
 			DES=as.integer(phy$edge[,2])
 			)
 	
-	res=.Call("cache_tree", phy=zz, package="geiger")
+	res=.Call("cache_descendants", phy=zz, package="geiger")
 	return(res)
 }
 
@@ -277,7 +277,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 	
 	edges=NULL
     
-	desc=.cache_tree(phy)$tips[-c(1:Ntip(phy))]
+	desc=.cache.descendants(phy)$tips[-c(1:Ntip(phy))]
     tidx=match(tips, phy$tip.label)
     
 	FUN=function(taxon){
@@ -846,7 +846,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL){
 			nn=nn[nn!=""]
 			if(length(nn)){
 				tt=matrix("", nrow=Ntip(phy), ncol=length(nn))
-				dd=.cache_tree(phy)$tips
+				dd=.cache.descendants(phy)$tips
 				for(i in 1:length(nn)){
 					tt[phy$tip.label%in%phy$tip.label[dd[[as.integer(names(nn[i]))]]],i]=nn[i]
 				}

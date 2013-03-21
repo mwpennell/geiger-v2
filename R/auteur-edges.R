@@ -95,7 +95,7 @@ function(phy, tips=NULL){
 	# store hash keys for trees in order 1:(Node(phy)+Ntip(phy))
 	tmp=f(trees, function(phy){
 		storage.mode(phy$Nnode) <- "integer"
-		phy$desc <- .cache_tree(phy)
+		phy$desc <- .cache.descendants(phy)
 		return(phy)
 	})
 	res=lapply(tmp, function(phy){

@@ -5,6 +5,7 @@
 \alias{primates}
 \alias{ncbi}
 \alias{caudata}
+\alias{whales}
 
 \title{example datasets}
 \description{providing access to comparative datasets}
@@ -14,6 +15,7 @@ data(caudata)
 data(chelonia)
 data(geospiza)
 data(primates)
+data(whales)
 data(ncbi)
 } 
 
@@ -24,6 +26,9 @@ is a named vector of (natural log-transformed) body sizes for each group. The sa
 the systematics for all recognized taxa (object \code{caudata$tax}) as well as a time-calibrated family-level phylogeny (\code{caudata$fam}) from Zhang and Wake (2009).
 
 The \code{amphibia} object is a set of three trees, the last of which is a time-scaled estimate of the Pyron and Wiens (2011) tree (see \code{\link[geiger]{congruify.phylo}}).
+
+The \code{whales} object is a dataset including a tree and a taxon richness matrix (see \code{\link[geiger]{medusa}}).
+
 
 The \code{ncbi} object is a copy of the NCBI taxonomy resource (\url{http://www.ncbi.nlm.nih.gov/Taxonomy/taxonomyhome.html}). 
 }
@@ -72,7 +77,7 @@ Data are from the following sources:
 \code{TURTLES (chelonia)}
 
 \itemize{
-		\item{JAFFE, G SLATER, and M ALFARO. 2011. Ecological habitat and body size evolution in turtles. \emph{Biology Letters} 7:558-561. }
+		\item{JAFFE AL, GJ SLATER, and ME ALFARO. 2011. Ecological habitat and body size evolution in turtles. \emph{Biology Letters} 7:558-561.}
 }	
 
 
@@ -82,6 +87,14 @@ Data are from the following sources:
 
 		\item{SCHLUTER D}
 
+}
+
+\code{WHALES (whales)}
+
+\itemize{
+		\item{data compiled by GJ SLATER}
+		
+		\item{PALEOBIOLOGY DATABASE. 2011. \url{http://www.paleodb.org}.}
 }
 
 
