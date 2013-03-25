@@ -57,7 +57,7 @@ jumptarget=10
 
 ## DEFINE FUNCTIONS
 # jump-diffusion simulator
-levylite=function(phy, alpha=0, sigmasq.brown=0.01, sigma.jump=0.2, lambda.jump=0.2){
+jumpsim=function(phy, alpha=0, sigmasq.brown=0.01, sigma.jump=0.2, lambda.jump=0.2){
 	phy=reorder(phy)
 	cedges=cumsum(phy$edge.length)
 	tmax=sum(phy$edge.length)
@@ -125,10 +125,10 @@ traitgram=function(phy, hist, alpha=0, cex.node=2, scl=2, ...){
 	points(0,alpha,bg=geiger:::.transparency("white",0.75),pch=21,cex=cex.node/scl)		
 }
 
-# wrapper for levylite
+# wrapper for jumpsim
 jumper=function(phy, alpha=0, sigmasq.brown=0.01, sigmasq.jump=1, jumps=jumptarget){
 	lambda=jumps/sum(phy$edge.length)
-	hist=levylite(phy, alpha=alpha, sigmasq.brown=sigmasq.brown, sigma.jump=sqrt(sigmasq.jump), lambda.jump=lambda)
+	hist=jumpsim(phy, alpha=alpha, sigmasq.brown=sigmasq.brown, sigma.jump=sqrt(sigmasq.jump), lambda.jump=lambda)
 	dat=hist$phenotype[hist$descendant<=Ntip(phy)]
 	names(dat)=phy$tip.label[hist$descendant[hist$descendant<=Ntip(phy)]]
 	edges=hist$descendant[hist$jumps>0]

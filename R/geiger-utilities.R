@@ -50,7 +50,7 @@ function(phy, node)
 	phy$tip.label[dd]
 }
 
-span=function(phy){
+span.phylo=function(phy){
     desc=.cache.descendants(phy)
     N=Ntip(phy)
     labs=c(phy$tip.label, phy$node.label)
@@ -470,17 +470,18 @@ constrain.m=function(f, m){
 }
 
 ## tree transformation
-transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "delta", "white", "depth"), ...){
+transform.phylo=function(x, model=c("OU", "EB", "nrate", "trend", "lambda", "kappa", "delta", "white", "depth"), ...){
 	
 	phy=x
 	
-	model=match.arg(model, c("OU", "EB", "trend", "lambda", "kappa", "delta", "white", "depth"))
+	model=match.arg(model, c("OU", "EB", "nrate", "trend", "lambda", "kappa", "delta", "white", "depth"))
 	
 	if(!"phylo"%in%class(phy)) stop("supply 'phy' as a 'phylo' object")
 	
 	FUN=switch(model, 
 			   OU=.ou.phylo(phy),
 			   EB=.eb.phylo(phy),
+               nrate=.nrate.phylo(phy),
 			   trend=.trend.phylo(phy),
 			   lambda=.lambda.phylo(phy),
 			   kappa=.kappa.phylo(phy),
@@ -492,8 +493,6 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 	dots=list(...)
 	if(length(dots)==length(argn(FUN))) return(FUN(unlist(dots)))
 	return(FUN)
-	
-	
 }
 
 
@@ -539,6 +538,59 @@ transform.phylo=function(x, model=c("OU", "EB", "trend", "lambda", "kappa", "del
 	return(z)
 }
 
+# tree transformation
+.nrate.phylo=function(phy){
+	ht=heights.phylo(phy)
+	N=Ntip(phy)
+	Tmax=ht$start[N+1]
+	mm=match(1:nrow(ht), phy$edge[,2])
+	ht$t=Tmax-ht$end
+	ht$e=ht$start-ht$end
+	ht$a=ht$t-ht$e
+	ht$rS=ht$a/Tmax
+	ht$rE=ht$t/Tmax
+	
+	dd=phy$edge[,2]
+	
+	relscale.brlen=function(start, end, len, dat){
+		ss=start<=dat[,"time"]
+		strt=min(which(ss))
+		
+		ee=dat[,"time"]<end
+		etrt=max(which(ee))+1
+		
+		bl=numeric()
+        fragment=numeric()
+		marker=start
+		for(i in strt:etrt){
+			fragment=c(fragment, (nm<-(min(c(end, dat[i, "time"]))))-marker)
+			bl=c(bl,dat[i, "rate"])
+			marker=nm
+		}
+        fragment=fragment/(sum(fragment))
+        sclbrlen=numeric()
+        for(i in 1:length(bl)) sclbrlen=c(sclbrlen, len*fragment[i]*bl[i])
+		sc=structure(as.numeric(sclbrlen), names=strt:etrt)
+		return(sc)
+	}
+	
+	
+	z=function(time, rate, rescale=TRUE){
+		if(any(time>1) | any(time<0)) stop("supply 'time' as a vector of relative time:\n\tvalues should be in the range 0 (root) to 1 (present)")
+		if(any(rate<0)) stop("'rate' must consist of positive values")
+		if(length(time)!=length(rate)) stop("'time' and 'rate' must be of equal length")
+		ordx=order(time)
+		time=time[ordx]
+		rate=rate[ordx]
+		dat=cbind(time=c(0,time, 1), rate=(c(1, 1, rate)))
+		rs=sapply(dd, function(x) as.numeric(sum(relscale.brlen(ht$rS[x], ht$rE[x], ht$e[x], dat))))
+		phy$edge.length=rs
+        if(rescale) phy=transform.phylo(phy, "depth", Tmax)
+		phy
+	}
+	attr(z, "argn")=c("time", "rate")
+	return(z)
+}
 
 
 # tree transformation

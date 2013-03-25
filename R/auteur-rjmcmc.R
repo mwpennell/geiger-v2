@@ -113,9 +113,8 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, samp=100, type=c("jump-rbm"
                         new.rootrate=.link.root(rootd, cur.rootrate, nd, new.delta, new.rates) ## JME
 						new.nR=sum(new.delta)
 						new.scalars=new.rates+cur.jumprates
-						lnHastingsRatio=nr$lnHastingsRatio
-						lnPriorRatio=.dlnratio(cur.nR, new.nR, ct$dlnSHIFT)
-						lnPriorRatio=lnPriorRatio + .dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
+						lnHastingsRatio=nr$lnpriorproposalRatio 
+						lnPriorRatio=0
 						subprop="mergesplit"
 						break()	
 					} else if(cur.nR>0){											# shift local rate
@@ -123,7 +122,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, samp=100, type=c("jump-rbm"
 						new.rates=nr$new.values
 						new.delta=nr$new.delta 
 						new.scalars=new.rates+cur.jumprates
-						lnHastingsRatio=nr$lnHastingsRatio
+						lnHastingsRatio=nr$lnHastingsRatio 
 						lnPriorRatio=.dlnratio(cur.scalars, new.scalars, ct$dlnRATE)
 						subprop="moveshift"
 						break()						

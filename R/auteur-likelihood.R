@@ -497,7 +497,7 @@ function(rphy, ic) {
     root <- n.tip + 1
     is.tip <- idx <= n.tip
 	
-	desc=.cache_tree(phy)
+	desc=.cache.descendants(phy)
     children <- desc$fdesc
 	if(!max(sapply(children, length) == 2)){
 		children=NULL

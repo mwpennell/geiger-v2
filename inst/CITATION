@@ -1,4 +1,22 @@
-citHeader("To cite auteur or geiger in a publication use:")
+citHeader("To cite medusa, auteur, or geiger in a publication use:")
+
+citEntry(entry="Article",
+	header="medusa",
+	title = "Nine exceptional radiations plus high turnover explain species diversity in jawed vertebrates",
+        author = personList(as.person("ME Alfaro"),
+		as.person("F Santini"),
+		as.person("C Brock"),
+		as.person("H Alamillo"),
+		as.person("A Dornburg"),
+		as.person("DL Rabosky"),
+		as.person("G Carnevale"),
+		as.person("LJ Harmon")),
+	journal = "Proceedings of the National Academy of Sciences of the United States of America",
+  	year = "2009",
+	volume = "106",
+	pages = "13410-13414",
+
+        textVersion = "Alfaro Michael E, Francesco Santini, Chad Brock, Hugo Alamillo, Alex Dornburg, Daniel L Rabosky, Giorgio Carnevale, and Luke J Harmon. 2009. Nine exceptional radiations plus high turnover explain species diversity in jawed vertebrates. PNAS 106:13410-13414.")
 
 citEntry(entry="Article",
 	header="auteur",

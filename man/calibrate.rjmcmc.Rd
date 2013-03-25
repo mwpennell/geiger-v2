@@ -20,8 +20,7 @@ calibrate.rjmcmc(phy, dat, nstep = 10000, widths = 2^(-3:3), model=c("bm"), ...)
   \item{...}{arguments to be passed to \code{\link[geiger]{make.gbm}} and \code{\link[geiger]{rjmcmc.bm}}}
 }
 \details{
-This function may be useful for constraining subsequent runs after an adequate proposal width has been approximated by this function. MCMC samples from this calibration 
-are not stored and do not become available to the user.}
+This function may be useful for constraining subsequent runs after an adequate proposal width has been approximated by this function. MCMC samples from this calibration are not stored and do not become available to the user. This function is solely used to give the user a sense of acceptance rates that can be expected for different proposal widths. The narrower the width, the more easily the chain can become stuck. With a wider width, the chain will more quickly explore a broader parameter space, yet acceptance rates may become unacceptably low.}
 
 \author{JM Eastman}
 

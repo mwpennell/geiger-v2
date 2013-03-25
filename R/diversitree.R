@@ -1,5 +1,50 @@
 
 ## FUNCTIONS from diversitree 0.9-4: commit ec08b1d2bd from 06-22-2012 @ 'https://github.com/richfitz/diversitree'
+
+drop.tip=function(phy, tip, trim.internal = TRUE, subtree = FALSE,
+         root.edge = 0, rooted = is.rooted(phy)) {
+  Ntip <- length(phy$tip.label)
+  if (is.character(tip)) 
+    tip <- which(phy$tip.label %in% tip)
+
+  phy <- reorder(phy)
+  NEWROOT <- ROOT <- Ntip + 1
+  Nnode <- phy$Nnode
+  Nedge <- nrow(phy$edge)
+
+  wbl <- !is.null(phy$edge.length)
+  edge1 <- phy$edge[, 1]
+  edge2 <- phy$edge[, 2]
+  keep <- !(edge2 %in% tip)  
+
+  ints <- edge2 > Ntip
+  repeat {
+    sel <- !(edge2 %in% edge1[keep]) & ints & keep
+    if (!sum(sel)) 
+      break
+    keep[sel] <- FALSE
+  }
+
+  phy2 <- phy
+  phy2$edge <- phy2$edge[keep, ]
+  if (wbl) 
+    phy2$edge.length <- phy2$edge.length[keep]
+  TERMS <- !(phy2$edge[, 2] %in% phy2$edge[, 1])
+  oldNo.ofNewTips <- phy2$edge[TERMS, 2]
+  n <- length(oldNo.ofNewTips)
+  idx.old <- phy2$edge[TERMS, 2]
+  phy2$edge[TERMS, 2] <- rank(phy2$edge[TERMS, 2])
+  phy2$tip.label <- phy2$tip.label[-tip]
+  if (!is.null(phy2$node.label))
+    phy2$node.label <-
+      phy2$node.label[sort(unique(phy2$edge[, 1])) - Ntip]
+  phy2$Nnode <- nrow(phy2$edge) - n + 1L
+  i <- phy2$edge > n
+  phy2$edge[i] <- match(phy2$edge[i], sort(unique(phy2$edge[i]))) + n
+  storage.mode(phy2$edge) <- "integer"
+  collapse.singles(phy2)
+}
+
 argn <- function(x, ...)
 UseMethod("argn")
 

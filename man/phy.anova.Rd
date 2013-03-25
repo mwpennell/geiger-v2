@@ -24,7 +24,7 @@ This function performs an ANOVA or MANOVA in a phylogenetic context.  First, the
 of this test statistic is then obtained by simulating new sets of dependent variables on the phylogenetic
 tree.  Simulations are run under a Brownian-motion model.  For ANOVA, the rate parameter is estimated from 
 the average squared independent contrast; for MANOVA the simulations use an estimated variance-covariance (vcv) 
-matrix from \code{\link[geiger]{ic.sigma}}.
+matrix from \code{\link[geiger]{vcv.phylo}}.
 
 For MANOVA, you can specify the test statistic for the summary table.  Wilks' statistic is most popular in the 
 literature and for further details, see \code{\link[stats]{summary.manova}}.

@@ -2,7 +2,7 @@
 ##   Perhaps relax on these column names, may cause too many problems
 ## May also include 'exemplar' column; in that case, rename relevant tip.label before pruning.
 #prune.tree.merge.data
-.treedata.medusa <- function (phy, richness=NULL)
+.treedata.medusa <- function (phy, richness=NULL, ...)
 {
 	
 	## MODIFIED -- jme
@@ -56,7 +56,7 @@
     # Prune tree down to lineages with assigned richnesses
 	temp <- richness[, "n.taxa"];
 	names(temp) <- richness[, "taxon"];
-	pruned <- treedata(phy, temp, warnings=TRUE)  # geiger function calling ape (namecheck)
+	pruned <- treedata(phy, temp, ...)  # geiger function calling ape (namecheck)
 	if (check) {
 		if (length(phy$tip.label) != length(pruned$phy$tip.label)) {
 			stop("'richness' data and tip labels in 'phy' do not appear to match fully")

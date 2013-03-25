@@ -177,7 +177,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 	if(is.null(hashtips)) hashtips=phy$tip.label
 	orig=hashes.phylo(orig, hashtips)
 	
-	desc=.cache_tree(orig)
+	desc=.cache.descendants(orig)
 	rootd=desc$fdesc[[Ntip(orig)+1]]
 	
 	cache=list(desc=desc,phy=orig)
@@ -783,6 +783,8 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 		if(!is.numeric(constrainSHIFT)) constrainSHIFT=0
 	}
 	
+    if(type%in%c("jump-bm", "jump-rbm")) .geigerwarn(immediate.=TRUE)
+    
 	mod=expand.grid(constrainSHIFT=c(TRUE,FALSE),constrainJUMP=c(TRUE,FALSE))
 	rownames(mod)=c("jump-rbm","jump-bm","rbm","bm")
 	

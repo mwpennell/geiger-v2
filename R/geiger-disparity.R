@@ -38,7 +38,7 @@ disparity <- function(phy=NULL, data, disp=c("avg.sq", "avg.manhattan", "num.sta
 		td<-treedata(phy, data)
 		phy=td$phy
 		data=td$data
-		desc=.cache_tree(phy)$tips
+		desc=.cache.descendants(phy)$tips
 		nb.tip <- length(td$phy$tip.label)
 		nb.node <- td$phy$Nnode
 		result<-numeric()
@@ -58,8 +58,8 @@ disparity <- function(phy=NULL, data, disp=c("avg.sq", "avg.manhattan", "num.sta
 }
 
 
-.disparity <- function(data, disp=c("avg.sq", "avg.manhattan", "num.states")){
-	disp=match.arg(disp, c("avg.sq", "avg.manhattan", "num.states"))
+.disparity <- function(data, index=c("avg.sq", "avg.manhattan", "num.states")){
+	disp=match.arg(index, c("avg.sq", "avg.manhattan", "num.states"))
 	
 	if(disp=="avg.sq") {
 		d<-dist(data, method="euclidean")^2
@@ -169,9 +169,14 @@ function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states")){
 	return(cbind(x=xx, y=yy))
 }
 
+.CI=function(CI=0.95){
+    prob = (1 - CI)/2
+    return(c(prob, 1-prob))
+}
 
-dtt<-function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states"), nsims=1000, mdi.range=c(0,1), plot=TRUE){
-	disp=match.arg(disp, c("avg.sq", "avg.manhattan", "num.states"))
+dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE){
+
+	disp=match.arg(index, c("avg.sq", "avg.manhattan", "num.states"))
 	
 	td<-treedata(phy, data)
 	
@@ -179,35 +184,43 @@ dtt<-function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states"), nsims=
 	ltt<-sort(branching.times(td$phy), decreasing=TRUE)
 	ltt<-c(0, (max(ltt)-ltt)/max(ltt));
 	
-	s<-ic.sigma(td$phy, td$data)
+	s<-vcv.phylo(td$phy, td$data)
 	dtt.sims=NULL
 	MDI=NULL
 	
-	if(is.numeric(nsims)){
-		if(nsims>0){
-			sims<-sim.char(td$phy, s, nsims)
+    ylim=c(range(pretty(dtt.data)))
+
+	if(is.numeric(nsim)){
+		if(nsim>0){
+			sims<-sim.char(td$phy, s, nsim)
 			
 			dtt.sims<-.dtt(td$phy, sims)
 			mean.sims<-apply(dtt.sims, 1, mean)
+            median.sims<-apply(dtt.sims, 1, median)
+
 			
-			MDI<-unname(.area.between.curves(ltt, apply(dtt.sims, 1, median), dtt.data, mdi.range))
+			MDI<-unname(.area.between.curves(ltt, apply(dtt.sims, 1, median), dtt.data, sort(mdi.range)))
+            names(MDI)=disp
 			colnames(dtt.sims)=NULL
+            
+            yy=range(dtt.sims)
+            ylim=range(c(ylim, yy))
 		}
 	}
 	
 	if(plot){
-#		ylim=c(range(pretty(c(dtt.data, c(dtt.sims)))))
-		ylim=c(range(pretty(dtt.data)))
 		plot(ltt, dtt.data, xlab="relative time", ylab="disparity", ylim=ylim, bty="n", type="n")
+
 		if(!is.null(dtt.sims)){
-#			poly=.dtt.polygon(dtt.sims, ltt, alpha=0.05)
-#			polygon(poly[,"x"], poly[,"y"], col=.transparency("lightgray", 0.5), border=NA) 
-			lines(ltt, mean.sims, lty=2)
-			lines(ltt, dtt.data, type="l", lwd=2)
+			poly=.dtt.polygon(dtt.sims, ltt, alpha=1-CI)
+			polygon(poly[,"x"], poly[,"y"], col=.transparency("lightgray", 0.5), border=NA)
+			lines(ltt, median.sims, lty=2)
 		}
+        lines(ltt, dtt.data, type="l", lwd=2)
+
 	}
 	
-	res=list(dtt=dtt.data, dtt_sims=dtt.sims, times=ltt, MDI=MDI)
+	res=list(dtt=dtt.data, times=ltt, sim=dtt.sims, MDI=MDI)
 	drp=sapply(res, function(x) is.null(x))
 	if(any(drp)) res=res[-which(drp)]
 	return(res)

@@ -16,7 +16,9 @@ asr(phy, dat)
 	ancestral character states for continuous characters.
 	
 	The \pkg{ape} function \code{\link[ape]{ace}} carries out a similar function but finds estimates by actually maximizing the likelihood across all ancestors simultaneously. The algorithm used here is faster and sometimes more reliable especially for larger trees.
-	}
+    The \pkg{phytools} function \code{\link[phytools]{fastAnc}} carries out this function
+}
+
 \value{
 	The function returns a vector of ancestral character states at each node, named based on the numeric 
 	node-identifiers used inside the \code{phy$edge} object.

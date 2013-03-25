@@ -835,7 +835,7 @@ phy.manova<-function(phy, data, group, nsim=1000, test=c("Wilks", "Pillai", "Hot
 	test=match.arg(test, c("Wilks", "Pillai", "Hotelling-Lawley", "Roy"))
 	td<-treedata(phy, data)
 	
-	s<-ic.sigma(td$phy, td$data)
+	s<-vcv(td$phy, td$data)
 	
 	m<-summary.manova(mod<-manova(as.matrix(td$data)~group), test=test)
 	

@@ -24,6 +24,7 @@
 \alias{prune.random.taxa}
 \alias{rate.estimate}
 \alias{rescaleTree}
+\alias{runMedusa}
 \alias{shifts.plot}
 \alias{speciationalTree}
 \alias{tip.disparity}
@@ -45,7 +46,7 @@
 		\item{\code{dtt.full}}: use \code{\link[geiger]{dtt}}
 		\item{\code{exponentialchangeTree}}: \code{\link[geiger]{transform.phylo}}
 		\item{\code{get.simulation.matrix}}: use \code{geiger:::.get.simulation.matrix}
-		\item{\code{getAncStates}}: use \code{\link[geiger]{asr}}
+		\item{\code{getAncStates}}: use \code{\link[phytools]{fastAnc}}
 		\item{\code{ic.sigma}}: use \code{\link[geiger]{vcv.phylo}}
 		\item{\code{intercalate.samples}}: use \code{geiger:::.intercalate.rjmcmc}
 		\item{\code{kappaTree}}: use \code{\link[geiger]{transform.phylo}}
@@ -60,6 +61,7 @@
 		\item{\code{prune.random.taxa}}: use \code{\link[geiger]{drop.random}}
 		\item{\code{rate.estimate}}: use \code{\link[geiger]{bd.ms}} or \code{\link[geiger]{bd.km}}
 		\item{\code{rescaleTree}}: use \code{\link[geiger]{transform.phylo}}
+        \item{\code{runMedusa}}: use \code{\link[geiger]{medusa}}
 		\item{\code{shifts.plot}}: use \code{plot}
 		\item{\code{speciationalTree}}: use \code{\link[geiger]{transform.phylo}}
 		\item{\code{tip.disparity}}: use \code{\link[geiger]{disparity}}

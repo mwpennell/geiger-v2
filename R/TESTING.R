@@ -1,6 +1,10 @@
+.geigerwarn=function(...) warning("the called function is currently in development, the results of which may not be trustworthy", ...)
+
 .mcmc=function(lik, prior=list(), start=NULL, proposal=NULL, control=list(n=1e4, s=100, w=1)){
 #mcmc(lik, start=c(sigsq=1, SE=1, z0=4), prior=list(sigsq=function(x) dexp(x, 1/1000, log=TRUE), SE=function(x) dexp(x, 1/1000, log=TRUE), z0=function(x) dnorm(x, mean=mean(dat), sd=100, log=TRUE)), control=list(n=20000, s=50))max=max(bounds[x,]))))
 
+    .geigerwarn(immediate.=TRUE)
+    
     ct=list(n=1e4, s=100, w=1, sample.priors=FALSE)
     ct[names(control)]=control
 	par=argn(lik)

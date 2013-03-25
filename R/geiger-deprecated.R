@@ -1,5 +1,12 @@
 .deprecate=function(prev, curr){
-	warning(paste(sQuote(prev), "is being deprecated: use", paste(sQuote(curr), collapse=" or "), sep=" "))
+	warning(paste(sQuote(prev), "is being deprecated: use", paste(sQuote(curr), "instead", collapse=" or "), sep=" "))
+}
+
+
+runMedusa=function(phy, richness, estimateExtinction = TRUE, modelLimit = 20, cutAtStem=TRUE, startR=0.05, startE=0.5, ...){
+	.deprecate("runMedusa", "medusa")
+    message("Refer to documentation (?medusa) for information on summarizing output")
+	medusa(phy, richness=richness, model=ifelse(estimateExtinction, "bd", "yule"), cut=ifelse(cutAtStem, "stem", "node"), partitions=modelLimit, init=c(r=startR, epsilon=startE), ...)
 }
 
 
@@ -28,8 +35,8 @@ tip.disparity=function(phy, data, disp=c("avg.sq", "avg.manhattan",
 }
 
 ic.sigma=function(phy, data){
-	.deprecate("ic.sigma", "vcv")
-	vcv(phy=phy, data=data)
+	.deprecate("ic.sigma", "vcv.phylo")
+	vcv.phylo(phy=phy, data=data)
 }
 
 rate.estimate=function(time=0, n=0, phy=NULL, epsilon = 0, missing = 0, crown=TRUE, kendall.moran=FALSE){
@@ -51,3 +58,76 @@ getAncStates=function(x, phy){
     .deprecate("getAncStates", "asr")
     asr(phy, x)
 }
+
+deltaTree = function(phy, delta, rescale=TRUE){
+    .deprecate("deltaTree", "transform.phylo")
+    f=transform.phylo(phy, model="delta")
+    f(delta=delta, rescale=rescale) 
+}
+
+lambdaTree = function(phy, lambda){
+    .deprecate("lambdaTree", "transform.phylo")
+    transform.phylo(phy, "lambda", lambda=lambda)
+}
+
+kappaTree = function(phy, kappa){
+    .deprecate("kappaTree", "transform.phylo")
+    transform.phylo(phy, "kappa", kappa=kappa)
+}
+
+ouTree = function(phy, alpha){
+    .deprecate("ouTree", "transform.phylo")
+    transform.phylo(phy, "OU", alpha=alpha)
+}
+
+tworateTree = function(phy, breakPoint, endRate){
+    .deprecate("tworateTree", "transform.phylo")
+    mt=max(heights(phy))
+    bk=breakPoint/mt
+    f=transform.phylo(phy, "nrate")
+    f(time=bk, rate=endRate, rescale=FALSE)
+}
+
+linearchangeTree = function(phy, endRate = NULL, slope=NULL){
+    .deprecate("linearchangeTree", "transform.phylo")
+    flag="'endRate' or 'slope' must be supplied"
+    if (is.null(slope) && is.null(endRate)) stop(flag)
+    if(!is.null(slope) && !is.null(endRate)) stop(flag)
+    
+    rootdepth <- max(heights(phy))
+    toslope=function(endRate, rootdepth){
+        (endRate-1)/rootdepth
+    }
+    if (is.null(slope)) {
+        slope = toslope(endRate, rootdepth)
+    }
+    
+    transform.phylo(phy, "trend", slope=slope)
+}
+
+exponentialchangeTree = function(phy, endRate=NULL, a=NULL){
+    .deprecate("exponentialchangeTree", "transform.phylo")
+    
+    flag="'endRate' or 'a' must be supplied"
+    if (is.null(a) && is.null(endRate)) stop(flag)
+    if(!is.null(a) && !is.null(endRate)) stop(flag)
+
+    rootdepth <- max(heights(phy))
+    if (is.null(a)) a <- log(endRate)/rootdepth
+    
+    transform.phylo(phy, "EB", a=a)
+}
+
+speciationalTree = function(phy){
+    .deprecate("speciationalTree", "transform.phylo")
+    transform.phylo(phy, "kappa", kappa=0)
+
+}
+
+rescaleTree = function(phy, totalDepth){
+    .deprecate("rescaleTree", "transform.phylo")
+    transform.phylo(phy, "depth", depth=totalDepth)
+
+}
+
+

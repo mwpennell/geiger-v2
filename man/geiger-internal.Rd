@@ -70,6 +70,7 @@
 \alias{resplitEdgeMatrixGeiger}
 \alias{root.phylo}
 \alias{sem}
+\alias{span.phylo}
 \alias{splitEdgeMatrixGeiger}
 \alias{transform}
 \alias{ultrametricize.phylo}

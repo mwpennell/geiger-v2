@@ -188,8 +188,8 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 
 ## PROPOSAL MECHANISM ##
 #rjmcmc proposal mechanism: proposal mechanism for traversing model complexity (by one parameter at a time)
-#author: JM EASTMAN 2010
-.splitormerge <- function(x, delta, control, cache) { 
+#author: JM EASTMAN and J UYEDA 2013
+.splitormerge <- function(x, delta, control, cache) {
 	phy=cache$phy
 	fdesc=cache$desc$fdesc
 	adesc=cache$desc$adesc
@@ -214,7 +214,7 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 		while(1) {
 			u=runif(1, -n.desc*value, n.split*value)
 			nr.desc=value+u/n.desc
-			nr.split=value-u/n.split	
+			nr.split=value-u/n.split
 			
 			if(.check.lim(c(nr.desc, nr.split), lim)) break()
 		}
@@ -251,7 +251,7 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 	}
 	new.vv=vv
 	cur.vv=vv[marker]
-
+    
 	shifts=nm[bb>0]
 	K=sum(bb)
 	Nk=nrow(phy$edge)-length(control$excludeSHIFT)
@@ -259,14 +259,14 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 	
 	if(sum(new.bb)>sum(bb)) {			## add transition: SPLIT
         if(sum(new.bb)==Nk){
-            return(list(x=x, delta=delta, lnHastingsRatio=0, decision="none")) ## CANNOT SPLIT
+            return(list(x=x, delta=delta, lnpriorproposalRatio=0, decision="none")) ## CANNOT SPLIT
         }
 		decision="split"
 		n.desc=length(s.desc<-.opensubtree.phylo(s, phy, adesc, shifts))+1
 		nd.desc=c(s.desc,s)
 		n.split=sum(vv==cur.vv)-n.desc
 		if(!logspace) {
-			u=.splitvalue(cur.vv=cur.vv, n.desc=n.desc, n.split=n.split, factor=control$prop.width) 
+			u=.splitvalue(cur.vv=cur.vv, n.desc=n.desc, n.split=n.split, factor=control$prop.width)
 		} else {
 			u=.splitrate(value=cur.vv, n.desc=n.desc, n.split=n.split, control$rate.lim)
 		}
@@ -276,7 +276,8 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 		ms=match(nd.desc, nm)
 		new.vv[ms]=nr.desc
 		
-		lnHastingsRatio = log((K+1)/(Nk-K)) ### from Drummond and Suchard 2010: where N is tips, K is number of local parms in tree
+        ###
+        lnpriorproposalRatio=.lnpriorhastings_ratio.split(K=K, N=Nk, r=cur.vv, r_i=nr.split, r_j=nr.desc, n_i=n.split, n_j=n.desc, fun_k=control$dlnSHIFT, fun_v=control$dlnRATE, delta=1)
 	} else {							## drop transition: MERGE
 		decision="merge"
 		ca.vv=length(which(vv==cur.vv))
@@ -289,20 +290,94 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 		} else {							# if ancestor of selected node is root, base new rate on sister node
 			sister.tmp=.get.desc.of.node(anc,phy)
 			sister=sister.tmp[sister.tmp!=s]
-			sis.vv=as.numeric(vv[match(sister,nm)])
-			ns.vv=length(which(vv==sis.vv))
+			sis.vv<-anc.vv<-as.numeric(vv[match(sister,nm)])
+			ns.vv<-na.vv<-length(which(vv==sis.vv))
 			nr=(sis.vv*ns.vv+cur.vv*ca.vv)/(ca.vv+ns.vv)
-			new.vv[vv==cur.vv | vv==sis.vv]=nr			
+			new.vv[vv==cur.vv | vv==sis.vv]=nr
 		}
 		
-		lnHastingsRatio = log((Nk-K+1)/K) ### from Drummond and Suchard 2010: where N is tips, K is number of local parms in tree
+        ###
+        lnpriorproposalRatio=.lnpriorhastings_ratio.merge(K=K, N=Nk, r=nr, r_i=cur.vv, r_j=anc.vv, n_i=ca.vv, n_j=na.vv, fun_k=control$dlnSHIFT, fun_v=control$dlnRATE)
 	}
 	
 	new.values=new.vv
 	
-	return(list(x=new.vv, delta=new.bb, lnHastingsRatio=lnHastingsRatio, decision=decision))
+	return(list(x=new.vv, delta=new.bb, lnpriorproposalRatio=lnpriorproposalRatio, decision=decision))
 }
 
+## PROPOSAL MECHANISM ##
+#author: JM EASTMAN and J UYEDA 2013 
+.lnpriorhastings_ratio.split=function(K, N, r, r_i, r_j, n_i, n_j, fun_k, fun_v, delta=1){
+    #K: number of current shifts
+    #N: number of tips in bifurcating tree
+    #r: current rate
+    #r_i: previous rate for class i
+    #r_j: previous rate for class j
+    #n_i: number of branches in class i
+    #n_j: number of branches in class j
+    #fun_k: log-prior function for shifts
+    #fun_k: log-prior function for rates
+    #delta: tuning parameter
+
+    #  from J UYEDA
+    #priors
+    lpk1=fun_k(K+1)
+    lpk=fun_k(K)
+    
+    lpri=fun_v(r_i)
+    lprj=fun_v(r_j)
+    lpr=fun_v(r)
+    
+    #proposals
+    vi=-r_i*n_i
+    vj=r_j*n_j
+    
+    lk1=log(K+1)
+    ln2k=log(2*N-2-K)
+    lvij=log(vj-vi)
+    lnij=log(n_i+n_j)
+    ldelta=log(delta)
+    
+    num=lpk1+lk1+lpri+lprj+lvij+lnij+ldelta
+    den=lpk+ln2k+lpr
+    
+    num-den
+}
+
+## PROPOSAL MECHANISM ##
+#author: JM EASTMAN and J UYEDA 2013 
+.lnpriorhastings_ratio.merge=function(K, N, r, r_i, r_j, n_i, n_j, fun_k, fun_v){
+    #K: number of current shifts
+    #N: number of tips in bifurcating tree
+    #r: merged rate
+    #r_i: previous rate for class i
+    #r_j: previous rate for class j
+    #n_i: number of branches in class i
+    #n_j: number of branches in class j
+    #fun_k: log-prior function for shifts
+    #fun_k: log-prior function for rates
+    
+    #  from J UYEDA
+    #priors
+    lpk1=fun_k(K-1)
+    lpk=fun_k(K)
+    
+    lpri=fun_v(r_i)
+    lprj=fun_v(r_j)
+    lpr=fun_v(r)
+    
+    #proposals
+    lninj=log(n_i*n_j)
+    lninj2=2*(log(n_i+n_j))
+
+    lk=log(K)
+    ln2k=log(2*N-1-K)
+    
+    num=lpk1+ln2k+lpr+lninj
+    den=lpk+lk+lpri+lprj+lninj2
+
+    num-den
+}
 
 
 

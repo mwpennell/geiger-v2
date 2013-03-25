@@ -40,7 +40,7 @@ geo=get(data(geospiza))
 usims<-sim.char(geo$phy, 0.02, 100)
 
 ## Continuous character -- multivariate
-s<-ic.sigma(geo$phy, geo$dat)
+s<-vcv(geo$phy, geo$dat)
 csims<-sim.char(geo$phy, s, 100)
 
 ## Discrete character -- univariate

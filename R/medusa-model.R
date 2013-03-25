@@ -1,5 +1,5 @@
 
-medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA, model=c("mixed", "bd", "yule"), cut=c("both","stem","node"), init=c(r=0.05, epsilon=0.5)){
+medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA, model=c("mixed", "bd", "yule"), cut=c("both","stem","node"), init=c(r=0.05, epsilon=0.5), ...){
   
 	## CHECK ARGUMENTS
     verbose=FALSE
@@ -34,7 +34,7 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
     #	if (nexus) phy <- read.nexus(phy)
 	if(!any(c("phylo","multiPhylo")%in%class(phy))) stop("'phy' must either be a phylo or multiPhylo object")
     richness=data.frame(richness, stringsAsFactors=FALSE)
-	phyData <- .treedata.medusa(phy=phy, richness=richness) ## modified prune.tree.merge.data for multiple trees (jme)
+	phyData <- .treedata.medusa(phy=phy, richness=richness, ...) ## modified prune.tree.merge.data for multiple trees (jme)
 	## END -- jme
 	
 	# internal function for running a single tree and richness data.frame (jme)

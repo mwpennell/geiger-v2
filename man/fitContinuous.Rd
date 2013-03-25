@@ -8,7 +8,7 @@
 fitContinuous(phy, dat, SE = 0, 
 	model = c("BM","OU","EB","trend","lambda","kappa","delta","drift","white"), 
 	bounds= list(), control = list(method = c("SANN","L-BFGS-B"), 
-	niter = 100, FAIL = 1e+200, hessian = FALSE, hessianCI = 0.95))
+	niter = 100, FAIL = 1e+200, hessian = FALSE, hessianCI = 0.95), \dots)
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
@@ -17,6 +17,7 @@ fitContinuous(phy, dat, SE = 0,
   \item{model}{ model to fit to comparative data (see \bold{Details}) }
   \item{bounds}{ range to constrain parameter estimates (see \bold{Details})  }
   \item{control}{ settings used for optimization of the model likelihood}
+  \item{...}{additional arguments to be passed to the internal likelihood function \code{bm.lik}}
 }
 \details{
 This function fits various likelihood models for continuous character evolution. The function 

@@ -10,7 +10,8 @@ fitting piecewise diversification models according to phylogenetic and taxonomic
 \usage{
 medusa(phy, richness = NULL, criterion = c("aicc", "aic"), 
     partitions=NA, model = c("mixed", "bd", "yule"), 
-    cut = c("both","stem","node"), init = c(r=0.05, epsilon=0.5))
+    cut = c("both","stem","node"), 
+    init = c(r=0.05, epsilon=0.5), \dots)
 }
 
 \arguments{
@@ -21,6 +22,7 @@ medusa(phy, richness = NULL, criterion = c("aicc", "aic"),
   \item{model}{the flavor of piecewise models to consider (see \bold{Details})}
   \item{cut}{determines where shifts are placed on the tree (see \bold{Details})}
   \item{init}{initial conditions for net diversification and relative extinction} 
+  \item{...}{additional arguments to be passed to \code{\link[geiger]{treedata}}}
 }
 
 \details{
@@ -64,13 +66,13 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     richness=dat$richness
     
     ## USING AICc as STOPPING CRITERION
-    res1=medusa(phy, richness)
+    res1=medusa(phy, richness, warnings=FALSE)
     print(names(res1)) # output list elements
     print(res1$summary) # show 'summary' object
     summary(res1, criterion="aicc") # select best model based on AICc
     
     ## USING PARTITIONS as STOPPING CRITERION
-    res2=medusa(phy, richness, partitions=12)
+    res2=medusa(phy, richness, partitions=12, warnings=FALSE)
     s2=summary(res2, criterion="aicc") # select best model based on AICc (again showing the third model as best)
     
     ## PLOTTING RESULTS
