@@ -1,16 +1,3 @@
 useDynLib(geiger)
 exportPattern("^[[:alpha:]]+")
-#importFrom( utils, capture.output )
 
-#export(im.bdtree, phy.anova, phy.manova)
-#export(disparity, dtt, dtt.full, vcv)
-#export(bd.ms, bd.km, crown.p, stem.p, crown.limits, stem.limits)
-#export(fitContinuous, fitDiscrete, drop.extinct, drop.random, rc)
-#export(sim.char)
-#export(tip.disparity)
-#export(bd.sim, treedata, tips)
-#export(print.bm, print.mkn)
-#export(transform.phylo)
-## IN PROGRESS
-#export(fitDiscrete)
-#export(fitDiscrete_original, fitContinuous_original)

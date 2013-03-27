@@ -3,7 +3,8 @@
 \title{Bayesian sampling of shifts in trait evolution: relaxed Brownian motion}
 \description{Implements reversible-jump Markov chain Monte Carlo sampling for trait evolutionary models}
 \usage{
-rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, samp = 100, type = c("jump-rbm", "rbm", "jump-bm", "bm"), ...)
+rjmcmc.bm(phy, dat, SE=NA, ngen = 50000, samp = 100, 
+    type = c("jump-rbm", "rbm", "jump-bm", "bm"), ...)
 }
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
@@ -47,160 +48,45 @@ Posterior results are written to several files within a base directory, the cont
 
 \author{JM Eastman, LJ Harmon, and AL Hipp}
 
+\references{ Eastman JM, ME Alfaro, P Joyce, AL Hipp, and LJ Harmon. 2011. A novel comparative method for identifying shifts in the rate of character evolution on trees. \emph{Evolution} 65:3578-3589.
+}
+
 \seealso{
 \code{\link[geiger]{load.rjmcmc}}
 }
 
 \examples{
-## generate data
-jumptarget=10
-
-## DEFINE FUNCTIONS
-# jump-diffusion simulator
-jumpsim=function(phy, alpha=0, sigmasq.brown=0.01, sigma.jump=0.2, lambda.jump=0.2){
-	phy=reorder(phy)
-	cedges=cumsum(phy$edge.length)
-	tmax=sum(phy$edge.length)
-	nn=phy$edge[,2]
-	cs=c()
-	tt=c()
-	jumps=0
-	if(lambda.jump>0){
-		while(1){
-			dt=rexp(1,lambda.jump)
-			tt=c(tt,dt)
-			cs=cumsum(tt)
-			if(cs[length(cs)]>tmax){
-				cs=cs[-length(cs)]
-				jumps=length(cs)
-				break()
-			}
-		}		
-	}
-
-	jump.edges=rep(0, length(nn))
-	if(jumps>0) {
-		for(j in 1:length(cs)){
-			tmp=min(which(cs[j]<cedges))
-			jump.edges[tmp]=jump.edges[tmp]+1
-		}
-	} 
-	
-	hist=as.data.frame(matrix(cbind(phy$edge, phy$edge.length, NA, jump.edges, NA, NA, NA), ncol=8))
-	names(hist)=c("ancestor","descendant","edge","phenotype","jumps","time", "effect_Brown", "effect_Jump")
-
-	root=Ntip(phy)+1
-	for(i in 1:nrow(hist)){
-		start=ifelse(hist$ancestor[i]==root, alpha, hist$phenotype[which(hist$descendant==hist$ancestor[i])])
-		stime=ifelse(hist$ancestor[i]==root, 0, hist$time[which(hist$descendant==hist$ancestor[i])])
-		t=hist$edge[i]
-		hist$phenotype[i]=start+(Beffect<-rnorm(1, mean=0, sd=sqrt(sigmasq.brown*t)))
-		hist$effect_Brown[i]=abs(Beffect^2)/hist$edge[i]
-		hist$time[i]=stime+hist$edge[i]
-		if((jmp<-hist$jumps[i])>0){
-			hist$phenotype[i]=hist$phenotype[i]+(Jeffect<-sum(rnorm(jmp, mean=0, sd=sigma.jump)))
-		} else {
-			Jeffect=0
-		}
-		hist$effect_Jump[i]=abs(Jeffect^2)/hist$edge[i]
-	}
-	
-	return(hist)
-}
-
-# plotting
-traitgram=function(phy, hist, alpha=0, cex.node=2, scl=2, ...){
-	mm=max(abs(alpha-unlist(hist$phenotype)))
-	root=Ntip(phy)+1
-	plot(x=NULL, y=NULL, xlim=range(pretty(c(0,max(hist$time)))), ylim=range(pretty(c(-mm+alpha, mm+alpha))), bty="n", xlab="time", ylab="phenotypic value")
-	for(i in 1:nrow(hist)) {
-		start=ifelse(hist$ancestor[i]==root, alpha, hist$phenotype[which(hist$descendant==hist$ancestor[i])])
-		stime=ifelse(hist$ancestor[i]==root, 0, hist$time[which(hist$descendant==hist$ancestor[i])])
-		
-		end=hist$phenotype[i]
-		etime=hist$time[i]
-		lines(c(stime,etime),c(start,end),col=geiger:::.transparency("gray25",0.75),...)		
-	}
-	points(hist$time,hist$phenotype,bg=geiger:::.transparency("white",0.75),pch=21,cex=ifelse(hist$descendant<=Ntip(phy), cex.node, cex.node/scl))	
-	points(0,alpha,bg=geiger:::.transparency("white",0.75),pch=21,cex=cex.node/scl)		
-}
-
-# wrapper for jumpsim
-jumper=function(phy, alpha=0, sigmasq.brown=0.01, sigmasq.jump=1, jumps=jumptarget){
-	lambda=jumps/sum(phy$edge.length)
-	hist=jumpsim(phy, alpha=alpha, sigmasq.brown=sigmasq.brown, sigma.jump=sqrt(sigmasq.jump), lambda.jump=lambda)
-	dat=hist$phenotype[hist$descendant<=Ntip(phy)]
-	names(dat)=phy$tip.label[hist$descendant[hist$descendant<=Ntip(phy)]]
-	edges=hist$descendant[hist$jumps>0]
-	return(list(hist=hist, dat=dat, phy=phy))
-}
-
-# scale branches of a subtree
-scaler=function(phy, scl=64, min=4, ...){
-	while(1) {	
-		# find an internal edge
-		anc=geiger:::.get.desc.of.node(Ntip(phy)+1,phy)
-		branches=phy$edge[,2]
-		ss=sapply(anc, function(x) length(geiger:::.get.descendants.of.node(x, phy, tips=FALSE)))
-		if(all(ss<min)) stop("'min' is too large")
-		branches=branches[branches>Ntip(phy) & branches!=anc]
-		branch=branches[sample(1:length(branches),1)]
-		desc=geiger:::.get.descendants.of.node(branch,phy)
-		if(length(desc)>=min) break()
-	}
-	rphy=phy
-	rphy$edge.length[match(desc,phy$edge[,2])]=phy$edge.length[match(desc,phy$edge[,2])]*scl
-	e=numeric(nrow(phy$edge))
-	e[match(c(branch,desc),phy$edge[,2])]=1
-	cols=c("red","gray")
-	dev.new()
-	plot(phy,edge.col=ifelse(e==1,cols[1],cols[2]), edge.width=2, ...) 
-	
-	mtext("expected pattern of rates")
-
-	rphy
-}
-
-
-
 ## GENERATE DATA: jump-diffusion
-phy=ladderize(rcoal(200), right=FALSE)
+phy=ladderize(sim.bdtree(n=200), right=FALSE)
 
 defpar=par(no.readonly=TRUE)
-tmp=jumper(phy)
+tmp=ex.jumpsimulator(phy, jumps=10)
 dat=tmp$dat
 hist=tmp$hist
-hist$scl=hist$effect_Jump/hist$effect_Brown
-hist$scl=hist$effect_Jump
 
-hist$cex=(hist$scl-min(hist$scl))/(max(hist$scl)-min(hist$scl))
-
-r=paste(sample(letters,9,replace=TRUE),collapse="")
-
-traitgram(phy, hist, alpha=0)
+ex.traitgram(phy, hist, alpha=0) # plot history of trait change
 
 ## RUN ANALYSIS
+r=paste(sample(letters,9,replace=TRUE),collapse="")
 rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, samp=500, filebase=r, simple.start=TRUE, type="jump-bm")
 outdir=paste("jump-BM", r, sep=".")
 ps=load.rjmcmc(outdir)
-dev.new()
-plot(x=ps, par="shifts", burnin=0.25, legend=TRUE, show.tip=FALSE)
 
 dev.new()
 plot(x=ps, par="jumps", burnin=0.25, legend=FALSE, show.tip=FALSE, type="fan", edge.width=2)
-
 mm=match(phy$edge[,2],hist$descendant)
 hist=hist[mm,]
-edgelabels.auteur(text=NULL, pch=21, cex=4*asin(sqrt(hist$cex)), bg=NA, col=ifelse(hist$cex>0, 1, NA), lty=2)
-
+edgelabels.auteur(text=NULL, pch=21, cex=hist$cex, bg=NA, col=ifelse(hist$cex>0, 1, NA), lty=2)
+title("red (estimated); black (true jump size)")
 par(defpar)
+
 dev.new()
 autocorr.plot(ps$log, ask=dev.interactive())
 plot(ps$log, ask=dev.interactive())
 
 
 ## GENERATE DATA: multi-rate diffusion
-scl=scaler(phy, show.tip=FALSE)
+scl=ex.ratesimulator(phy, min=12, show.tip=FALSE)
 dat=rTraitCont(scl)
 
 ## RUN ANALYSIS
@@ -208,9 +94,11 @@ rjmcmc.bm(phy, dat, prop.width=1.5, ngen=20000, samp=500, filebase=r, simple.sta
 outdir=paste("relaxedBM", r, sep=".")
 ps=load.rjmcmc(outdir)
 dev.new()
-plot(x=ps, par="shifts", burnin=0.25, legend=TRUE, show.tip=FALSE)
+plot(x=ps, par="shifts", burnin=0.25, legend=TRUE, show.tip=FALSE, edge.width=2)
 
 ## PASTE UNCOMMENTED FOLLOWING LINE TO DROP DIRECTORIES CREATED BY RJMCMC
  # unlink(dir(pattern=paste(r)),recursive=TRUE)
 
 }
+\keyword{models}
+

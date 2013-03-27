@@ -8,7 +8,7 @@
 \title{
 Blending information from taxonomies and trees}
 \description{
-Working with systematic reference tables and phylogenies}
+working with systematic reference tables and phylogenies}
 \usage{
 nodelabel.phylo(phy, taxonomy, strict=TRUE)
 phylo.lookup(taxonomy)
@@ -23,8 +23,8 @@ glomogram.phylo(phy, subtrees)
   \item{taxonomy}{a linkage table (of class \code{matrix}) between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
   \item{clades}{a named list of clade definitions (i.e., spanning taxa; see \bold{Examples}); spanning taxa may invoke other definitions found within the \code{clades} list}
   \item{unplaced}{whether to use 'unplaced' taxa if given as an element in \code{clades}} 
-  \item{subtrees}{a list of trees to be grafted into \code{phy}; each \code{subtrees} element has two sub-elements: \code{subtree} and \code{age} (see \bold{Examples})}
-  \item{strict}{whether to enforce strict labeling of nodes or allow liberal estimates of the best location of a given node label}
+  \item{subtrees}{a list of trees to be grafted into \code{phy}; each \code{subtrees} element must either be a 'phylo' or 'multiPhylo' object with branch lengths in the same units as \code{phy} (see \bold{Examples})}
+  \item{strict}{whether to enforce strict labeling of nodes or allow liberal estimates of the best location of a given nodelabel}
 }
 
 \details{
@@ -37,7 +37,7 @@ glomogram.phylo(phy, subtrees)
 	\code{lookup.phylo} converts a phylogenetic tree (\code{phy}) into a linkage table based on nodelabels associated with \code{phy}, which can be supplemented with a \code{taxonomy} and (or) 
 	\code{clades} object.   
 	
-	\code{phylo.clades} returns a series of phylogenetic subtrees based on clade definitions found in the \code{clades} object.  Definitions can be handles that are recursive (e.g., \code{clades=list(alpha=c(1,2,3), beta=c("alpha", 4))})
+	\code{phylo.clades} returns a series of phylogenetic subtrees based on clade definitions found in the \code{clades} object.  Definitions can be handles that are recursive (see \bold{Examples}).
 }
 \author{JM Eastman}
 
@@ -63,14 +63,16 @@ lkp=lookup.phylo(sal$phy, taxonomy=tax, clades=cld)
 print(lkp)
 nphy=nodelabel.phylo(sal$phy, lkp)
 dev.new()
-plot.phylo(ladderize(nphy,right=FALSE), cex=0.35, type="fan", label.offset=2.5, no.margin=TRUE, edge.color="gray", edge.width=0.5)
+plot.phylo(ladderize(nphy,right=FALSE), cex=0.35, 
+type="fan", label.offset=2.5, no.margin=TRUE, edge.color="gray", edge.width=0.5)
 
 nodelabels(nphy$node.label, cex=0.45, col="red", frame="n")
 
 ## CLADES to TREE: phylo.clades()
-salamandroidea=extract.clade(nphy, geiger:::.mrca(c("Ambystomatidae", "Plethodontidae"), nphy))
-cryptobranchoidea=extract.clade(nphy, geiger:::.mrca(c("Cryptobranchidae", "Hynobiidae"), nphy))
-siren=extract.clade(nphy, geiger:::.mrca(c("Siren_lacertina", "Siren_intermedia"), nphy))
+fmrca=geiger:::.mrca
+salamandroidea=extract.clade(nphy, fmrca(c("Ambystomatidae", "Plethodontidae"), nphy))
+cryptobranchoidea=extract.clade(nphy, fmrca(c("Cryptobranchidae", "Hynobiidae"), nphy))
+siren=extract.clade(nphy, fmrca(c("Siren_lacertina", "Siren_intermedia"), nphy))
 
 clades=list(
 			 Sirenoidea=c("Siren", "Pseudobranchus"), 
@@ -90,8 +92,8 @@ nodelabels(amph$node.label, cex=0.35, col="red", frame="n")
 
 
 ## GLOMOGRAM
-sirenidae=extract.clade(nphy, geiger:::.mrca(c("Siren_lacertina", "Pseudobranchus_axanthus"), nphy))
-ambystomatidae=extract.clade(nphy, geiger:::.mrca(c("Ambystoma_gracile", "Ambystoma_texanum"), nphy))
+sirenidae=extract.clade(nphy, fmrca(c("Siren_lacertina", "Pseudobranchus_axanthus"), nphy))
+ambystomatidae=extract.clade(nphy, fmrca(c("Ambystoma_gracile", "Ambystoma_texanum"), nphy))
 trees=list(
 	Cryptobranchoidea=cryptobranchoidea,
 	Sirenidae=sirenidae,
@@ -115,5 +117,7 @@ plot(ladderize(res, right=FALSE), cex=1, label.offset=5, tip.color=ifelse(cc==1,
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+\keyword{data}
+\keyword{graphs}
+\keyword{manip}
+

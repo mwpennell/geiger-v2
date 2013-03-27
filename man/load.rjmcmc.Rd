@@ -1,7 +1,7 @@
 \name{load.rjmcmc}
 \alias{load.rjmcmc}
 \title{posterior samples from single or multiple MCMC runs}
-\description{generating a pooled and thinned sample of posterior estimates from any number of independent MCMC runs}
+\description{generating a pooled and thinned sample of posterior estimates from rjmcmc}
 \usage{
 
 	\method{load}{rjmcmc}(x, phy = NULL, burnin = NULL, thin = NULL, \dots)
@@ -53,3 +53,7 @@ res=load.rjmcmc(paste("relaxedBM", names(trees), sep="."), phy=trees$d, burnin=0
 plot(res, par="shifts", show.tip=FALSE, edge.width=2.5)
 
 }
+\keyword{data}
+\keyword{manip}
+
+

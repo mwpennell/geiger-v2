@@ -20,9 +20,7 @@ License: \tab GPL version 2 or greater?\cr
 
 }
 \author{
-Luke J. Harmon, Jason Weir, Chad Brock, and Wendell Challenger
+LJ Harmon, J Weir, C Brock, RE Glor, W Challenger, G Hunt, R FitzJohn, MW Pennell, GJ Slater, JW Brown, and JM Eastman
 
 Maintainer: Luke Harmon <lukeh@uidaho.edu>
 }
-\keyword{arith}
-\keyword{graphs}

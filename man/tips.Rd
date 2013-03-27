@@ -18,7 +18,7 @@ tips(phy, node)
 The function returns the set of tips subtended by the given \code{node}.
 }
 
-\author{Luke J. Harmon}
+\author{ LJ Harmon }
 
 \examples{
 geo=get(data(geospiza))
@@ -26,7 +26,7 @@ geo=get(data(geospiza))
 tips(geo$phy, 18)
 }
 
-\keyword{manip}
+\keyword{graphs}
 
 
 

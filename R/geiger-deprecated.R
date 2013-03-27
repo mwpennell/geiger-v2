@@ -1,7 +1,16 @@
-.deprecate=function(prev, curr){
-	warning(paste(sQuote(prev), "is being deprecated: use", paste(sQuote(curr), "instead", collapse=" or "), sep=" "))
+.deprecate=function(prev, curr, ...){
+	warning(paste(sQuote(prev), "is being deprecated: use", paste(sQuote(curr), "instead", collapse=" or "), sep=" "), ...)
 }
 
+.defunctify=function(prev, curr, ...){
+	warning(paste(sQuote(prev), "is no longer available: use", paste(sQuote(curr), "instead", collapse=" or "), sep=" "), ...)
+}
+
+
+.namespace=function(package){
+    x=loadedNamespaces()
+    package%in%x
+}
 
 runMedusa=function(phy, richness, estimateExtinction = TRUE, modelLimit = 20, cutAtStem=TRUE, startR=0.05, startE=0.5, ...){
 	.deprecate("runMedusa", "medusa")
@@ -31,7 +40,7 @@ birthdeath.tree=function(b, d, time.stop=0, taxa.stop=0, seed=0, print.seed=FALS
 tip.disparity=function(phy, data, disp=c("avg.sq", "avg.manhattan", 
 "num.states")){
 	.deprecate("tip.disparity", "disparity")
-	disparity(phy=phy, data=data, disp=disp)
+	disparity(phy=phy, data=data, index=disp)
 }
 
 ic.sigma=function(phy, data){
@@ -55,8 +64,16 @@ node.leaves=function(phy, node){
 }
 
 getAncStates=function(x, phy){
-    .deprecate("getAncStates", "asr")
-    asr(phy, x)
+    .defunctify("getAncStates", "phytools:::fastAnc", immediate.=TRUE)
+    stop()
+#    if(.namespace("phytools")) {
+#        td=treedata(phy, x, sort=TRUE)
+#       if(ncol(td$data)>1) res=apply(td$data, 2, function(y) fastAnc(td$phy, y)) else res=fastAnc(td$phy, td$data[,1])
+#            attr(res, "phylo")=td$phy
+#           return(res)
+#    } else {
+#        stop("'phytools' is unavailable")
+#    }
 }
 
 deltaTree = function(phy, delta, rescale=TRUE){

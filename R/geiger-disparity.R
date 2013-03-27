@@ -31,7 +31,7 @@ function(x, f1, f2, xrange=c(0,1))
 
 
 
-disparity <- function(phy=NULL, data, disp=c("avg.sq", "avg.manhattan", "num.states")){
+disparity <- function(phy=NULL, data, index=c("avg.sq", "avg.manhattan", "num.states")){
 	
 	if(!is.null(phy)){
 		if (!"phylo"%in%class(phy)) stop("Supply 'phy' as a 'phylo' object")
@@ -46,13 +46,13 @@ disparity <- function(phy=NULL, data, disp=c("avg.sq", "avg.manhattan", "num.sta
 		for(i in 1:nb.node) {
 			l<-desc[[nb.tip+i]]
 			d<-td$data[phy$tip.label[l],]
-			result[i]<-.disparity(d, disp)
+			result[i]<-.disparity(d, index)
 		}
 		names(result)=nb.tip+1:nb.node
 		return(result)	  	
 		
 	} else {
-		return(.disparity(data, disp))
+		return(.disparity(data, index))
 	}
 	
 }
@@ -122,7 +122,7 @@ function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states")){
 	stem.depth<-stem.depth/max(ltt);
 	ltt<-ltt/max(ltt);
 	if(length(dim(td$data))==2) {
-		d<-disparity(phy2, td$data, disp=disp)
+		d<-disparity(phy2, td$data, index=disp)
 		result[1]<-d[1]
 		for(i in 2:length(ltt)) {
 			x<-d[stem.depth>=ltt[i-1]&node.depth<ltt[i-1]]
@@ -139,7 +139,7 @@ function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states")){
 		
 		for(i in 1:dim(td$data)[3]) {
 			pp<-as.matrix(td$data[,,i])
-			d<-disparity(phy2, pp, disp=disp)
+			d<-disparity(phy2, pp, index=disp)
 			y<-numeric()
 			
 			y[1]<-d[1]

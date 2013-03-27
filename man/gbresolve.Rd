@@ -14,7 +14,7 @@ working with NCBI taxonomy}
 
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{a phylogenetic tree of class 'phylo' or a string vector (\code{gbresolve}) or a single string (\code{gbcontain})}
+  \item{x}{a phylogenetic tree of class 'phylo' (\code{gbresolve.phylo}), or a string vector (\code{gbresolve}), or a single string (\code{gbcontain})}
   \item{rank}{a Linnaean rank to restrict taxonomic resolution}
   \item{within}{a character string representing a group within which to resolve query}
   \item{...}{additional arguments to be passed to the taxdump constructor (\code{geiger:::.ncbi})}
@@ -51,5 +51,5 @@ gbcontain("caudata", rank="genus")
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+\keyword{data}
+\keyword{graphs}

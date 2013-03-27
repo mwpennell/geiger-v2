@@ -8,7 +8,8 @@
 }
 \usage{
 disparity(phy=NULL, data, index = c("avg.sq", "avg.manhattan", "num.states"))
-dtt(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE)
+dtt(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"),
+    mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

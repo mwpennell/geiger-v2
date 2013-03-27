@@ -30,3 +30,6 @@ for \code{to.coda}, an object of class \code{codaMCMCMC} is returned.
 \seealso{\code{\link[geiger]{load.rjmcmc}}}
 
 \author{JM Eastman}
+\keyword{data}
+\keyword{manip}
+

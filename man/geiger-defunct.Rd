@@ -19,6 +19,8 @@
 \alias{node.leaves}
 \alias{node.sons}
 \alias{ouTree}
+\alias{phy.anova}
+\alias{phy.manova}
 \alias{pool.rjmcmcsamples}
 \alias{prune.extinct.taxa}
 \alias{prune.random.taxa}
@@ -33,7 +35,7 @@
 \alias{vmat}
 \title{deprecated functions in GEIGER}
 \description{
-  This function has been deprecated in \pkg{geiger} or moved to another package.
+  This function has been deprecated in \pkg{geiger} and \pkg{auteur} or may be available from another package. Below shows the original function and the suggested function to use in its place.
 }
 \details{
 	\itemize{
@@ -44,7 +46,7 @@
 		\item{\code{deltaTree}}: use \code{\link[geiger]{transform.phylo}}
 		\item{\code{disp.calc}}: use \code{\link[geiger]{disparity}}
 		\item{\code{dtt.full}}: use \code{\link[geiger]{dtt}}
-		\item{\code{exponentialchangeTree}}: \code{\link[geiger]{transform.phylo}}
+		\item{\code{exponentialchangeTree}}: use \code{\link[geiger]{transform.phylo}}
 		\item{\code{get.simulation.matrix}}: use \code{geiger:::.get.simulation.matrix}
 		\item{\code{getAncStates}}: use \code{\link[phytools]{fastAnc}}
 		\item{\code{ic.sigma}}: use \code{\link[geiger]{vcv.phylo}}
@@ -56,6 +58,8 @@
 		\item{\code{node.leaves}}: use \code{\link[geiger]{tips}}
 		\item{\code{node.sons}}: use \code{geiger:::.get.desc.of.node}
 		\item{\code{ouTree}}: use \code{\link[geiger]{transform.phylo}}
+        \item{\code{phy.anova}}: use \code{\link[geiger]{aov.phylo}}
+        \item{\code{phy.manova}}: use \code{\link[geiger]{aov.phylo}}
 		\item{\code{pool.rjmcmcsamples}}: use \code{\link[geiger]{load}}
 		\item{\code{prune.extinct.taxa}}: use \code{\link[geiger]{drop.extinct}}
 		\item{\code{prune.random.taxa}}: use \code{\link[geiger]{drop.random}}

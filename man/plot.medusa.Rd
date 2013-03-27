@@ -1,4 +1,4 @@
-\name{summary.medusaRAW}
+\name{plot.medusa}
 \alias{summary.medusaRAW}
 \alias{plot.medusaRAW}
 \alias{plot.medusa}
@@ -66,3 +66,5 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     plot(s2, cex=0.5, label.offset=1) # using plot.medusa()
     title("arbitrarily chosen model")
 }
+\keyword{graphics}
+

@@ -22,26 +22,28 @@ The functions prune taxa from a tree either at random or based either on a tempo
 The result is a tree that has been pruned based on the given criterion.}
 
 	
-\author{ Luke J. Harmon }
+\author{ LJ Harmon }
 \seealso{
 	\code{\link[ape]{drop.tip}}
 }
 \examples{
 
 # Birth-death tree with extinct taxa
-p2<-birthdeath.tree(b=0.2, d=0.1, time.stop=30)
-plot(p2)
+p1<-sim.bdtree(b=0.2, d=0.1, stop="time", t=30)
+plot(p1, cex=0.25)
 
 # Previous tree with extinct taxa removed
-drop.extinct(p2)->p3
-if(!is.null(p3)) plot(p3)
+drop.extinct(p1)->p2
+if(!is.null(p2)) plot(p2, cex=0.5)
 
-p4<-birthdeath.tree(b=0.2, d=0, taxa.stop=100)
-p5<-drop.random(p4, 40)
+p3<-sim.bdtree(b=0.2, d=0, stop="taxa", n=100)
+p4<-drop.random(p3, 40)
 
-plot(p5)
+plot(p4, cex=0.5)
 
 
 }
 
-\keyword{ arith }
+\keyword{ graphs }
+\keyword{manip}
+

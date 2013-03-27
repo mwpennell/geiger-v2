@@ -10,7 +10,7 @@ treedata(phy, data, sort=FALSE, warnings=TRUE)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
-  \item{data}{a named vector or matrix of continuous trait values, associated with species in \code{phy}}
+  \item{data}{a named vector or matrix of continuous trait values, for species in \code{phy}}
   \item{sort}{whether to sort the \code{data} based on names found in \code{phy}}
   \item{warnings}{whether to report warnings of mismatched taxa between \code{phy} and \code{data}}
 }
@@ -23,7 +23,7 @@ array.
   The function returns a list of two elements (\code{phy} and \code{data}) that are manipulated to include only those species 
   found in both the tree and data supplied by the user.  
 }
-\author{ Luke J. Harmon }
+\author{ LJ Harmon }
 \examples{
 
 geo=get(data(geospiza))
@@ -32,4 +32,7 @@ treedata(geo$phy, geo$dat, sort=TRUE, warnings=TRUE)
 
 }
 
-\keyword{ arith }
+\keyword{manip}
+\keyword{data}
+\keyword{graphs}
+

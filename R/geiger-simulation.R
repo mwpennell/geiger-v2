@@ -12,8 +12,8 @@
 	m
 }
 
-.model.matrix=function(m, model=c("brownian", "speciational", "discrete")){
-	model=match.arg(model, c("brownian", "speciational", "discrete"))
+.model.matrix=function(m, model=c("BM", "speciational", "discrete")){
+	model=match.arg(model, c("BM", "speciational", "discrete"))
 	if(model=="discrete"){
 		if(is.matrix(m)){
 			m=list(m)
@@ -25,16 +25,16 @@
 	
 }
 sim.char <-
-function(phy, model.matrix, nsims=1, model=c("brownian", "speciational", "discrete"), root=1)
+function(phy, par, nsim=1, model=c("BM", "speciational", "discrete"), root=1)
 {
-	model=match.arg(model, c("brownian", "speciational", "discrete"))
+	model=match.arg(model, c("BM", "speciational", "discrete"))
 	
-	model.matrix=.model.matrix(model.matrix, model)
+	model.matrix=.model.matrix(par, model)
 	
 	nbranches<-nrow(phy$edge)
 	nspecies<-Ntip(phy)
 	
-	if(model%in%c("brownian", "speciational"))
+	if(model%in%c("BM", "speciational"))
 	{
 		m<-.get.simulation.matrix(phy)
 		
@@ -44,24 +44,24 @@ function(phy, model.matrix, nsims=1, model=c("brownian", "speciational", "discre
 		
 		nchar<-nrow(model.matrix)
 		
-		rnd<-t(mvrnorm(nsims*nbranches, mu=rep(0, nchar), Sigma=model.matrix)) ## JME: using 'root'
-		rnd<-array(rnd, dim=c(nchar, nbranches, nsims));
+		rnd<-t(mvrnorm(nsim*nbranches, mu=rep(0, nchar), Sigma=model.matrix)) ## JME: using 'root'
+		rnd<-array(rnd, dim=c(nchar, nbranches, nsim));
 		
 		simulate<-function(v, root) (m %*% as.matrix(v))+root;
 		
 		result<-apply(rnd, 1, simulate, root)
-		result<-aperm(array(result, dim=c(nspecies, nsims, nchar)), c(1, 3, 2))
+		result<-aperm(array(result, dim=c(nspecies, nsim, nchar)), c(1, 3, 2))
 		
 		rownames(result)<-phy$tip.label;
 	} else {
 		phy=new2old.phylo(phy)
 		nchar<-length(model.matrix);
 		node.value<-numeric(nbranches)
-		result<-array(0, dim=c(nspecies, nchar, nsims))
+		result<-array(0, dim=c(nspecies, nchar, nsim))
 		for(j in 1:nchar) {
 			m<-model.matrix[[j]];
 			if(!root%in%c(1:nrow(m))) stop(paste("'root' must be a character state from 1 to ", nrow(m), sep=""))
-			for(k in 1:nsims) {
+			for(k in 1:nsim) {
 	   			for(i in 1:nbranches) {
 					if(as.numeric(phy$edge[i,1])==-1) s<-root
 					else {

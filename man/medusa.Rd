@@ -8,7 +8,7 @@ fitting piecewise diversification models according to phylogenetic and taxonomic
 }
 
 \usage{
-medusa(phy, richness = NULL, criterion = c("aicc", "aic"), 
+medusa(phy, richness = NULL, criterion = c("aicc", "aic"),
     partitions=NA, model = c("mixed", "bd", "yule"), 
     cut = c("both","stem","node"), 
     init = c(r=0.05, epsilon=0.5), \dots)
@@ -18,7 +18,7 @@ medusa(phy, richness = NULL, criterion = c("aicc", "aic"),
   \item{phy}{an ultrametric phylogenetic tree of class 'phylo'}
   \item{richness}{an optional matrix of taxonomic richnesses (see \bold{Details})}
   \item{criterion}{an information criterion to use as stopping criterion}
-  \item{partitions}{the number of models to consider, regardless of fit}
+  \item{partitions}{the number of models to be considered regardless of fit}
   \item{model}{the flavor of piecewise models to consider (see \bold{Details})}
   \item{cut}{determines where shifts are placed on the tree (see \bold{Details})}
   \item{init}{initial conditions for net diversification and relative extinction} 
@@ -82,4 +82,6 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     # plot breakpoints for the best model chosen by AICc
     plot(s2, cex=0.5, partitions=list(cex=5), label.offset=1, edge.width=2) # invoking plot.medusa()
 }
+\keyword{models}
+
 

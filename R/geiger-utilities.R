@@ -42,8 +42,7 @@ cherries <- function(phy){
 # things accordingly; it returns a list with 
 # two elements: phy and data
 
-tips <-
-function(phy, node)
+tips <- function(phy, node)
 {
 	if(node<=Ntip(phy)) return(phy$tip.label[node])
 	dd=.get.descendants.of.node(node, phy, tips=TRUE)
@@ -470,11 +469,11 @@ constrain.m=function(f, m){
 }
 
 ## tree transformation
-transform.phylo=function(x, model=c("OU", "EB", "nrate", "trend", "lambda", "kappa", "delta", "white", "depth"), ...){
+transform.phylo=function(x, model=c("OU", "EB", "nrate", "lrate", "trend", "lambda", "kappa", "delta", "white", "depth"), ...){
 	
 	phy=x
 	
-	model=match.arg(model, c("OU", "EB", "nrate", "trend", "lambda", "kappa", "delta", "white", "depth"))
+	model=match.arg(model, c("OU", "EB", "nrate", "lrate", "trend", "lambda", "kappa", "delta", "white", "depth"))
 	
 	if(!"phylo"%in%class(phy)) stop("supply 'phy' as a 'phylo' object")
 	
@@ -482,6 +481,7 @@ transform.phylo=function(x, model=c("OU", "EB", "nrate", "trend", "lambda", "kap
 			   OU=.ou.phylo(phy),
 			   EB=.eb.phylo(phy),
                nrate=.nrate.phylo(phy),
+               lrate=.lrate.phylo(phy),
 			   trend=.trend.phylo(phy),
 			   lambda=.lambda.phylo(phy),
 			   kappa=.kappa.phylo(phy),
@@ -589,6 +589,29 @@ transform.phylo=function(x, model=c("OU", "EB", "nrate", "trend", "lambda", "kap
 		phy
 	}
 	attr(z, "argn")=c("time", "rate")
+	return(z)
+}
+
+.lrate.phylo=function(phy){
+    N=Ntip(phy)
+    n=Nnode(phy)
+    cache=.cache.tree(phy)
+    cache$phy=phy
+    vv=rep(1, N+n-1)
+
+	z=function(node, rate){
+        
+        
+        shifts=c(sort(node[node>N]), node[node<=N])
+        mm=match(shifts, node)
+        rates=rate[mm]
+        
+        for(i in 1:length(shifts)) vv=.assigndescendants(vv, shifts[i], rates[i], exclude=shifts, cache=cache)
+        phy$edge.length=vv*phy$edge.length
+        phy
+    }
+    
+	attr(z, "argn")=c("node", "rate")
 	return(z)
 }
 

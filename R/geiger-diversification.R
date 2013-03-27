@@ -92,7 +92,10 @@ stem.p <-
 function(phy=NULL, time, n, r, epsilon)
 {
 	if(!is.null(phy)){
-		if(is.null(phy$root.edge)) stop("'phy' must have a 'root.edge' element")
+		if(is.null(phy$root.edge)) {
+            warning("'phy' is assumed to have a 'root.edge' element of zero")
+            phy$root.edge=0
+        }
 		if(!missing(time)) warning("'time' argument has been ignored")
 		time=max(heights.phylo(phy))
 		if(!missing(n)) warning("'n' argument has been ignored")
@@ -105,13 +108,10 @@ function(phy=NULL, time, n, r, epsilon)
 }
 
 stem.limits <-
-function(phy=NULL, time, r, epsilon, prob=c(0.025, 0.975))
+function(time, r, epsilon, CI=0.95)
 {
-	if(!is.null(phy)){
-		if(is.null(phy$root.edge)) stop("'phy' must have a 'root.edge' element")
-		if(!missing(time)) warning("'time' argument has been ignored")
-		time=max(heights.phylo(phy))
-	}
+    q=1-CI
+    prob=c(q/2, 1-(q/2))
 	
 	limits <- matrix(nrow=length(time), ncol=2)
 	for (i in 1:length(time)) {
@@ -129,19 +129,16 @@ function(phy=NULL, time, r, epsilon, prob=c(0.025, 0.975))
 
 
 
-crown.limits <-  function(phy=NULL, time, r, epsilon, prob=c(0.025, 0.975))
+crown.limits <-  function(time, r, epsilon, CI=0.95)
 {
-	if(!is.null(phy)){
-		phy$root.edge=0
-		if(!missing(time)) warning("'time' argument has been ignored")
-		time=max(heights.phylo(phy))
-	}
+    q=1-CI
+    prob=c(q/2, 1-(q/2))
 	
 	limits <- matrix(nrow=length(time), ncol=2)
 	for (i in 1:length(time))
 	{
 		foo<-function(x, prob)
-		(crown.p(time[i], r, epsilon, x)-prob)^2
+		(crown.p(time=time[i], r=r, epsilon=epsilon, n=x)-prob)^2
 		u<-optim(foo, par=exp(r*time), prob=prob[1], method="L-BFGS-B")
 		l<-optim(foo, par=exp(r*time), prob=prob[2], method="L-BFGS-B")
 		
@@ -155,7 +152,7 @@ crown.limits <-  function(phy=NULL, time, r, epsilon, prob=c(0.025, 0.975))
 
 
 rc <-
-function(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, ...)
+function(phy, plot=TRUE, ...)
 {
 	
 	
@@ -203,29 +200,35 @@ function(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, ...)
 	rownames(res)<-c("root", node.name[2:nb.node])
 	
 	if(plot) {
-		labels<-character(length(phy$edge.length))
-		names(labels)<-as.character(1:length(labels)+nb.tip)
-		if(bonf) {
-			s<-which(res[,4]<p.cutoff)
-		} else s<-which(res[,3]<p.cutoff)
-		mark<-character(length(s))
-		if(length(s)>0) {
-			for(i in 1:length(s)) {
-				xx<-names(s)[i]
-				tt<-which(ltt==ltt[xx])
-				nn<-stem.depth>=ltt[tt-1]&node.depth<ltt[tt-1]
-				anc<-sum(nn)
-				desc<-numeric(anc)
-				for(j in 1:anc) {
-					desc[j]<-length(tips(phy, names(nn)[nn][j]))
-				}
-				bigone<-which(desc==max(desc))
-				mark[i]<-names(nn)[nn][bigone]
-			}
-		}
-		labels[mark]<-"*"
-		phy$node.label<-labels
-		plot.phylo(phy, show.node.label=TRUE, no.margin=TRUE, ...)
+        plotter=function(bonf=FALSE, p.cutoff=0.05, ...){
+
+            labels<-character(length(phy$edge.length))
+            names(labels)<-as.character(1:length(labels)+nb.tip)
+            if(bonf) {
+                s<-which(res[,4]<p.cutoff)
+            } else {
+                s<-which(res[,3]<p.cutoff)
+            }
+            mark<-character(length(s))
+            if(length(s)>0) {
+                for(i in 1:length(s)) {
+                    xx<-names(s)[i]
+                    tt<-which(ltt==ltt[xx])
+                    nn<-stem.depth>=ltt[tt-1]&node.depth<ltt[tt-1]
+                    anc<-sum(nn)
+                    desc<-numeric(anc)
+                    for(j in 1:anc) {
+                        desc[j]<-length(tips(phy, names(nn)[nn][j]))
+                    }
+                    bigone<-which(desc==max(desc))
+                    mark[i]<-names(nn)[nn][bigone]
+                }
+            }
+            labels[mark]<-"*"
+            phy$node.label<-labels
+            plot.phylo(phy, show.node.label=TRUE, no.margin=TRUE, ...)
+        }
+        plotter(...)
 	}
 	return(res)
 }

@@ -7,7 +7,7 @@ dat,
 SE = 0,
 model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"), 
 bounds=list(), 
-control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessianCI=0.95), ...
+control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, CI=0.95), ...
 )
 {
 		
@@ -36,13 +36,13 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	
 	
 # CONTROL OBJECT for optimization
-	ct=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessianCI=0.95)
+	ct=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, CI=0.95)
 	if(any(!names(control)%in%names(ct)->tmp)) warning("Unexpected 'control' parameters:\n\t", paste(names(control)[tmp], collapse="\n\t"), sep="")
 	control=control[which(!tmp)]
 	if("method"%in%names(control)) control$method=match.arg(control$method, c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"), several.ok=TRUE)
 	ct[names(control)]=control
 	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
-	ct$hessian_P=1-ct$hessianCI
+	ct$hessian_P=1-ct$CI
 	
 	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
 	
@@ -320,7 +320,7 @@ dat,
 model=c("ER","SYM","ARD","meristic"),
 transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
 bounds=list(), 
-control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, hessianCI=0.95),
+control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, CI=0.95),
 ...)
 {
 	
@@ -355,13 +355,13 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	model=match.arg(transform, c("none", "EB", "lambda", "kappa", "delta", "white"))
 	
 # CONTROL OBJECT
-	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(model=="none", 50, 100), FAIL=1e200, hessian=FALSE, hessianCI=0.95)
+	ct=list(method=c("SANN","L-BFGS-B"), niter=ifelse(model=="none", 50, 100), FAIL=1e200, hessian=FALSE, CI=0.95)
 	if(any(!names(control)%in%names(ct)->tmp)) warning("Unexpected 'control' parameters:\n\t", paste(names(control)[tmp], collapse="\n\t"), sep="")
 	control=control[which(!tmp)]
 	if("method"%in%names(control)) control$method=match.arg(control$method, c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"), several.ok=TRUE)
 	ct[names(control)]=control
 	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
-	ct$hessian_P=1-ct$hessianCI
+	ct$hessian_P=1-ct$CI
 	
 	
 	lik=mkn.lik(phy, dat, constrain=constrain, transform=model, control=list(method="exp", root=ROOT.OBS), ...)
@@ -719,141 +719,53 @@ control=list(root=ROOT.OBS),
 	lik
 }
 
-
-
-asr<-function(phy, dat) {
-	
-	gg=.treedata(phy,dat)
-    if(!gg=="OK") stop("'dat' and 'phy' must match: use 'treedata()'")
+aov.phylo=function(formula, phy, nsim=1000, test=c("Wilks", "Pillai", "Hotelling-Lawley", "Roy"), ...){
+    xx=lapply(all.vars(formula), get)
+    flag="'formula' must be of the form 'dat~group', where 'group' is a named factor vector and 'dat' is a data matrix or named vector"
     
-    td=treedata(phy,dat)
-    dat=td$data
-    phy=td$phy
-
-	if(ncol(dat)>1) return(apply(dat, 2, function(x) asr(phy, x)))
+    if(!is.factor(xx[[2]])) stop(flag)
+    if(is.null(names(xx[[2]]))) stop(flag)
     
-    if(length(dat[,1])!=length(unique(dat[,1]))) warning("'asr' is not yet implemented for discrete characters")
-
-	
-	nn<-phy$Nnode
-	nt<-length(phy$tip.label)
-	anc<-numeric(nn)
-	
-	for(i in 1:nn) {
-		node<-nt+i
-		rp<-root(phy, node=node)
-		rp<-multi2di(rp)
-		pp<-.pic.asr(dat, rp)
-		mm<-match(rp$edge[,1], rp$edge[,2])
-		rr<-which(is.na(mm))[1]
-		root<-rp$edge[rr,1]
-		anc[i]<-pp[root]
-	}
-	
-	names(anc)<-1:nn + nt	
-	anc
-	
-}
-
-
-
-.pic.asr<-function(x,phy,sd=NULL,n=NULL,se=NULL,scaled=TRUE,var.contrasts=FALSE)
-{
-	
-    if (is.null(phy$edge.length)) 
-	stop("'phy' must include branch lengths: see ape:::compute.brlen")
-    nb.tip <- length(phy$tip.label)
-    nb.node <- phy$Nnode
-	
-    if (length(x) != nb.tip) 
-	stop("length of phenotypic and of phylogenetic data do not match")
-    if (any(is.na(x))) 
-	stop("the present method cannot (yet) be used directly with missing data: you may consider removing the species with missing data from your tree with the function `drop.tip'.")
-    phy<-reorder(phy, "pruningwise")
-	
-    phenotype<-ssq<-deltaV<-numeric(nb.tip + nb.node)
-  	deltaV[1:nb.tip]<-0
-    if (is.null(names(x))){
-        phenotype[1:nb.tip] <- x
-		if(!is.null(n))ssq[1:nb.tip]<-1/n
-	}else{
-		if (all(names(x) %in% phy$tip.label)){
-			phenotype[1:nb.tip] <- x[phy$tip.label]
-			if(!is.null(n))ssq[1:nb.tip]<-1/n[phy$tip.label]
-		}else{
-			phenotype[1:nb.tip] <- x
-            if(!is.null(n))ssq[1:nb.tip]<-1/n
-            warning("the names of argument \"x\" and the names of the tip labels did not match: the former were ignored in the analysis.")
-        }
+    yy=merge(xx[[1]], xx[[2]], by=0)
+    if(nrow(yy)==0) stop(flag)
+    rownames(yy)=yy[,1]
+    yy=yy[,-1]
+    
+    tmp<-treedata(phy, yy, sort=TRUE)
+    phy=tmp$phy
+    yy=yy[phy$tip.label,]
+    
+    group=structure(yy[,ncol(yy)], names=rownames(yy))
+    dat=as.matrix(yy[,-ncol(yy)])
+    rownames(dat)=rownames(yy)
+        
+    s<-vcv(phy, dat)
+  
+    multivar=ifelse(ncol(dat)>1, TRUE, FALSE)
+    if(multivar){
+        test=match.arg(test, c("Wilks", "Pillai", "Hotelling-Lawley", "Roy"))
+        m=summary.manova(mod<-manova(dat~group), test=test)
+        f.data=m[[4]][1,2]
+        FUN=function(xx) summary.manova(manova(as.matrix(xx)~group), test=test)[[4]][1,2]
+        sims<-sim.char(phy, s, nsim=nsim)
+        f.null<-apply(sims, 3, FUN)
+        out=as.data.frame(m[[4]])
+        attr(out, "heading")=c("Multivariate Analysis of Variance Table\n","Response: dat")
+    } else {
+        test=NULL
+        m=anova(mod<-lm(dat~group))
+        f.data<-m[1,4]
+        FUN=function(xx) anova(lm(xx~group))[1,4]
+        out=as.data.frame(m)
     }
-    contr<-var.contr<-numeric(nb.node)
-#pic function brought in from C source
-	for(i in seq(1,nb.tip*2-2,by=2)){
-		j<-i+1
-		anc<-phy$edge[i,1]
-		d1<-phy$edge[i,2]
-		d2<-phy$edge[j,2]
-		sumbl<-phy$edge.length[i]+phy$edge.length[j]
-		ic<-anc-nb.tip
-		contr[ic]<-phenotype[d1]-phenotype[d2]
-		if(scaled)contr[ic]<-contr[ic]/sqrt(sumbl)
-		if(var.contrasts)var.contr[ic]<-sumbl
-		phenotype[anc]<-(phenotype[d1]*phy$edge.length[j]+phenotype[d2]*phy$edge.length[i])/sumbl
-		if(j!=(nb.tip*2-2)){
-			k<-which(phy$edge[,2]==anc)
-			phy$edge.length[k]<-phy$edge.length[k]+phy$edge.length[i]*phy$edge.length[j]/sumbl
-		}
-	}
-	phenotype
-}
+    colnames(out)=gsub(" ", "-", colnames(out))
+    sims<-sim.char(phy, s, nsim=nsim)
+    f.null<-apply(sims, 3, FUN)
+    p.phylo=(sum(f.null>f.data)+1)/(nsim+1)
 
-
-phy.anova<-function(phy, data, group, nsim=1000)
-{
-	td<-treedata(phy, data)
-	
-	s<-mean(pic(td$data, td$phy)^2)
-	a<-anova(mod<-lm(td$data~group))
-	f.data<-a[1,4]
-	sims<-sim.char(td$phy, as.matrix(s), nsims=nsim)
-	
-	foo<-function(xx) anova(lm(xx~group))[1,4]
-	f.null<-apply(sims, 3, foo)
-	
-	cat("Standard ANOVA:\n")	
-	print(a)
-	
-	cat("\n\nPhylogenetic p-value: \t")
-	cat((sum(f.null>f.data)+1)/(nsim+1),"\n")
-#	return(mod)
-	
-	
-}
-
-phy.manova<-function(phy, data, group, nsim=1000, test=c("Wilks", "Pillai", "Hotelling-Lawley", "Roy"))
-{	
-	test=match.arg(test, c("Wilks", "Pillai", "Hotelling-Lawley", "Roy"))
-	td<-treedata(phy, data)
-	
-	s<-vcv(td$phy, td$data)
-	
-	m<-summary.manova(mod<-manova(as.matrix(td$data)~group), test=test)
-	
-	w.data<-m[[4]][1,2]
-	
-	sims<-sim.char(td$phy, s, nsims=nsim)
-	
-	foo<-function(xx) summary.manova(manova(as.matrix(xx)~group), test=test)[[4]][1,2]
-	
-	w.null<-apply(sims, 3, foo)
-	
-	cat("Standard MANOVA:\n")	
-	print(m)
-	
-	cat("\n\nPhylogenetic p-value: \t")
-	cat((sum(w.data>w.null)+1)/(nsim+1),"\n")
-	
-#	return(mod)
-	
+    out$'Pr(phy)'=c(p.phylo, NA)
+    print.anova(out, ...)
+    attr(mod, "summary")=out
+    return(mod)
 }
 

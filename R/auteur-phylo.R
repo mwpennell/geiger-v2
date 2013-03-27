@@ -1,10 +1,11 @@
 
 ## GENERIC FUNCTION
-heights <- function(phy)
+heights <- function(x)
 UseMethod("heights")
 
 
-heights.phylo=function(phy){
+heights.phylo=function(x){
+    phy=x
 	phy <- reorder(phy, "postorder")
 	n <- length(phy$tip.label)
 	n.node <- phy$Nnode
@@ -27,7 +28,8 @@ heights.phylo=function(phy){
 }
 
 
-heights.multiPhylo=function(phy){
+heights.multiPhylo=function(x){
+    phy=x
 	phy=hashes.phylo(phy)
 	hh=unique(unlist(lapply(phy, function(x) x$hash)))
 	times=lapply(phy, function(x) {tmp=heights.phylo(x); tmp$hash=x$hash; tmp})

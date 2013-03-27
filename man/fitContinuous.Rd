@@ -6,9 +6,9 @@
 }
 \usage{
 fitContinuous(phy, dat, SE = 0, 
-	model = c("BM","OU","EB","trend","lambda","kappa","delta","drift","white"), 
-	bounds= list(), control = list(method = c("SANN","L-BFGS-B"), 
-	niter = 100, FAIL = 1e+200, hessian = FALSE, hessianCI = 0.95), \dots)
+    model = c("BM","OU","EB","trend","lambda","kappa","delta","drift","white"),
+    bounds= list(), control = list(method = c("SANN","L-BFGS-B"),
+    niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), \dots)
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
@@ -30,7 +30,7 @@ A number of random starting points are used in optimization and are given throug
 (e.g., \code{control$niter}). The \code{FAIL} value within the \code{control} object should be a large value 
 that will be considerably far from -lnL of the maximum model likelihood. In most cases, the default setting 
 for \code{control$FAIL} will be appropriate. The Hessian may be used to compute confidence intervals 
-(\code{hessianCI}) for the parameter estimates if the \code{hessian} element in \code{control} is TRUE.
+(\code{CI}) for the parameter estimates if the \code{hessian} element in \code{control} is TRUE.
 
 \emph{Beware}: difficulty in finding the optimal solution is determined by an interaction between the nature and complexity of the 
 likelihood space (which is data- and model-dependent) and the numerical optimizer used to explore the space.  There is never a 
@@ -102,7 +102,7 @@ Harmon LJ et al. 2010. Early bursts of body size and shape evolution are rare in
 Pagel M. 1999. Inferring the historical patterns of biological evolution. \emph{Nature} 401:877-884
 }
 
-\author{Luke J. Harmon and Wendell Challenger}
+\author{LJ Harmon, W Challenger, and JM Eastman}
 \examples{
 
 geo=get(data(geospiza))
@@ -131,15 +131,16 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 	trait=match.arg(trait, c("wingL","tarsusL","culmenL","beakD","gonysW"))
 	
 	# define set of models to compare
-	models=c("BM", "OU", "EB", "lambda", "kappa", "delta", "white")
-	summaries=c("diffusion", "Ornstein-Uhlenbeck", "early burst", "phylogenetic signal", "speciational", "time proportionality", "white noise")
+	models=c("BM", "OU", "EB", "white")
+	summaries=c("diffusion", "Ornstein-Uhlenbeck", "early burst", "white noise")
 	
 	## ESTIMATING measurement error ##
 	aic.se=numeric(length(models))
 	lnl.se=numeric(length(models))
 	
 	for(m in 1:length(models)){
-		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], " with SE ***\n\n", sep="")
+		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], " with SE ***
+        \n", sep="")
 		tmp=fitContinuous(phy,dat[,trait],SE=NA, model=models[m],bounds=list(SE=c(0,0.5)))
 		print(tmp$opt)
 		aic.se[m]=tmp$opt$aicc
@@ -152,7 +153,8 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 	lnl=numeric(length(models))
 	
 	for(m in 1:length(models)){
-		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], " ***\n\n", sep="")
+		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], " ***
+        \n", sep="")
 		tmp=fitContinuous(phy,dat[,trait],SE=0,model=models[m])
 		print(tmp$opt)
 		aic[m]=tmp$opt$aicc
@@ -166,13 +168,15 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 	# no measurement error
 	daic=delta_aic(aic)
 	cat("\n\n\n\t\t\t\t*** MODEL COMPARISON: ",trait,"*** \n",sep="")
-	cat("\tdelta-AIC values for models assuming no measurement error\n\t\t\t\t zero indicates the best model\n\n")
+	cat("\tdelta-AIC values for models assuming no measurement error
+    \t\t\t\t zero indicates the best model\n\n")
 	print(daic, digits=2)
 	
 		# measurement error
 	daic.se=delta_aic(aic.se)
 	cat("\n\n\n\n\t\t\t\t*** MODEL COMPARISON: ",trait," ***\n",sep="")
-	cat("\t\t   delta-AIC values for models estimating SE\n\t\t\t\t zero indicates the best model\n\n")
+	cat("\t\t   delta-AIC values for models estimating SE
+    \t\t\t\t zero indicates the best model\n\n")
 	print(daic.se, digits=2)
 	cat("\n\n\n")
 
@@ -189,3 +193,4 @@ print(res)
 }
 
 \keyword{ arith }
+\keyword{models}

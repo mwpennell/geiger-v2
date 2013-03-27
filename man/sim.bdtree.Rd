@@ -14,7 +14,7 @@ sim.bdtree(b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed = 0, extinct=TRUE)
   \item{stop}{stopping criterion}
   \item{n}{maximum number of taxa in simulation}
   \item{t}{maximum time steps of simulation}
-  \item{seed}{random number seed (by default a random number generator is seeded based on the clock)}
+  \item{seed}{random number seed (default is to seed based on the clock)}
   \item{extinct}{ whether to return trees where all lineages have gone extinct (see \bold{Details})}  }
 \details{
 	Starting from a root node - i.e., two living lineages - this function simulates the growth of a
@@ -28,10 +28,12 @@ sim.bdtree(b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed = 0, extinct=TRUE)
 	include some extinct lineages (terminating before the present day).  See \code{\link[geiger]{drop.extinct}} for 
 	a function to remove these lineages.
 }
-\author{Luke J. Harmon and Jason Weir}
+\author{ LJ Harmon and J Weir}
 \note{ 
 	One note of caution: it is easy to set parameter values that result in tremendously \emph{huge} trees.  If the
 	function seems to hang up, this could be the problem.
+    
+    Other tree simulators are available from the packages \pkg{ape} (\code{\link[ape]{rbdtree}}), \pkg{TreeSim} (\code{\link[TreeSim]{sim.bd.taxa}}, \code{\link[TreeSim]{sim.bd.age}}, and \code{\link[TreeSim]{sim.bd.taxa.age}}), and \pkg{phytools} (\code{\link[phytools]{pbtree}}).
 }
 \seealso{
 \code{\link[geiger]{sim.bd}} for non-phylogenetic simulations; \code{\link[geiger]{drop.extinct}}

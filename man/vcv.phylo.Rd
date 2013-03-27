@@ -20,7 +20,7 @@
 \references{ Revell, L. J., L. J. Harmon, R. B. Langerhans, and J. J. Kolbe. 2007. A phylogenetic 
              approach to determining the importance of constraint on phenotypic evolution in the 
              neotropical lizard, \emph{Anolis cristatellus}. \emph{Evolutionary Ecology Research} 9: 261-282. }
-\author{ Luke J. Harmon }
+\author{ LJ Harmon }
 \seealso{
 	\code{\link[ape]{vcv.phylo}} in \pkg{ape}
 }

@@ -19,12 +19,16 @@ congruify.phylo(reference, target, taxonomy = NULL, tol = 0, scale=c(NA, "PATHd8
 }
 \details{
 	This function uses the \code{reference} to inform secondary calibrations in the \code{target}. The primary output is a table of 'congruent' nodes between the \code{reference} 
-	and \code{target} with associated dates given by the \code{reference}.  
+	and \code{target} with associated dates extracted from corresponding nodes in the \code{reference}.  
 	
 	If multiple trees are supplied as the \code{reference}, a 'congruification' table is generated for each.  
 	
 	If \code{scale="PATHd8"}, the \code{target} will be smoothed by \code{PATHd8} using the "d8 calculation" (see \url{http://www2.math.su.se/PATHd8/PATHd8manual.pdf}). 
 	This scaling method requires that \code{PATHd8} is available on the user's \code{PATH} variable that can be accessed by \code{\link[base]{Sys.getenv}("PATH")}.
+}
+
+\references{
+Eastman JM, LJ Harmon, and DC Tank. 2013. Congruification: support for time scaling large phylogenetic trees. \emph{Methods in Ecology and Evolution}, in press.
 }
 
 \author{JM Eastman}
@@ -36,11 +40,16 @@ print(res$calibrations)
 plot.phylo(ladderize(sal$phy,right=FALSE), cex=0.35, type="fan", label.offset=2.5)
 plot.phylo(ladderize(sal$fam,right=FALSE), cex=0.5, type="fan", label.offset=2.5, no.margin=FALSE)
 
-cat("\n\n\n*** If 'PATHd8' is installed ***, execute the following:\n\tres=congruify.phylo(sal$fam, sal$phy, sal$tax, 
-	tol=0, scale=\"PATHd8\")\n\tprint(res)\n\tplot(res$phy, cex=0.35, type=\"fan\", label.offset=2.5)\n\n\t
-	print(max(branching.times(res$phy)))\n\tprint(max(branching.times(sal$fam)))\n\tprint(max(branching.times(sal$phy)))\n\n\n")
+cat("\n\n\n*** If 'PATHd8' is installed ***, execute the following:
+\n\tres=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, scale=\"PATHd8\")
+\tprint(res)
+\n\tplot(res$phy, cex=0.35, type=\"fan\", label.offset=2.5)
+\n\tprint(max(branching.times(res$phy)))
+\tprint(max(branching.times(sal$fam)))
+\tprint(max(branching.times(sal$phy)))\n\n\n")
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+\keyword{graphs}
+\keyword{manip}
+

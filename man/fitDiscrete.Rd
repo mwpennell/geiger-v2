@@ -5,11 +5,11 @@
 	fitting macroevolutionary models to phylogenetic trees
 }
 \usage{
-fitDiscrete(phy, dat, 
-	model = c("ER","SYM","ARD","meristic"), 
-	transform = c("none", "EB", "lambda", "kappa", "delta", "white"), 
-	bounds = list(), control = list(method = c("SANN", "L-BFGS-B"), 
-	niter = 100, FAIL = 1e+200, hessian = FALSE, hessianCI = 0.95), ...)
+fitDiscrete(phy, dat,
+    model = c("ER","SYM","ARD","meristic"),
+    transform = c("none", "EB", "lambda", "kappa", "delta", "white"),
+    bounds = list(), control = list(method = c("SANN", "L-BFGS-B"),
+    niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), ...)
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
@@ -39,9 +39,9 @@ The function can handle traits with any number of character states, under a rang
 	\item{\bold{ER} }{is an \code{equal-rates} model of where a single parameter governs all transition rates}
 	\item{\bold{SYM} }{is a \code{symmetric} model where forward and reverse transitions share the same parameter}
 	\item{\bold{ARD} }{is an \code{all-rates-different} model where each rate is a unique parameter}  
-	\item{\bold{meristic} }{is a model wherein transitions occur in a stepwise fashion (e.g., 1->2->3->2) without skipping intermediate steps; this requires a sensible coding of the character 
+	\item{\bold{meristic} }{is a model wherein transitions occur in a stepwise fashion (e.g., 1 to 2 to 3 to 2) without skipping intermediate steps; this requires a sensible coding of the character 
 		states as consecutive integers are assumed to be neighboring states}
-	\item{\bold{matrix} }{is a user supplied model (given as a dummy matrix representing transition classes between states); elements that are zero assume that rates are zero (see \bold{Examples})}
+	\item{\bold{matrix} }{is a user supplied model (given as a dummy matrix representing transition classes between states); elements that are zero signify rates that are also zero (see \bold{Examples})}
 }
 
 
@@ -90,7 +90,7 @@ Options for \code{transform} are as follows:
 \references{ 
 Yang, Z. 2006. \emph{Computational Molecular Evolution}. Oxford University Press: Oxford.
 }
-\author{ Luke J. Harmon and R. E. Glor }
+\author{ LJ Harmon, RE Glor, RG FitzJohn, and JM Eastman }
 \examples{
 geo=get(data(geospiza))
 
@@ -105,3 +105,4 @@ fitDiscrete(geo$phy, gb, model="SYM", transform="kappa") #-6.822943
 
 }
 \keyword{ arith }
+\keyword{models}

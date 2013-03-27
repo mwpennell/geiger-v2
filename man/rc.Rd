@@ -5,15 +5,13 @@
 	conducting the relative cladogenesis test for all slices through a tree	
 }
 \usage{
-rc(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, ...)
+rc(phy, plot=TRUE, ...)
 
 }
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
   \item{plot}{ whether to plot tree with significant branches highlighted}
-  \item{bonf}{ whether to use bonferroni correction when highlighting significant branches on the tree (see \bold{Details})}
-  \item{p.cutoff}{cutoff for significant p-values (used only when plotting)}
-  \item{...}{arguments passed to \code{\link[ape]{plot.phylo}}}
+  \item{...}{arguments passed for plotting (see \code{\link[ape]{plot.phylo}})}
 }
 \details{
 	A list of nodes is returned, along with the number of lineages alive just before that node, the 
@@ -26,8 +24,7 @@ rc(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, ...)
 	to the right of the MRCA of the diverse clade.
 	
 	The Bonferroni correction used here is exceedingly conservative for a tree of any reasonable size (and not 
-	necessarily recommended, especially given the exploratory nature of this test and the non-
-	independence of the comparisons). 
+	necessarily recommended, especially given the exploratory nature of this test and the non-independence of the comparisons). Plotting defaults to indicating which nodes are significant without a Bonferroni correction and a P-value of 0.05 as a cutoff (see \bold{Examples} for modifying this behavior).
 	
 	One will often see significant results "trickle down" nodes in the tree - that is, if one clade is 
 	expecially diverse, then one or more of its parent clades will also be diverse.  The most 
@@ -40,17 +37,21 @@ rc(phy, plot=TRUE, bonf=FALSE, p.cutoff=0.05, ...)
   Number of ancestors, Maximum descendents, p-value, Bonferroni-corrected p-value
 }
 \references{ 
-Purvis, A., Nee, S. & Harvey, P. H. 1995. \emph{Proc. R. Soc. London Ser. B} 260:329-333.
+Purvis A, S Nee, and PH Harvey. 1995. \emph{Proc. R. Soc. London Ser. B} 260:329-333.
 
-Moore, B.R., K.M.A. Chan, and M.J. Donoghue. 2004. Detecting diversification rate variation in supertrees. In O.R.P. Bininda-Emonds (ed.), \emph{Phylogenetic 
+Moore BR, KMA Chan, and MJ Donoghue. 2004. Detecting diversification rate variation in supertrees. In O.R.P. Bininda-Emonds (ed.), \emph{Phylogenetic 
 Supertrees: Combining Information to Reveal the Tree of Life}, pp. 487-533. Kluwer Academic, Netherlands:Dordrecht.
 }
-\author{ Luke J. Harmon }
+\author{ LJ Harmon }
 \examples{
 
 geo=get(data(geospiza))
 
+## WITHOUT BONFERRONI CORRECTION
 rc(geo$phy)
+
+## WITH BONFERRONI CORRECTION and ALPHA=0.15
+rc(geo$phy, bonf=TRUE, p.cutoff=0.15)
 
 }
 

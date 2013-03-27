@@ -16,15 +16,16 @@ sim.bd(b=1, d=0, n0=1, times=0:4)
 }
 \details{
 	This function simulates species diversification under a uniform birth-death process. This differs 
-	from birthdeath.tree in that only the number of species, and not their phylogenetic affinities, are
-	stored. This function relates to GEIGER's rate.estimate (and associated functions), which are also non-phylogenetic.
+	from \code{\link[geiger]{sim.bdtree}} in that only the number of species, and not their phylogenetic affinities, are
+	stored. This function relates to \code{\link[geiger]{bd.ms}} and \code{\link[geiger]{bd.km}}, which are also non-phylogenetic.
 }
 \value{
-	Population size at each time in TIMES
+	a matrix of population size at each time point
 	}
-\references{Yule, G. U. 1924. A mathematical theory of evolution based on the conclusions of 
+\references{Yule, GU. 1924. A mathematical theory of evolution based on the conclusions of 
 			Dr. J. C. Willis, FRS. \emph{Philos. Trans. R. Soc. London Ser. B} 213:21-87 }
-\author{Richard E. Glor and Luke J. Harmon}
+\author{ RE Glor and LJ Harmon }
+
 \seealso{
 \code{\link[geiger]{bd.ms}}; \code{\link[geiger]{bd.km}}
 }
