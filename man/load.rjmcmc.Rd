@@ -32,7 +32,7 @@ an object of class \code{rjmcmc} or \code{rjmcmcmc}}
 \seealso{\code{\link[geiger]{rjmcmc.bm}}}
 
 \examples{
-
+\donttest{
 sal=get(data(caudata))
 a<-sim<-sal$phy
 bl=c(386,387,388,183,184,185,186)
@@ -47,11 +47,11 @@ while(1){
 
 trees=list(a=a,b=b, c=ladderize(a, right=TRUE), d=ladderize(a, right=FALSE))
 class(trees)="multiPhylo"
-rjmcmc.bm(trees, dat, ngen=1e5, type="rbm")
+rjmcmc.bm(trees, dat, ngen=1e3, type="rbm")
 
-res=load.rjmcmc(paste("relaxedBM", names(trees), sep="."), phy=trees$d, burnin=0.25)
+res=load(paste("relaxedBM", names(trees), sep="."), phy=trees$d, burnin=0.25)
 plot(res, par="shifts", show.tip=FALSE, edge.width=2.5)
-
+}
 }
 \keyword{data}
 \keyword{manip}

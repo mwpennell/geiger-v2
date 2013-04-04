@@ -13,21 +13,22 @@ print.rbm=function (x, printlen = 3, ...)
 }
 
 
-.get.multicore=function(){
+.get.parallel=function(){
 	ee=Sys.getenv()
 	
-	if(.check.multicore()) {
-		if("ignoreMULTICORE"%in%names(ee)) f=lapply else f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE) 
+	if(.check.parallel()) {
+		if("ignoreMULTICORE"%in%names(ee)) f=lapply else f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
 	} else {
 		f=lapply
 	}
 	
 	f
 }
-.check.multicore=function(){
+
+.check.parallel=function(){
 	tmp=rownames(installed.packages())
-	if("multicore"%in%tmp) {
-		require(multicore)
+	if("parallel"%in%tmp) {
+		require(parallel)
 		return(TRUE)
 	} else {
 		return(FALSE)

@@ -417,7 +417,7 @@ constrain.m=function(f, m){
 			nb.edge <- nrow(cache$edge)
 			ord=.C("neworder_pruningwise", as.integer(nb.tip), as.integer(nb.node), 
 				   as.integer(cache$edge[, 1]), as.integer(cache$edge[, 2]), as.integer(nb.edge), 
-				   integer(nb.edge), PACKAGE = "ape")[[6]]
+				   integer(nb.edge), PACKAGE = "geiger")[[6]]
 			cache$edge=cache$edge[ord,]
 			cache$edge.length=cache$edge.length[ord]
 		}	
@@ -434,7 +434,7 @@ constrain.m=function(f, m){
 			nb.tip <- cache$n.tip
 			nb.edge <- nrow(cache$edge)
 			ord=.C("neworder_phylo", as.integer(nb.tip), as.integer(cache$edge[, 1]), 
-				   as.integer(cache$edge[, 2]), as.integer(nb.edge), integer(nb.edge), as.integer(1), DUP=FALSE, NAOK=TRUE, PACKAGE="ape")[[5]]
+				   as.integer(cache$edge[, 2]), as.integer(nb.edge), integer(nb.edge), as.integer(1), DUP=FALSE, NAOK=TRUE, PACKAGE="geiger")[[5]]
 			cache$edge=cache$edge[ord,]
 			cache$edge.length=cache$edge.length[ord]
 		}	

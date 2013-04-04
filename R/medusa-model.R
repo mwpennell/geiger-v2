@@ -6,7 +6,7 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
     initialE=init[["epsilon"]]
     initialR=init[["r"]]
     
-    mc=.check.multicore()
+    mc=.check.parallel()
     num.cores=getOption("cores")
     
     if(!is.na(partitions)){
@@ -148,7 +148,7 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 			for (i in seq_len(model.limit-1))
 			{
 				node.list <- all.nodes[-fit$split.at];
-				if (mc)  # multicore (i.e. multithreaded) processing. No GUI, and not at all on Windows
+				if (mc)  # parallel (i.e. multithreaded) processing. No GUI, and not at all on Windows
 				{
 					res <- mclapply(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut, mc.cores=num.cores);
 				} else {
@@ -170,7 +170,7 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 			while (!done & i < model.limit)
 			{
 				node.list <- all.nodes[-fit$split.at];
-				if (mc)  # multicore (i.e. multithreaded) processing. No GUI, and not at all on Windows
+				if (mc)  # parallel (i.e. multithreaded) processing. No GUI, and not at all on Windows
 				{
 					res <- mclapply(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut, mc.cores=num.cores);
 				} else {

@@ -29,6 +29,7 @@ This function may be useful for constraining subsequent runs after an adequate p
 }
 
 \examples{
+\donttest{
 n=40
 phy=rcoal(n=n)
 dat=rTraitCont(phy=phy, model="BM", sigma=sqrt(0.1))
@@ -36,6 +37,7 @@ r=paste(sample(letters,9,replace=TRUE),collapse="")
 
 ## calibrate proposal width
 calibrate.rjmcmc(phy=phy, dat=dat, nstep=5000, widths=2^(-3:0), type="rbm")	
+}
 }
 \keyword{data}
 

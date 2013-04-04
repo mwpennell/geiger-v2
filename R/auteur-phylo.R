@@ -192,8 +192,6 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 # taxonomy: exclusivity highest on left, lowest on right (species, genus, family, etc., as columns)
 # columns in 'taxonomy' should ONLY be taxonomic ranks
 	
-## FIXME: add multicore support
-## FIXME: warn on missing labels (due to non-monophyly)
 
 #	tt=as.matrix(taxonomy)
 #	tt[!is.na(tt)]=""
@@ -314,7 +312,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
 #		rownames(edges)=1:nrow(edges)
 		N=Ntip(phy)
         
-        ff=.get.multicore()
+        ff=.get.parallel()
 
 		dist=unlist(ff(desc, function(x) {
             y=tidx%in%x
@@ -1014,7 +1012,7 @@ phylo.lookup=function(taxonomy) {
 	if("ignoreMULTICORE"%in%names(env)) {
 		f=lapply
 	} else {
-		if(.check.multicore()) {
+		if(.check.parallel()) {
 			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
 		} else {
 			f=lapply

@@ -1,18 +1,17 @@
 Package: geiger
 Type: Package
 Title: Analysis of evolutionary diversification
-Version: 1.99
-Date: 2013-03-22
+Version: 1.99-2
+Date: 2013-04-05
 Author: Luke Harmon <lukeh@uidaho.edu>, Jason Weir, Chad Brock, Rich
-        Glor, Wendell Challenger, Gene Hunt, Rich FitzJohn, Matt Pennell, Graham Slater, Joseph Brown, and Jon Eastman <jonathan.eastman@gmail.com>
-Maintainer: Jonathan Eastman <jonathan.eastman@gmail.com>
-Depends: ape (>= 3.0-6), MASS, mvtnorm, msm, subplex, deSolve (>= 1.7), colorspace, digest, Rcpp (>= 0.9.0), coda, R (>= 2.15.0)
-Suggests: multicore
+        Glor, Wendell Challenger, Gene Hunt, Rich FitzJohn, Matt Pennell, Graham Slater, Joseph Brown, Josef Uyeda, and Jon Eastman <jonathan.eastman@gmail.com>
+Maintainer: Jon Eastman <jonathan.eastman@gmail.com>
+Depends: ape (>= 3.0-6), MASS, mvtnorm, msm, subplex, deSolve (>= 1.7), colorspace, digest, Rcpp (>= 0.9.0), coda, R (>= 2.15.0), ncbit
+Suggests: parallel
 LinkingTo: Rcpp
 Description: macroevolutionary simulation and parameter estimation
         related to diversification from comparative
         phylogenetic data
 License: GPL (>= 2)
 URL: http://www.webpages.uidaho.edu/~lukeh/software.html
-Packaged: 2013-03-22 13:30:17 UTC; jeastman
-LazyLoad: yes
+

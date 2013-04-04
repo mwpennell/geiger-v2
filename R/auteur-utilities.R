@@ -111,7 +111,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 	if(length(dirs)==1) {
 		return(.subset.auteurRAW(get(load(paste(x, dir(x, pattern="samples.rda"), sep="/"))), burnin=burnin, thin=thin, phy=phy, hashtips=hashtips))
 	}
-	FUN=.get.multicore()
+	FUN=.get.parallel()
 	raw<-FUN(dirs, function(x) get(load(paste(x, dir(x, pattern="samples.rda"), sep="/"))))
 	
 	# TREES: collect trees and resolve variable topologies

@@ -92,16 +92,21 @@ Yang, Z. 2006. \emph{Computational Molecular Evolution}. Oxford University Press
 }
 \author{ LJ Harmon, RE Glor, RG FitzJohn, and JM Eastman }
 \examples{
-geo=get(data(geospiza))
 
-gb<-round(geo$dat[,5])
-names(gb)<-rownames(geo$dat)
+
+## match data and tree
+tmp=get(data(geospiza))
+td=treedata(tmp$phy, tmp$dat)
+geo=list(phy=td$phy, dat=td$data)
+gb=round(geo$dat[,5]) ## create discrete data
+names(gb)=rownames(geo$dat)
 mm=rbind(c(NA, 0, 0), c(1, NA, 2), c(0, 2, NA))
 
-fitDiscrete(geo$phy, gb, model="ER") #-7.119792
+fitDiscrete(geo$phy, gb, model="ER", control=list(niter=5)) #-7.119792
+\donttest{
 fitDiscrete(geo$phy, gb, model="ARD") #-6.064573
 fitDiscrete(geo$phy, gb, model=mm) #-7.037944
-fitDiscrete(geo$phy, gb, model="SYM", transform="kappa") #-6.822943
+fitDiscrete(geo$phy, gb, model="SYM", transform="kappa")} #-6.822943
 
 }
 \keyword{ arith }

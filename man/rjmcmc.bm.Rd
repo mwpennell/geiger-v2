@@ -46,7 +46,7 @@ Posterior results are written to several files within a base directory, the cont
   \code{\link[geiger]{load.rjmcmc}}.  The package \pkg{coda} can be used within R for run diagnostics on the processed output (see, e.g., \code{\link[coda]{heidel.diag}} and \code{\link[coda]{autocorr}}.}
 }
 
-\author{JM Eastman, LJ Harmon, and AL Hipp}
+\author{JM Eastman, LJ Harmon, AL Hipp, and JC Uyeda}
 
 \references{ Eastman JM, ME Alfaro, P Joyce, AL Hipp, and LJ Harmon. 2011. A novel comparative method for identifying shifts in the rate of character evolution on trees. \emph{Evolution} 65:3578-3589.
 }
@@ -56,10 +56,13 @@ Posterior results are written to several files within a base directory, the cont
 }
 
 \examples{
+\donttest{
 ## GENERATE DATA: jump-diffusion
 phy=ladderize(sim.bdtree(n=200), right=FALSE)
-
+r=paste(sample(letters,9,replace=TRUE),collapse="")
 defpar=par(no.readonly=TRUE)
+
+
 tmp=ex.jumpsimulator(phy, jumps=10)
 dat=tmp$dat
 hist=tmp$hist
@@ -67,23 +70,21 @@ hist=tmp$hist
 ex.traitgram(phy, hist, alpha=0) # plot history of trait change
 
 ## RUN ANALYSIS
-r=paste(sample(letters,9,replace=TRUE),collapse="")
 rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, samp=500, filebase=r, simple.start=TRUE, type="jump-bm")
 outdir=paste("jump-BM", r, sep=".")
-ps=load.rjmcmc(outdir)
+ps=load(outdir)
 
 dev.new()
 plot(x=ps, par="jumps", burnin=0.25, legend=FALSE, show.tip=FALSE, type="fan", edge.width=2)
 mm=match(phy$edge[,2],hist$descendant)
 hist=hist[mm,]
 edgelabels.auteur(text=NULL, pch=21, cex=hist$cex, bg=NA, col=ifelse(hist$cex>0, 1, NA), lty=2)
-title("red (estimated); black (true jump size)")
+title("red (estimated); black (true jump size)", line=-5)
 par(defpar)
 
 dev.new()
 autocorr.plot(ps$log, ask=dev.interactive())
 plot(ps$log, ask=dev.interactive())
-
 
 ## GENERATE DATA: multi-rate diffusion
 scl=ex.ratesimulator(phy, min=12, show.tip=FALSE)
@@ -92,13 +93,13 @@ dat=rTraitCont(scl)
 ## RUN ANALYSIS
 rjmcmc.bm(phy, dat, prop.width=1.5, ngen=20000, samp=500, filebase=r, simple.start=TRUE, type="rbm")
 outdir=paste("relaxedBM", r, sep=".")
-ps=load.rjmcmc(outdir)
+ps=load(outdir)
 dev.new()
 plot(x=ps, par="shifts", burnin=0.25, legend=TRUE, show.tip=FALSE, edge.width=2)
 
 ## PASTE UNCOMMENTED FOLLOWING LINE TO DROP DIRECTORIES CREATED BY RJMCMC
  # unlink(dir(pattern=paste(r)),recursive=TRUE)
-
+}
 }
 \keyword{models}
 

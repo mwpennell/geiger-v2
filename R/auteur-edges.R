@@ -90,7 +90,7 @@ function(phy, tips=NULL){
 	
 	
 	NULL_TIPS=.md5(integer(length(tips)))
-	f=.get.multicore()
+	f=.get.parallel()
 	
 	# store hash keys for trees in order 1:(Node(phy)+Ntip(phy))
 	tmp=f(trees, function(phy){
@@ -126,10 +126,10 @@ function(phy, tips=NULL){
 	}
 }
 	
-.md5=function(x){
-	# x: an integer vector
-	.Call("digest", serialize(as.integer(x), connection=NULL), as.integer(1), as.integer(-1), as.integer(14), as.integer(0), PACKAGE = "digest")
 
+.md5=function(x){
+    obj=serialize(as.integer(x), connection=NULL)
+    digest(obj, serialize=FALSE, skip=14, algo="md5", file=FALSE, length=Inf)
 }
 
 .hash.tip <- function(labels, tips){

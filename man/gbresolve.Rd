@@ -2,7 +2,6 @@
 \alias{gbresolve.phylo}
 \alias{gbresolve}
 \alias{gbcontain}
-\alias{Linnaean}
 
 \title{ NCBI taxonomy }
 \description{
@@ -17,22 +16,26 @@ working with NCBI taxonomy}
   \item{x}{a phylogenetic tree of class 'phylo' (\code{gbresolve.phylo}), or a string vector (\code{gbresolve}), or a single string (\code{gbcontain})}
   \item{rank}{a Linnaean rank to restrict taxonomic resolution}
   \item{within}{a character string representing a group within which to resolve query}
-  \item{...}{additional arguments to be passed to the taxdump constructor (\code{geiger:::.ncbi})}
+  \item{...}{additional arguments to be passed to the taxdump constructor (\code{\link[ncbit]{ncbit}})}
 }
 
 \details{
-	The functions access the NCBI taxonomy resource (\url{http://www.ncbi.nlm.nih.gov/Taxonomy/taxonomyhome.html}; see also \code{\link[geiger]{ncbi}}). 
+	The functions access the NCBI taxonomy resource (\url{http://www.ncbi.nlm.nih.gov/Taxonomy/taxonomyhome.html}; see also \code{\link[ncbit]{ncbit}}).
 	\code{gbresolve} resolves the taxonomic hierarchy for queried taxa up to the given \code{rank} (or between the given \code{rank}s if two are given), 
     and \code{gbcontain} resolves all taxa found within a given queried group and occurring at a specified \code{rank}.  The \code{rank} must be found 
     within the object \code{Linnaean} (see \bold{Examples}). The argument \code{within} can restrict the group within which to conduct the search 
     (see \bold{Examples}).  
 	
-	The local copy of the taxonomy resource (accessible in with \code{data(ncbi)}) can be updated with a call to \code{geiger:::.ncbi(update=TRUE)}.  
+	The local copy of the taxonomy resource (accessible in with \code{data(ncbi)} from \pkg{ncbit}) can be updated with a call to \code{ncbit(update=TRUE)}.  
 }
 
 \author{JM Eastman}
 
 \examples{
+\donttest{
+## call up NCBI taxonomy
+ncbi=ncbit(update=FALSE)
+
 ## possible ranks
 print(Linnaean)
 
@@ -48,6 +51,7 @@ plot(x$phy, show.node=TRUE, type="f", show.tip=FALSE, cex=0.3)
 
 ## find all genera within salamanders
 gbcontain("caudata", rank="genus")
+}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

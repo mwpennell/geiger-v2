@@ -46,6 +46,7 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
 }
 
 \examples{
+    \donttest{
     dat=get(data(whales))
     phy=dat$phy
     richness=dat$richness
@@ -64,7 +65,8 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     # arbitary model selection -- invoking summary.medusaRAW()
     s2=summary(res, model=12) # select twelfth (most highly complex) model
     plot(s2, cex=0.5, label.offset=1) # using plot.medusa()
-    title("arbitrarily chosen model")
+    title("arbitrarily chosen model complexity")
+    }
 }
 \keyword{graphics}
 

@@ -29,93 +29,6 @@ Linnaean=c(
 	"forma"
 )
 
-
-
-.path_to_gb.dmp=function(package="geiger"){
-	path=paste(system.file(package=package), "data", sep="/")
-#	pl=paths[[which(names(paths)=="fetch_genbank")]]
-#	base_path=gsub("fetch_genbank.pl", "", pl)
-	nd=paste(path, "nodes.dmp", sep="/")
-	nm=paste(path, "names.dmp", sep="/")
-	ncbi=paste(path, "ncbi.rda", sep="/")
-	return(c(ncbi=ncbi, names=nm, nodes=nd, base=path))
-}
-
-
-## EXPORTING GB taxonomy to R tables
-# partly from OMeara phyloorchard code ncbiTaxonomy.R::ncbiTaxonomy()
-.ncbi=function(update=FALSE){
-	
-	gb_path=.path_to_gb.dmp()
-	rda=as.list(gb_path)$ncbi
-	
-	build=update
-	if(!file.exists(rda) | build){
-		build=TRUE
-	} else {
-		build=FALSE
-		if(exists("gbtaxdump")) return(gbtaxdump)
-	}
-	
-	if(build){
-		if(file.exists("taxdump.tar.gz")) unlink("taxdump.tar.gz")
-		cat("Please be patient as 'taxdump' is built from NCBI; download may take several minutes...\n")
-		if(!system("which curl", ignore.stdout=TRUE)==0) stop("Install 'curl' before proceeding.")
-		if(!system("which gunzip", ignore.stdout=TRUE)==0) stop("Install 'gunzip' before proceeding.")
-		if(!system("which tar", ignore.stdout=TRUE)==0) stop("Install 'tar' before proceeding.")
-		if(!system("which perl", ignore.stdout=TRUE)==0) stop("Install 'perl' before proceeding.")
-		
-		
-		system("curl -OL ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz", ignore.stderr=TRUE, wait=TRUE)
-		system("gunzip taxdump.tar.gz", ignore.stderr=TRUE, wait=TRUE)
-		system("tar -xvf taxdump.tar", ignore.stderr=TRUE, wait=TRUE)
-		system("perl -i -p -e's/[^\\w+^\\s+^\\d+^\\|+]//g' names.dmp")
-		system("perl -i -p -e's/[^\\w+^\\s+^\\d+^\\|+]//g' nodes.dmp")
-		
-		mv=TRUE
-		rm=TRUE
-		
-		if(mv){
-			system("rm -rf /tmp/idx")
-			if(all(sapply(ff<-c("nodes.dmp", "names.dmp"), file.exists))){
-				system(paste("mv nodes.dmp", gb_path[["nodes"]], sep=" "))
-				system(paste("mv names.dmp", gb_path[["names"]], sep=" "))
-				cleanup=c("taxdump.tar", "readme.txt", "gc.prt", "merged.dmp", "division.dmp", "delnodes.dmp", "citations.dmp", "gencode.dmp")
-				cleanup=cleanup[cleanup%in%dir()]
-				if(rm) system(paste("rm -f", paste(cleanup, collapse=" "), sep=" "))
-			} else {
-				stop("Error encountered from NCBI: 'nodes.dmp' and (or) 'names.dmp' cannot be located.")
-			}
-			
-## CALL UP gb data
-			names.dmp<-read.table(gb_path[["names"]],header=FALSE, sep="|",strip.white=TRUE,fill=TRUE,stringsAsFactors=FALSE) 
-			names.dmp<-names.dmp[,1:4]
-			names(names.dmp)<-c("id", "node", "unique", "type")
-			nodes.dmp<-read.table(gb_path[["nodes"]],header=FALSE, sep="|",strip.white=TRUE,fill=TRUE,stringsAsFactors=FALSE)
-			nodes.dmp<-nodes.dmp[,c(1:5,11:13)]
-			names(nodes.dmp)<-c("id","parent_id","rank","embl_code","division_id","GenBank_hidden_flag","hidden_subtree_root_flag","comments")
-			
-#		gb=list(nodes=nodes.dmp, names=names.dmp)
-#			class(gb)=c("taxdump", class(gb))
-#			save(gb, file=rda)
-			ncbi=cbind(names.dmp, nodes.dmp[match(names.dmp$id, nodes.dmp$id), c("parent_id", "rank")])
-			rownames(ncbi)=NULL
-            ncbi[which(ncbi[,"node"]=="root"),"rank"]="root"
-			attr(ncbi, "date")=Sys.Date()
-			class(ncbi)=c("taxdump", class(ncbi))
-			save(ncbi, file=rda)
-			
-		}
-	}
-	
-	
-	ncbi=get(load(rda))
-	return(ncbi)
-	
-}
-
-gbtaxdump=.ncbi(update=FALSE)
-
 gbcontain=function(x, rank="species", within="", ...){
 	type="scientific name"
 	rank=match.arg(rank, Linnaean)
@@ -123,7 +36,7 @@ gbcontain=function(x, rank="species", within="", ...){
     if(is.na(lidx)) stop("uninterpretable 'rank'")
 #	if(length(x)>1) stop("Supply 'x' as a single taxon")
 	
-	gb=.ncbi(...)
+	gb=ncbit(...)
 	ss=gb[,"type"]%in%type
 #    gb=cbind(gb, ridx=rr)
     gb=gb[ss,]
@@ -189,7 +102,7 @@ gbcontain=function(x, rank="species", within="", ...){
 	if("ignoreMULTICORE"%in%names(env)) {
 		f=lapply
 	} else {
-		f=.get.multicore()
+		f=.get.parallel()
 	}
 	
 	res=f(x, function(g) {gbc(g)})
@@ -237,7 +150,7 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
     rank=rank[oridx<-order(ridx)]
     ridx=ridx[oridx]
 
-	gb=.ncbi(...)
+	gb=ncbit(...)
 
 	FUN=.fetch_gbhierarchy.above(gb, rank=rank[1], within=within)
 				
@@ -251,7 +164,7 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
     names(tips)=tips
 						  
 	
-	f=.get.multicore()
+	f=.get.parallel()
 	
 	tmp=f(tt, FUN)
 	
@@ -418,7 +331,6 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 }
 
 
-### NEEDS TO BE WRITTEN TO TAKE ADVANTAGE OF .GB_ANC_WORKER
 .fetch_gbhierarchy.above=function(gb, rank="root", within=""){
 	
 ## returns taxonomic information for a 'taxon' up to the 'rank' given
@@ -550,16 +462,6 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 	return(get_tax)
 }
 
-
-print.taxdump=function(x, ...){
-	if(nrow(x)>6){
-		cat(paste("\nNCBI GenBank taxonomy assembled ", attributes(x)$date, "\n ...showing the first several entries...\n\n", sep=""))	
-	} else {
-		cat(paste("\nNCBI GenBank taxonomy assembled ", attributes(x)$date, "\n\n", sep=""))	
-	}
-	print(head(as.data.frame(x)))
-	
-}
 
 .compile_taxonomy=function(tax){
 	all=Linnaean	

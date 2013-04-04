@@ -2,7 +2,6 @@
 	con=list(...)
 	trees=phy
 	fb=con$filebase
-#	Sys.setenv(ignoreMULTICORE=TRUE)
 	nm=names(phy)
 	if(is.null(nm)) nm=1:length(phy)
 	if(!is.null(fb)) files=paste(fb, nm, sep="_") else files=nm

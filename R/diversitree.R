@@ -527,6 +527,8 @@ ROOT.ALL   <- ROOT.BOTH
 	initfunc <- sprintf("initmod_%s", model)
 	derivs <- sprintf("derivs_%s", model)
 	
+    safe=TRUE # to eliminate foreign-function call for CRAN check ## JME 03.27.2013
+    
 	if ( safe ) {
 		function(vars, times, pars) {
 			ret <- t(lsoda(vars, times, pars, rtol=rtol, atol=atol,
@@ -581,43 +583,45 @@ ROOT.ALL   <- ROOT.BOTH
 		flist <- list(fmat=0, tmat=0, imat=0, ModelForc=NULL)
 		elag <- list(islag=0L)
 		
-		sol <- function(vars, times, pars) {
-			if ( length(vars) != ny )
-			stop("Incorrect variable length")
-			if ( length(times) <= 1 )
-			stop("Need >= 2 times")
-			storage.mode(vars) <- storage.mode(times) <- "numeric"
-			
-			ret <- 
-			.Call("call_lsoda", vars, times, derivs, pars,
-				  rtol, atol,
-				  NULL,      # rho: environment
-				  NULL,      # tcrit: critical times
-				  jacfunc, 
-				  initfunc,
-				  NULL,      # eventfunc [New in 1.6]
-				  INTZERO,   # verbose (false)
-				  INTONE,    # itask
-				  rwork,
-				  iwork,
-				  jactype,   # Jacobian type (2=full, 5=banded [1 up and down])
-				  INTZERO,   # nOut (no global variables)
-				  lrw,       # size of workspace (real)
-				  liw,       # size of workspace (int)
-				  INTONE,    # Solver
-				  NULL,      # rootfunc
-				  INTZERO,   # nRoot
-				  0,         # rpar: no extra real parameters
-				  INTZERO,   # ipar: no extra integer parameters
-				  INTZERO,   # Type
-				  flist,     # [New in 1.5]
-				  list(),    # elist [New in 1.6]
-				  elag,      # [New in 1.7]
-				  PACKAGE="deSolve")
-			if ( max(abs(ret[1,] - times)) > 1e-6 )
-			stop("Integration error: integration stopped prematurely")
-			ret[-1,-1,drop=FALSE]
-		}
+##----- eliminated foreign-function call for CRAN check ## JME 03.27.2013
+#		sol <- function(vars, times, pars) {
+#			if ( length(vars) != ny )
+#			stop("Incorrect variable length")
+#			if ( length(times) <= 1 )
+#			stop("Need >= 2 times")
+#			storage.mode(vars) <- storage.mode(times) <- "numeric"
+
+#			ret <- 
+#			.Call("call_lsoda", vars, times, derivs, pars,
+#				  rtol, atol,
+#				  NULL,      # rho: environment
+#				  NULL,      # tcrit: critical times
+#				  jacfunc,
+#				  initfunc,
+#				  NULL,      # eventfunc [New in 1.6]
+#				  INTZERO,   # verbose (false)
+#				  INTONE,    # itask
+#				  rwork,
+#				  iwork,
+#				  jactype,   # Jacobian type (2=full, 5=banded [1 up and down])
+#				  INTZERO,   # nOut (no global variables)
+#				  lrw,       # size of workspace (real)
+#				  liw,       # size of workspace (int)
+#				  INTONE,    # Solver
+#				  NULL,      # rootfunc
+#				  INTZERO,   # nRoot
+#				  0,         # rpar: no extra real parameters
+#				  INTZERO,   # ipar: no extra integer parameters
+#				  INTZERO,   # Type
+#				  flist,     # [New in 1.5]
+#				  list(),    # elist [New in 1.6]
+#				  elag,      # [New in 1.7]
+#				  PACKAGE="deSolve")
+#			if ( max(abs(ret[1,] - times)) > 1e-6 )
+#			stop("Integration error: integration stopped prematurely")
+#			ret[-1,-1,drop=FALSE]
+#		}
+    stop("unsupported call")
 	}
 }
 

@@ -37,8 +37,8 @@ Eastman JM, LJ Harmon, and DC Tank. 2013. Congruification: support for time scal
 sal=get(data(caudata))
 res=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, scale=NA)
 print(res$calibrations)
-plot.phylo(ladderize(sal$phy,right=FALSE), cex=0.35, type="fan", label.offset=2.5)
-plot.phylo(ladderize(sal$fam,right=FALSE), cex=0.5, type="fan", label.offset=2.5, no.margin=FALSE)
+plot(ladderize(sal$phy,right=FALSE), cex=0.35, type="fan", label.offset=2.5)
+plot(ladderize(sal$fam,right=FALSE), cex=0.5, type="fan", label.offset=2.5, no.margin=FALSE)
 
 cat("\n\n\n*** If 'PATHd8' is installed ***, execute the following:
 \n\tres=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, scale=\"PATHd8\")

@@ -49,6 +49,7 @@
 \alias{is.root}
 \alias{kendallmoran.rate}
 \alias{likfx.bm}
+\alias{Linnaean}
 \alias{load}
 \alias{make.bm.relaxed}
 \alias{mkn.lik}

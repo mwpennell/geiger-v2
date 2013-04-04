@@ -112,18 +112,19 @@ phy=tmp$phy
 dat=tmp$data
  
 #---- STORE RESULTS 
-brownFit <-  fitContinuous(phy, dat[,"wingL"], SE=NA)
+brownFit <-  fitContinuous(phy, dat[,"wingL"], SE=NA, control=list(niter=50))
 
 #---- PRINT RESULTS
 print(names(brownFit))
 print(brownFit)
 
-
+\donttest{
 #---- COMPUTE LIKELIHOOD
 flik=brownFit$lik
 print(argn(flik))
 print(flik(c(sigsq=0.07054568, SE=0, z0=4.205953))) # 8.243269
 print(flik(c(sigsq=0, SE=0.1138144, z0=4.235734))) # 9.805223
+
 
 #---- CREATE a FUNCTION to COMPARE MODELS
 fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
@@ -189,7 +190,7 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 #---- COMPARE MODELS for WING LENGTH
 res=fitGeospiza("wingL")
 print(res)
-
+}
 }
 
 \keyword{ arith }

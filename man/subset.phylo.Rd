@@ -23,7 +23,7 @@ working with systematic reference tables and phylogenies}
 sal=get(data(caudata))
 print(head(sal$tax))
 
-nphy=subset.phylo(sal$phy, sal$tax, "genus")
+nphy=subset(sal$phy, sal$tax, "genus")
 plot(nphy, type="fan", cex=0.15)
 
 }
