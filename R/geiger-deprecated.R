@@ -18,6 +18,15 @@ runMedusa=function(phy, richness, estimateExtinction = TRUE, modelLimit = 20, cu
 	medusa(phy, richness=richness, model=ifelse(estimateExtinction, "bd", "yule"), cut=ifelse(cutAtStem, "stem", "node"), partitions=modelLimit, init=c(r=startR, epsilon=startE), ...)
 }
 
+prune.extinct.taxa=function(phy, tol= .Machine$double.eps^0.5){
+    .deprecate("prune.extinct.taxa", "drop.extinct")
+	drop.extinct(phy, tol)
+}
+
+prune.random.taxa=function(phy, n){
+    .deprecate("prune.random.taxa", "drop.random")
+	drop.random(phy, n)
+}
 
 name.check=function(phy, data){
     if(is.null(names(data))) stop("'data' must be given as a vector or matrix with names")

@@ -13,8 +13,8 @@ GEIGER
 \tabular{ll}{
 Package: \tab geiger\cr
 Type: \tab Package\cr
-Version: \tab 1.0\cr
-Date: \tab 2007-01-19\cr
+Version: \tab 1.99-3\cr
+Date: \tab 2013-04-09\cr
 License: \tab GPL version 2 or greater?\cr
 }
 
@@ -22,5 +22,5 @@ License: \tab GPL version 2 or greater?\cr
 \author{
 LJ Harmon, J Weir, C Brock, RE Glor, W Challenger, G Hunt, R FitzJohn, MW Pennell, GJ Slater, JW Brown, and JM Eastman
 
-Maintainer: Luke Harmon <lukeh@uidaho.edu>
+Maintainer: Jon Eastman <jonathan.eastman@gmail.com>
 }
