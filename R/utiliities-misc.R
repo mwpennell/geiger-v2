@@ -1,28 +1,36 @@
-print.rbm=function (x, printlen = 3, ...) 
-{
-    cat("likelihood function for relaxed-rates univariate continuous trait evolution\n")
-	aa=names(argn(x))
-    cat("\targument names:", paste(aa, collapse = ", "))		 
-	cat("\n\n")
-	f=x
-	attributes(f)=NULL
-	cat("definition:\n")
-	print(f)
-	
-	cat("\n\nNOTE: 'rates' vector should be given in order given by the function 'argn()'")
+coef.gfit=function(object, ...){
+    if(is.constrained(object$lik)) p=names(object$lik(argn(object$lik),pars.only=TRUE)) else p=argn(object$lik)
+    unlist(object$opt[p])
+}
+
+coef.gfits=function(object, ...){
+    lapply(object, coef)
+}
+
+logLik.gfit=function(object, ...){
+    object$opt$lnL
+}
+
+logLik.gfits=function(object, ...){
+    lapply(object, function(x) x$opt$lnL)
 }
 
 
-.get.parallel=function(){
-	ee=Sys.getenv()
+
+
+.get.parallel=function(...){
 	
 	if(.check.parallel()) {
-		if("ignoreMULTICORE"%in%names(ee)) f=lapply else f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
+		if(Sys.getenv("R_PARALLEL")=="FALSE") {
+            fx=function(X,FUN,...) lapply(X,FUN,...)
+        } else {
+            fx=function(X,FUN,...) mclapply(X,FUN,...,mc.silent=TRUE)
+        }
 	} else {
-		f=lapply
+        fx=function(X,FUN,...) lapply(X,FUN,...)
 	}
 	
-	f
+	fx
 }
 
 .check.parallel=function(){

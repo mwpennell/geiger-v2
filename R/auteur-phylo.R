@@ -1008,16 +1008,7 @@ phylo.lookup=function(taxonomy) {
         occurrences=c(occurrences, root=mm)
     }
 	
-	env=Sys.getenv()
-	if("ignoreMULTICORE"%in%names(env)) {
-		f=lapply
-	} else {
-		if(.check.parallel()) {
-			f=function(X,FUN) mclapply(X,FUN,mc.silent=TRUE)
-		} else {
-			f=lapply
-		}
-	}
+    f=.get.parallel()
 	
     #clds=f(names(occurrences), function(x) {
     #		tmp=which(tax==x, arr.ind=TRUE)

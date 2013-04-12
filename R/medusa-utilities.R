@@ -145,7 +145,8 @@
 ## In addition, every node's descendants are also calculated.  The element 'desc' is a list.
 ## $desc[i] contains the indices within $edge, $t.start, etc., of all descendants of node 'i'
 ## (in ape node numbering format).
-.make.cache.medusa <- function (phy, richness, mc, num.cores)
+## f: either mclapply or lapply -- see .get.parallel()
+.make.cache.medusa <- function (phy, richness, fx)
 {
 	n.tips <- length(phy$tip.label);
 	n.int <- nrow(phy$edge) - n.tips;
@@ -185,16 +186,10 @@
 	all.edges <- as.matrix(z[,c("anc","dec")]);
 	desc.stem <- list();
 	desc.node <- list();
-	
-	if (mc)
-	{
-		desc.stem <- mclapply(seq_len(max(all.edges)), .descendants.cutAtStem.idx, all.edges=all.edges, mc.cores=num.cores);
-		desc.node <- mclapply(seq_len(max(all.edges)), .descendants.cutAtNode.idx, all.edges=all.edges, mc.cores=num.cores);
-	} else {
-		desc.stem <- lapply(seq_len(max(all.edges)), .descendants.cutAtStem.idx, all.edges=all.edges);
-		desc.node <- lapply(seq_len(max(all.edges)), .descendants.cutAtNode.idx, all.edges=all.edges);
-	}
-	
+
+    desc.stem <- fx(seq_len(max(all.edges)), .descendants.cutAtStem.idx, all.edges=all.edges);
+    desc.node <- fx(seq_len(max(all.edges)), .descendants.cutAtNode.idx, all.edges=all.edges);
+
 	for (i in 1:length(desc.node))
 	{
 		if (length(desc.node[[i]]) == 0) # tips

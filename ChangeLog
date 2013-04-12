@@ -1,7 +1,9 @@
 CHANGES IN GEIGER
-2013-04-09
+2013-04-11
   * released geiger 1.99-3 to CRAN
   * adding drop.extinct.taxa and drop.random.taxa to maintain previous functions
+  * adding better support for parallel:::mclapply
+  * adding coef and logLik methods for fitContinuous and fitDiscrete
 
 2013-04-06
   * released geiger 1.99-2 to CRAN

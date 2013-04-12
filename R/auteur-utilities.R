@@ -1,13 +1,29 @@
+print.rbm=function (x, printlen = 3, ...) 
+{
+    cat("likelihood function for relaxed-rates univariate continuous trait evolution\n")
+	aa=names(argn(x))
+    cat("\targument names:", paste(aa, collapse = ", "))		 
+	cat("\n\n")
+	f=x
+	attributes(f)=NULL
+	cat("definition:\n")
+	print(f)
+	
+	cat("\n\nNOTE: 'rates' vector should be given in order given by the function 'argn()'")
+}
+
+
 
 #rjmcmc utility for initiating a proposal width for Markov sampling
 #author: JM EASTMAN 2010
 #modified: 02.26.2011 to use spline() in computation of best prop.width
 #deprecates calibrate.proposalwidth
-calibrate.rjmcmc <- function(phy, dat, nstep=10000, widths=2^(-3:3), model=c("bm"), ...) {
-	model=match.arg(model, c("bm"))
-	if(model=="bm") {
-		acceptance.rates=sapply(widths, function(x) rjmcmc.bm(phy=phy, dat=dat, ngen=nstep, prop.width=x, summary=FALSE, ...)$acceptrate)
-	} 
+calibrate.rjmcmc <- function(phy, dat, nstep=10000, widths=2^(-3:3), type=c("bm", 
+    "rbm", "jump-bm", "jump-rbm"), ...) {
+	model=match.arg(type, c("bm", 
+    "rbm", "jump-bm", "jump-rbm"))
+
+    acceptance.rates=sapply(widths, function(x) rjmcmc.bm(phy=phy, dat=dat, ngen=nstep, samp=1, prop.width=x, summary=FALSE, type="rbm", ...)$acceptrate) 
 	
 	aa=sapply(acceptance.rates, .withinrange, 0.20, 0.80)
 	df=data.frame(width=widths, acceptrate=acceptance.rates)

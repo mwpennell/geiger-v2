@@ -29,6 +29,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 				   fitContinuous(phy, dat[,idx], SE=SE, model=model, bounds=bounds, control=control)	   
 				   })
 		names(res)=nm
+        class(res)=c("gfits", class(res))
 		return(res)
 	} else {
 		dat=dat[,1]
@@ -239,11 +240,11 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	chk=sapply(1:length(par), function(idx){
 			   p=par[[idx]]
 			   if(!is.na(p)){
-			   return((p<=range$mn[idx] | p>=range$mx[idx]))
+                return((p<=range$mn[idx] | p>=range$mx[idx]))
 			   } else {
-			   return(FALSE)
+                return(FALSE)
 			   }
-			   })
+    })
 	if(any(chk)){
 		warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
 	}
@@ -254,14 +255,9 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 
 	mm$CI=CI
 	mm$hessian=hessian
-#	if(is.null(CI)){
-	return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm))	
-	
-#	} else {
-#		return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm, CI=CI))	
-#		
-#	}
-	
+    res=list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm)
+    class(res)=c("gfit", class(res))
+    return(res)
 }
 
 
@@ -342,6 +338,7 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 				   fitDiscrete(phy, dat[,idx], model=model, transform=transform, bounds=bounds, control=control, ...)	   
 				   })
 		names(res)=nm
+        class(res)=c("gfits", class(res))
 		return(res)
 	} else {
 		tmp=dat[,1]
@@ -582,14 +579,9 @@ control=list(method=c("SANN","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, 
 	mm$CI=CI
 	mm$hessian=hessian
 	
-#	if(is.null(CI)){
-	return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm))	
-	
-#	} else {
-#		return(list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm, CI=CI))	
-	
-#	}
-	
+	res=list(lik=lik, bnd=range[,c("mn", "mx")], res=res, opt=mm)
+    class(res)=c("gfit", class(res))
+    return(res)
 }
 
 ## WORKHORSE -- built from diversitree:::make.mkn  

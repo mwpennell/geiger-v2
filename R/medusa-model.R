@@ -6,8 +6,9 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
     initialE=init[["epsilon"]]
     initialR=init[["r"]]
     
-    mc=.check.parallel()
-    num.cores=getOption("cores")
+#    mc=.check.parallel()
+#    num.cores=getOption("mc.cores", 1L)
+    fx=.get.parallel()
     
     if(!is.na(partitions)){
         flag="'partitions' should either be NA or an integer, specifying the maximum number of piecewise models to consider"
@@ -18,14 +19,16 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
         criterion=match.arg(criterion, choices=c("aicc", "aic"), several.ok=FALSE)
         stop="threshold"
     }
+    
     #	stop=match.arg(stop, choices=c("threshold","partitions"), several.ok=FALSE)
     if(stop=="threshold"){
-        #        criterion=match.arg(threshold, choices=c("aicc", "aic"), several.ok=FALSE)
+        #   criterion=match.arg(threshold, choices=c("aicc", "aic"), several.ok=FALSE)
         npartitions=0
     } else {
         npartitions=partitions
         criterion="aicc"
     }
+
 	model=match.arg(model, choices=c("mixed", "bd", "yule"), several.ok=FALSE)
 	shiftCut=match.arg(cut, choices=c("both", "stem", "node"), several.ok=FALSE)
     
@@ -50,7 +53,7 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 		
 		## Store pertinent information: branch times, richness, descendants
 		#cat("Preparing data for analysis... ");
-		obj <- .make.cache.medusa(phy=phy, richness=richness, mc=mc, num.cores=num.cores);
+		obj <- .make.cache.medusa(phy=phy, richness=richness, fx=fx);
 		#cat("done.\n");
 		
 		## Keep track of all nodes, internal and pendant (for keeping track of breakpoints)
@@ -65,43 +68,29 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 		
 		## Pre-fit pendant edges so these values need not be re(re(re))calculated; amounts to ~25% of all calculations
 		## Will show particular performance gain for edges with many fossil observations
-        #		cat("Optimizing parameters for pendant edges... ");
+        #cat("Optimizing parameters for pendant edges... ");
 		tips <- NULL;
 		# Will always be shiftCut="stem"; if mixed model, keep only best fit and throw out other in .prefit.medusa
-		if (mc)
-		{
-			tips <- mclapply(pend.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="stem", criterion=criterion, mc.cores=num.cores);
-		} else {
-			tips <- lapply(pend.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="stem", criterion=criterion);
-		}
-        #		cat("done.\n");
+
+        tips <- fx(pend.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="stem", criterion=criterion);
+		#cat("done.\n");
 		
 		## Pre-fit virgin internal nodes; should deliver performance gain for early models, and especially for large trees
 		## Remain useful until a spilt is accepted within the clade
 		## Need to incorporate cutAtStem here
 		#cat("Pre-calculating parameters for virgin internal nodes... ");
 		virgin.stem <- list(); virgin.node <- list();
-		if (mc)
-		{
-			if (shiftCut == "stem" || shiftCut == "both")
-			{
-				virgin.stem <- mclapply(int.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="stem", criterion=criterion, mc.cores=num.cores);
-			}
+
+        if (shiftCut == "stem" || shiftCut == "both")
+        {
+            virgin.stem <- fx(int.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="stem", criterion=criterion);
 			if (shiftCut == "node" || shiftCut == "both")
 			{
-				virgin.node <- mclapply(int.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="node", criterion=criterion, mc.cores=num.cores);
+				virgin.node <- fx(int.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="node", criterion=criterion);
 			}
-		} else {
-			if (shiftCut == "stem" || shiftCut == "both")
-			{
-				virgin.stem <- lapply(int.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="stem", criterion=criterion);
-			}
-			if (shiftCut == "node" || shiftCut == "both")
-			{
-				virgin.node <- lapply(int.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="node", criterion=criterion);
-			}
-		}
-		virgin.nodes <- list(stem=virgin.stem, node=virgin.node);
+		} 
+        
+        virgin.nodes <- list(stem=virgin.stem, node=virgin.node);
 		#cat("done.\n\n");
 		
 		prefit <- list(tips=tips, virgin.nodes=virgin.nodes);
@@ -109,12 +98,8 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 		## Needed downstream; do not recalculate
 		## Gives the number of tips associated with an internal node; determines whether a node is 'virgin' or not
 		num.tips <- list()
-		if (mc)
-		{
-			num.tips <- mclapply(all.nodes, function(x) length(obj$tips[[x]]))
-		} else {
-			num.tips <- lapply(all.nodes, function(x) length(obj$tips[[x]]))
-		}
+
+        num.tips <- fx(all.nodes, function(x) length(obj$tips[[x]]))
 		
 		## Fit the base model
 		## 'fit' holds current results; useful for initializing subsequent models
@@ -144,16 +129,12 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 		if (stop == "partitions")
 		{
 
-            #			cat("Step 1 (of ", model.limit, "): best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
+            #cat("Step 1 (of ", model.limit, "): best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
 			for (i in seq_len(model.limit-1))
 			{
 				node.list <- all.nodes[-fit$split.at];
-				if (mc)  # parallel (i.e. multithreaded) processing. No GUI, and not at all on Windows
-				{
-					res <- mclapply(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut, mc.cores=num.cores);
-				} else {
-					res <- lapply(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut);
-				}
+                res <- fx(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut);
+				
 				# Select model with best score according to the specific criterion employed (default aicc)
 				best <- which.min(unlist(lapply(res, "[[", criterion)));
 				models <- c(models, res[best]);
@@ -161,27 +142,23 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 				
 				z <- zz[[i+1]] <- .split.z.at.node.medusa(node=node.list[best], z=z, desc=desc, shiftCut=fit$cut.at)$z;
 				
-                #				cat("Step ", i+1, " (of ", model.limit, "): best likelihood = ", round(models[[i+1]]$lnLik, digits=7), "; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
+                #cat("Step ", i+1, " (of ", model.limit, "): best likelihood = ", round(models[[i+1]]$lnLik, digits=7), "; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
 			}
 		} else if (stop == "threshold") {
 			i <- 1;
 			done <- FALSE;
-            #		cat("Step 1: best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
+            #cat("Step 1: best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
 			while (!done & i < model.limit)
-			{
+            {
 				node.list <- all.nodes[-fit$split.at];
-				if (mc)  # parallel (i.e. multithreaded) processing. No GUI, and not at all on Windows
-				{
-					res <- mclapply(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut, mc.cores=num.cores);
-				} else {
-					res <- lapply(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut);
-				}
+				res <- fx(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut);
+
 				# Select model with best score according to the specific criterion employed (default aicc)
 				best <- which.min(unlist(lapply(res, "[[", criterion)));
 				# Compare last accepted model to current best model
 				if (as.numeric(models[[length(models)]][criterion]) - as.numeric(res[[best]][criterion]) < threshold_N)
 				{
-                    #				cat("\nNo significant increase in ", criterion, " score. Disregarding subsequent piecewise models.\n", sep="");
+                    #cat("\nNo significant increase in ", criterion, " score. Disregarding subsequent piecewise models.\n", sep="");
 					done <- TRUE;
 					break;
 				}
@@ -190,7 +167,7 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 				
 				z <- zz[[i+1]] <- .split.z.at.node.medusa(node=node.list[best], z=z, desc=desc, shiftCut=fit$cut.at)$z;
 				
-                #				cat("Step ", i+1, ": best likelihood = ", models[[i+1]]$lnLik, "; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
+                #cat("Step ", i+1, ": best likelihood = ", models[[i+1]]$lnLik, "; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
 				i <- i+1;
 			}
 		}

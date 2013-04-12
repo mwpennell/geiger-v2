@@ -18,6 +18,8 @@
 \alias{bf}
 \alias{bm.lik}
 \alias{cherries}
+\alias{coef.gfit}
+\alias{coef.gfits}
 \alias{constrain}
 \alias{constrain.k}
 \alias{constrain.m}
@@ -51,6 +53,8 @@
 \alias{likfx.bm}
 \alias{Linnaean}
 \alias{load}
+\alias{logLik.gfit}
+\alias{logLik.gfits}
 \alias{make.bm.relaxed}
 \alias{mkn.lik}
 \alias{PATHd8.phylo}

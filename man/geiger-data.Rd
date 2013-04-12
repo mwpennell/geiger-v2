@@ -21,7 +21,7 @@ data(whales)
 The objects \code{caudata}, \code{chelonia}, \code{geospiza}, and \code{primates} each have at least two items, a \code{phy} object 
 and a \code{dat} object. The \code{phy} object is a phylogenetic tree of class 'phylo' (see \code{\link[ape]{read.tree}}).  The \code{dat} object (e.g., \code{caudata$dat})
 is a named vector of (natural log-transformed) body sizes for each group. The salamander data (object \code{caudata}) also includes 
-the systematics for all recognized taxa (object \code{caudata$tax}) as well as a time-calibrated family-level phylogeny (\code{caudata$fam}) from Zhang and Wake (2009).
+the systematics for all recognized taxa (object \code{caudata$tax}) as well as a time-calibrated family-level phylogeny (\code{caudata$fam}) from Zhang and Wake (2009). The object \code{caudata$phy} is an unpublished glomogram of mostly family level phylogenies from the literature.  The backbone for that tree is from Zhang and Wake (2009). 
 
 The \code{amphibia} object is a set of three trees, the last of which is a time-scaled estimate of the Pyron and Wiens (2011) tree (see \code{\link[geiger]{congruify.phylo}}).
 

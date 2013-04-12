@@ -96,14 +96,8 @@ gbcontain=function(x, rank="species", within="", ...){
 			return(x)
 		}
 	}
-	
-	
-	env=Sys.getenv()
-	if("ignoreMULTICORE"%in%names(env)) {
-		f=lapply
-	} else {
-		f=.get.parallel()
-	}
+    
+	f=.get.parallel()
 	
 	res=f(x, function(g) {gbc(g)})
 
