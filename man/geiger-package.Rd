@@ -13,8 +13,6 @@ GEIGER
 \tabular{ll}{
 Package: \tab geiger\cr
 Type: \tab Package\cr
-Version: \tab 1.99-3\cr
-Date: \tab 2013-04-09\cr
 License: \tab GPL version 2 or greater?\cr
 }
 

@@ -435,10 +435,10 @@ ROOT.ALL   <- ROOT.BOTH
 
 
 
-.make.cache.mkn <- function(tree, states, k, strict, control) {
+.make.cache.mkn <- function(tree, states, k, strict, control, ...) {
 	method <- control$method
 	method=match.arg(method, "exp")
-	tree <- .check.tree(tree)
+	tree <- .check.tree(tree, ...)
 	if ( !is.null(states) ) # for multitrait
     states <- .check.states(tree, states, strict.vals=1:k)
 	cache <- .make.cache(tree)

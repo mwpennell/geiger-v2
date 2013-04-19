@@ -349,7 +349,7 @@ void vcv_internal (int const &maxnode,
  * author: Jonathan M Eastman 01.11.2011
  */
 
-/* C++ | R INTERFACE; variance-covariance main function */
+/* C++ | R INTERFACE; variance-covariance main function -- CURRENTLY UNUSED (faster in geiger:::.paths.phylo) */
 RcppExport SEXP vmat (SEXP tree) 
 {
 	/* 

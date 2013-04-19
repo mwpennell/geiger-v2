@@ -7,7 +7,7 @@
 \usage{
 fitContinuous(phy, dat, SE = 0, 
     model = c("BM","OU","EB","trend","lambda","kappa","delta","drift","white"),
-    bounds= list(), control = list(method = c("SANN","L-BFGS-B"),
+    bounds= list(), control = list(method = c("subplex","L-BFGS-B"),
     niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), \dots)
 }
 \arguments{
@@ -73,9 +73,7 @@ Possible models are as follows:
 	\code{fitContinuous} returns a list with the following four elements: 
 	
 		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model. 
-			For instance, if estimating a Brownian-motion model with unknown standard error, the arguments to the \code{lik} function would be \code{sigsq} and \code{SE} 
-			(see \bold{Examples}). The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing 
-			the likelihood under different parameter values 
+			For instance, if estimating a Brownian-motion model with unknown standard error, the arguments (\code{pars}) to the \code{lik} function would be \code{sigsq} and \code{SE}. By default, the function evaluates the likelihood of the model by assuming the maximum likelihood root state. This behavior can be changed in the call to \code{lik} with \code{lik(pars, root=ROOT.GIVEN)} where \code{pars} includes a value for the root state (z0). See \bold{Examples} for a demonstration. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing the likelihood under different parameter values 
 		}
 		\item{\bold{bnd} }{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
 		}
@@ -122,8 +120,12 @@ print(brownFit)
 #---- COMPUTE LIKELIHOOD
 flik=brownFit$lik
 print(argn(flik))
-print(flik(c(sigsq=0.07054568, SE=0, z0=4.205953))) # 8.243269
-print(flik(c(sigsq=0, SE=0.1138144, z0=4.235734))) # 9.805223
+
+# evaluate likelihood with different parameters (including root state) given
+print(flik(c(sigsq=0.07054568, SE=0, z0=4.205953), root=ROOT.GIVEN)) # 8.243269
+print(flik(c(sigsq=0.07054568, SE=0, z0=0), root=ROOT.GIVEN)) # -808.0432
+print(flik(c(sigsq=0, SE=0.1138144, z0=4.235734), root=ROOT.GIVEN)) # 9.805223
+print(flik(c(sigsq=0, SE=0.1138144))) # 9.805223
 
 
 #---- CREATE a FUNCTION to COMPARE MODELS
@@ -168,7 +170,7 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 		
 	# no measurement error
 	daic=delta_aic(aic)
-	cat("\n\n\n\t\t\t\t*** MODEL COMPARISON: ",trait,"*** \n",sep="")
+	cat("\n\n\n\t\t\t\t*** MODEL COMPARISON: ",trait," *** \n",sep="")
 	cat("\tdelta-AIC values for models assuming no measurement error
     \t\t\t\t zero indicates the best model\n\n")
 	print(daic, digits=2)

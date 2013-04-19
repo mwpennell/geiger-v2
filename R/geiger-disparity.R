@@ -80,7 +80,7 @@ disparity <- function(phy=NULL, data, index=c("avg.sq", "avg.manhattan", "num.st
 
 
 vcv.phylo=function(phy, data=NULL, ...){
-	if(is.null(data)) return(.vmat(phy)) else return(.ic.sigma(phy, data))
+	if(is.null(data)) return(.paths.phylo(phy, vcv=TRUE)) else return(.ic.sigma(phy, data))
 }
 
 .ic.sigma <-

@@ -13,6 +13,11 @@ print.rbm=function (x, printlen = 3, ...)
 }
 
 
+print.gprior=function(x, printlen = 3, ...){
+    y=x
+    attributes(y)=NULL
+    print(y)
+}
 
 #rjmcmc utility for initiating a proposal width for Markov sampling
 #author: JM EASTMAN 2010

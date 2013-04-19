@@ -66,6 +66,8 @@
 \alias{print.auteurRAW}
 \alias{print.bayesfactor}
 \alias{print.constraint.m}
+\alias{print.glnL}
+\alias{print.gprior}
 \alias{print.mcmc.list}
 \alias{print.rbm}
 \alias{print.rjmcmc}

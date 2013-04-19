@@ -1,4 +1,8 @@
 CHANGES IN GEIGER
+2013-04-31
+  * optimized and parallelized fitContinuous and fitDiscrete
+  * optimized vcv.phylo
+
 2013-04-11
   * released geiger 1.99-3 to CRAN
   * adding drop.extinct.taxa and drop.random.taxa to maintain previous functions

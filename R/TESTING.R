@@ -39,12 +39,13 @@
         lambda=unipr(0, 1),
         kappa=unipr(0, 1),
         delta=unipr(0, 2.999999),
-        SE=tnormpr(-500, 100, m=-500, s=100)
+        SE=tnormpr(-500, 100, m=-500, s=100),
+        trns=tnormpr(-500, 100, m=-500, s=100)
     )
     
     # parameter space
-    epar=c("z0", "sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE")
-    names(epar)=c("nat", "exp", "exp", "nat", "nat", "nat", "nat", "nat", "nat", "exp")
+    epar=c("z0", "sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE", "trns")
+    names(epar)=c("nat", "exp", "exp", "nat", "nat", "nat", "nat", "nat", "nat", "exp", "exp")
 
     for(i in names(priors)){
         xx=match(i, epar)
@@ -58,7 +59,12 @@
     }
     
     if(!all(par%in%names(priors))) {
-        stop(paste("Missing prior(s) for:\n\t", paste(par[!par%in%names(priors)], collapse="\n\t"), sep=""))
+        flag=paste("Missing prior(s) for:\n\t", paste(missingpar<-par[!par%in%names(priors)], collapse="\n\t"), sep="")
+        attb=attributes(lik)
+        if(is.null(trns<-attb$trns)) stop(flag)
+        if(any(trns)) pp=lapply(par[which(trns)], function(x) priors$trns) else stop(flag)
+        names(pp)=par[which(trns)]
+        priors=c(priors, pp)
     }
     
     priors=priors[par]
@@ -71,6 +77,13 @@
     })
     if(any(!chk)) stop("Ensure that priors are given as a list and that each prior has a 'type' attribute that is either 'exp' or 'nat'")
 
+    ## BOUNDS
+    bounds=lapply(priors, function(x) {
+        ee=environment(x)
+        if(is.null(ee$a)) a=-Inf else a=ee$a
+        if(is.null(ee$b)) b=Inf else b=ee$b
+        return(list(min=a, max=b))
+    })
     
     ## REPARAMETERIZED LIK FUNCTION
     typ=sapply(priors, function(x) attributes(x)$type)
@@ -79,22 +92,36 @@
         lik(pp)
     }
 
+    getstart=function(bounds){
+        fx=function(bound){
+            bb=unlist(bound)
+            if(any(is.infinite(bb))){
+                bb[which(bb==min(bb))]=max(c(-100, min(bb)))
+                bb[which(bb==max(bb))]=min(c(100, max(bb)))
+            }
+            rr=diff(bb)
+            as.numeric(min(bb)+rr*runif(1, 0, 1/3)) # get value from lower third of range
+        }
+        sapply(as.list(bounds), fx)
+    }
 	
     ## STARTING VALUES
-    fstart=FALSE
-    if(is.null(start)) {
-        start=structure(rep(1, length(par)), names=par)
-        fstart=TRUE
+    count=0
+    while(1){
+        fstart=FALSE
+        flag="'start' should be a named vector of starting values with names in argn(lik), returning a finite likelihood"
+        
+        if(is.null(start)) start=getstart(bounds[par]) else  start=try(ifelse(typ=="exp", log(start), start), silent=TRUE)
+        if(inherits(start, "try-error")) stop(flag)
+        if(any(is.na(start))) stop(flag)
+
+        lnLc=try(flik(start), silent=TRUE)
+        
+        if(inherits(lnLc, "try-error")) count=count+1
+        if(!is.numeric(lnLc) | is.na(lnLc)) count=count+1 else break()
+        if(count==100) stop(flag)
+        next()
     }
-    if(is.null(names(start)) & length(start)!=length(par)) stop("'start' must be supplied as a named vector of starting values with names in argn(lik)")
-    if(!is.null(names(start)) & all(names(start)%in%par)) start=start[par] else if(!length(par)==length(start)) stop("'start' appears misspecified")
-    
-    start=ifelse(typ=="exp", log(start), start)
-    if(!is.numeric(flik(start))) {
-        if(fstart) warning("try supplying 'start' as a named vector of starting values for each parameter in argn(lik)")
-        stop("'start' must return a numeric likelihood for 'lik'")
-    }
-		
     
     ## PROPOSAL FREQUENCIES
 	if(is.null(proposal)) {
@@ -112,7 +139,6 @@
 	
     ## DATA STRUCTURES
 	cur<-structure(start, names=par)
-	lnLc=flik(start)
 	n_prop<-a_prop<-structure(numeric(length(par)), names=par)
 	
     cur<-new<-structure(numeric(length(par)), names=par)
@@ -132,13 +158,14 @@
 			choice=names(proposal)[min(which(runif(1)<proposal))]
 			cpar=cur[[choice]]
 			if(runif(1)<0.75) {
-				cprop=.proposal.multiplier(cpar, ct$w, list(min=-Inf, max=Inf))
+				cprop=.proposal.multiplier(cpar, ct$w, bounds[[choice]])
 			} else {
-				cprop=.proposal.slidingwindow(cpar, ct$w, list(min=-Inf, max=Inf))
+				cprop=.proposal.slidingwindow(cpar, ct$w, bounds[[choice]])
 			}
 			ppar=cprop$v
 			new[[choice]]=ppar
-			lnLn=flik(new)
+			lnLn=try(suppressWarnings(flik(new)), silent=TRUE)
+            
 		
 			if(is.finite(lnLn)){
 				lnh=cprop$lnHastingsRatio

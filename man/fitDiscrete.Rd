@@ -8,7 +8,7 @@
 fitDiscrete(phy, dat,
     model = c("ER","SYM","ARD","meristic"),
     transform = c("none", "EB", "lambda", "kappa", "delta", "white"),
-    bounds = list(), control = list(method = c("SANN", "L-BFGS-B"),
+    bounds = list(), control = list(method = c("subplex", "L-BFGS-B"),
     niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), ...)
 }
 \arguments{
@@ -21,18 +21,14 @@ fitDiscrete(phy, dat,
   \item{...}{if \code{model="meristic"}, \code{...} can dictate whether the matrix is asymmetric (\code{symmetric=FALSE})}
 }
 \details{
-This function fits various likelihood models for discrete character evolution. The function 
-returns parameter estimates and the likelihood for univariate datasets. 
+This function fits various likelihood models for discrete character evolution. The function returns parameter estimates and the likelihood for univariate datasets. All of the models are continuous-time Markov models of trait evolution (see Yang 2006 for a good general discussion of this type of model). 
 
-The model likelihood is maximized using methods available in \code{\link[stats]{optim}} as well as \code{\link[subplex]{subplex}}. 
-Optimization methods to be used within \code{optim} can be specified through the \code{control} object. A number of random starting points 
-are used in optimization and are given through the \code{niter} element within the \code{control} object 
-(e.g., \code{control$niter}). The \code{FAIL} value within the \code{control} object should be a large value 
-that will be considerably far from -lnL of the maximum model likelihood. In most cases, the default setting 
-for \code{control$FAIL} will be appropriate. The Hessian may be used to compute confidence intervals 
-(\code{hessian_CI}) for the parameter estimates if the \code{hessian} element in \code{control} is TRUE.
+The model likelihood is maximized using methods available in \code{\link[stats]{optim}} as well as \code{\link[subplex]{subplex}}. Optimization methods to be used within \code{optim} can be specified through the \code{control} object. 
 
-All of the models are continuous-time Markov models of trait evolution (see Yang 2006 for a good general discussion of this type of model).  
+A number of random starting points are used in optimization and are given through the \code{niter} element within the \code{control} object (e.g., \code{control$niter}). Finding the maximum likelihood fit is sometimes tricky, especially as the number of parameters in the model increases. Even in the example below, a slightly suboptimal fit is occasionally returned with the default settings fitting the general (\code{ARD}) model. There is no rule of thumb for the number of iterations that will be appropriate for a given dataset and model, but one use the variance in fitted likelihoods across iterations as an indication of the difficulty of the likelihood space (see details of the \code{res} object in \bold{Value}). Twenty optimization iterations per parameter seems to be a decent \emph{starting} point for fitting these models. 
+
+The \code{FAIL} value within the \code{control} object should be a large value that will be considerably far from -lnL of the maximum model likelihood. In most cases, the default setting for \code{control$FAIL} will be appropriate. The Hessian may be used to compute confidence intervals (\code{CI}) for the parameter estimates if the \code{hessian} element in \code{control} is TRUE.
+ 
 The function can handle traits with any number of character states, under a range of models. The character model is specified by the \code{model} argument:
 
 \itemize{
@@ -71,8 +67,7 @@ Options for \code{transform} are as follows:
 	\code{fitDiscrete} returns a list with the following four elements: 
 	
 		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model. 
-			For instance, if estimating an untransformed \code{ER} model, there would be a single argument (the transition rate) necessary for the \code{lik} function. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing 
-			the likelihood under different parameter values 
+			For instance, if estimating an untransformed \code{ER} model, there would be a single argument (the transition rate) necessary for the \code{lik} function. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing the likelihood under different parameter values. By default, the function evaluates the likelihood of the model by weighting root states in accordance with their conditional probability given the data (this is the \code{ROOT.OBS} option; see FitzJohn et al. 2009). This default behavior can be changed in the call to \code{lik} with \code{lik(pars, root=ROOT.FLAT)}, for instance, which would weight each state equally at the root. The other useful option is \code{ROOT.GIVEN}, where the user must also supply a vector (\code{root.p}) of probabilities for each possible state. To make likelihoods roughly comparable between \pkg{geiger} and \pkg{ape}, one should use the option \code{lik(pars, root=ROOT.GIVEN, root.p=rep(1,k))}, where \code{k} is the number of character states. See \bold{Examples} for a demonstration
 		}
 		\item{\bold{bnd} }{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
 		}
@@ -88,26 +83,36 @@ Options for \code{transform} are as follows:
 		}
 }
 \references{ 
-Yang, Z. 2006. \emph{Computational Molecular Evolution}. Oxford University Press: Oxford.
+Yang Z. 2006. \emph{Computational Molecular Evolution}. Oxford University Press: Oxford.
+FitzJohn RG, WP Maddison, and SP Otto. 2009. Estimating trait-dependent speciation and extinction rates from incompletely resolved molecular phylogenies. \emph{Systematic Biology} 58:595-611.
 }
 \author{ LJ Harmon, RE Glor, RG FitzJohn, and JM Eastman }
 \examples{
-
-
 ## match data and tree
 tmp=get(data(geospiza))
 td=treedata(tmp$phy, tmp$dat)
 geo=list(phy=td$phy, dat=td$data)
 gb=round(geo$dat[,5]) ## create discrete data
 names(gb)=rownames(geo$dat)
-mm=rbind(c(NA, 0, 0), c(1, NA, 2), c(0, 2, NA))
 
-fitDiscrete(geo$phy, gb, model="ER", control=list(niter=5)) #-7.119792
+tmp=fitDiscrete(geo$phy, gb, model="ER", control=list(niter=5)) #-7.119792
+## using the returned likelihood function
+lik=tmp$lik
+lik(0.3336772, root=ROOT.OBS) #-7.119792
+lik(0.3336772, root=ROOT.FLAT) #-8.125354
+lik(0.3336772, root=ROOT.GIVEN, root.p=rep(1/3,3)) #-8.125354
+lik(0.3336772, root=ROOT.GIVEN, root.p=c(0, 1, 0)) #-7.074039
+
 \donttest{
+# general model (ARD)
 fitDiscrete(geo$phy, gb, model="ARD") #-6.064573
-fitDiscrete(geo$phy, gb, model=mm) #-7.037944
-fitDiscrete(geo$phy, gb, model="SYM", transform="kappa")} #-6.822943
 
+# user-specified rate classes
+mm=rbind(c(NA, 0, 0), c(1, NA, 2), c(0, 2, NA))
+fitDiscrete(geo$phy, gb, model=mm) #-7.037944
+
+# symmetric-rates model 
+fitDiscrete(geo$phy, gb, model="SYM")} #-6.822943
 }
 \keyword{ arith }
 \keyword{models}

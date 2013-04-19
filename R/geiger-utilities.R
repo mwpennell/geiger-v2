@@ -155,6 +155,10 @@ print.transformer=function (x, printlen = 3, ...)
 	print(f)
 }
 
+## GENERIC
+print.glnL=function(x, ...){
+    print(as.numeric(x))
+}
 
 
 ## GENERIC
@@ -379,69 +383,44 @@ constrain.m=function(f, m){
 }
 
 # compute path length from root to tip
-.paths.phylo=function(phy){
-## from vcv.phylo()
+.paths.phylo=function(phy, ...){
+    
+    ## much from ape:::vcv.phylo()
 	phy <- reorder(phy, "postorder")
 
-	n <- length(phy$tip.label)
-	pp <- .cache.descendants(phy)$adesc[-c(1:n)]
-	e1 <- phy$edge[, 1]
-	e2 <- phy$edge[, 2]
-	EL <- phy$edge.length
-	xx <- numeric(n + phy$Nnode)
-	for (i in length(e1):1) {
-		var.cur.node <- xx[e1[i]]
-		xx[e2[i]] <- var.cur.node + EL[i]
-		j <- i - 1L
-		while (e1[j] == e1[i] && j > 0) {
-			left <- if (e2[j] > n) 
-			pp[[e2[j] - n]]
-			else e2[j]
-			right <- if (e2[i] > n) 
-			pp[[e2[i] - n]]
-			else e2[i]
-			j <- j - 1L
-		}
-	}
-	xx[1:n]
+    FUN=function(vcv=FALSE){
+        n <- length(phy$tip.label)
+        pp <- .cache.descendants(phy)$tips
+        e1 <- phy$edge[, 1]
+        e2 <- phy$edge[, 2]
+        EL <- phy$edge.length
+        xx <- numeric(n + phy$Nnode)
+        if(vcv) vmat=matrix(0, n, n)
+        for (i in length(e1):1) {
+            var.cur.node <- xx[e1[i]]
+            xx[e2[i]] <- var.cur.node + EL[i]
+            if(vcv){
+                j <- i - 1L
+                while (e1[j] == e1[i] && j > 0) {
+                    left=pp[[e2[j]]]
+                    right=pp[[e2[i]]]
+                    vmat[left, right] <- vmat[right, left] <- var.cur.node
+                    j <- j - 1L
+                }
+            }
+        }
+        if(vcv) {
+            diags <- 1 + 0:(n - 1) * (n + 1)
+            vmat[diags] <- xx[1:n]
+            return(vmat)
+        } else {
+            return(xx[1:n])
+        }
+    }
+    
+    FUN(...)
 }
 
-
-
-## DEFUNCT
-.DEFUNCT_reorder.cache.pruningwise=function(cache){
-	if(cache$ordering!="pruningwise") {
-		nb.node <- cache$n.node
-		if (nb.node != 1) {
-			nb.tip <- cache$n.tip
-			nb.edge <- nrow(cache$edge)
-			ord=.C("neworder_pruningwise", as.integer(nb.tip), as.integer(nb.node), 
-				   as.integer(cache$edge[, 1]), as.integer(cache$edge[, 2]), as.integer(nb.edge), 
-				   integer(nb.edge), PACKAGE = "geiger")[[6]]
-			cache$edge=cache$edge[ord,]
-			cache$edge.length=cache$edge.length[ord]
-		}	
-		cache$ordering="pruningwise"
-	}
-	cache
-}
-
-## DEFUNCT
-.DEFUNCT_reorder.cache.cladewise=function(cache){
-	if(cache$ordering!="cladewise") {
-		nb.node <- cache$n.node
-		if (nb.node != 1) {
-			nb.tip <- cache$n.tip
-			nb.edge <- nrow(cache$edge)
-			ord=.C("neworder_phylo", as.integer(nb.tip), as.integer(cache$edge[, 1]), 
-				   as.integer(cache$edge[, 2]), as.integer(nb.edge), integer(nb.edge), as.integer(1), DUP=FALSE, NAOK=TRUE, PACKAGE="geiger")[[5]]
-			cache$edge=cache$edge[ord,]
-			cache$edge.length=cache$edge.length[ord]
-		}	
-		cache$ordering="cladewise"
-	}
-	cache
-}
 
 .heights.cache=function (cache) 
 {
