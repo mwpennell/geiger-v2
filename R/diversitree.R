@@ -135,7 +135,7 @@ ROOT.ALL   <- ROOT.BOTH
 				names(states) <- tree$tip.label
 				warning("Assuming states are in tree$tip.label order")
 			} else {
-				stop(sprintf("Invalid states length (expected %d)", length(tree$tip.label)))
+				stop(sprintf("Invalid states length (expected %s)", length(tree$tip.label)))
 			}
 		} else {
 			stop("The states vector must contain names")
