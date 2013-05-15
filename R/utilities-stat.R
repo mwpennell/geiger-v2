@@ -18,7 +18,7 @@ sem=function(x){
 #author: R FITZ-JOHN 2011 (from diversitree)
 
 hdr <-
-function (z, hpd = 0.95, lim = NULL) 
+function (z, hpd = 0.95, lim = NULL)
 {
 	hdr.uniroot <-
 	function (z, p = 0.95, lim = NULL) 

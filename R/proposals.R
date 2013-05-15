@@ -68,7 +68,7 @@ dcount=function(x, FUN, ...){
 			if(is.null(x<-attr(x,"density"))) stop("'x' must have a 'density' attribute.")
 			x=.standardize.prior(x)
 			attr(y,"density")=x
-			y
+			x=y
 		} else {
 			if(is.null(attr(x,"count"))) stop("'x' must have a 'count' attribute.")
 			if(is.null(attr(x,"cumsum"))) stop("'x' must have a 'cumsum' attribute.")
@@ -76,14 +76,24 @@ dcount=function(x, FUN, ...){
 			if(abs(max(attr(x, "cumsum"))-1)>.Machine$double.eps) {
 				x=.standardize.prior(x)
 			}
-			x
 		}
 	}
+    class(x)=c("gprior", class(x))
+    x
 }
 
 ## PROPOSAL UTILITY ##
-.check.lim=function(x, lim=list(min=0,max=Inf)){
-	if(all(x>lim$min) & all(x<lim$max)) return(TRUE) else return(FALSE)
+.check.lim=function(x, lim=list(min=0,max=Inf), ...){
+    
+    ff=function(at.bound=TRUE){
+        return(at.bound)
+    }
+    bb=ff(...)
+    if(bb){
+        if(all(x>=lim$min) & all(x<=lim$max)) return(TRUE) else return(FALSE)
+    } else {
+        if(all(x>lim$min) & all(x<lim$max)) return(TRUE) else return(FALSE)
+    }
 }
 
 

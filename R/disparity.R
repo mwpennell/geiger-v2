@@ -79,8 +79,9 @@ disparity <- function(phy=NULL, data, index=c("avg.sq", "avg.manhattan", "num.st
 }
 
 
-vcv.phylo=function(phy, data=NULL, ...){
-	if(is.null(data)) return(.vmat(phy)) else return(.ic.sigma(phy, data))
+
+ratematrix=function(phy, dat){
+    .ic.sigma(phy=phy, data=dat)
 }
 
 .ic.sigma <-
@@ -185,7 +186,7 @@ dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.r
 	ltt<-sort(branching.times(td$phy), decreasing=TRUE)
 	ltt<-c(0, (max(ltt)-ltt)/max(ltt));
 	
-	s<-vcv.phylo(td$phy, td$data)
+	s<-ratematrix(td$phy, td$data)
 	dtt.sims=NULL
 	MDI=NULL
 	
