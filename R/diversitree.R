@@ -445,11 +445,7 @@ ROOT.ALL   <- ROOT.BOTH
 .make.cache.mkn <- function(tree, states, k, strict, control, ...) {
 	method <- control$method
 	method=match.arg(method, "exp")
-<<<<<<< HEAD
-	tree <- .check.tree(tree, ultrametric=F)
-=======
 	tree <- .check.tree(tree, ...)
->>>>>>> 753327e8bc7a4dd521ed53b1570138caea79fa83
 	if ( !is.null(states) ) # for multitrait
     states <- .check.states(tree, states, strict.vals=1:k)
 	cache <- .make.cache(tree)
