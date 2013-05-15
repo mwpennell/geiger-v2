@@ -12,27 +12,41 @@
 	m
 }
 
-.model.matrix=function(m, model=c("BM", "speciational", "discrete")){
+.check.Qmatrix=function(Q){
+    m=unique(dim(Q))
+    if(length(m)>1) stop("'Q' must be a square matrix")
+    didx=1 + 0L:(m - 1L) * (m + 1)
+    if(!all(rowSums(Q)==0)) stop("rows of 'Q' must sum to zero")
+    if(!all(Q[didx]<=0)) stop("diagonal elements of 'Q' should be negative")
+    if(!all(Q[-didx]>=0)) stop("off-diagonal elements of 'Q' should be positive")
+}
+
+.make.modelmatrix=function(m, model=c("BM", "speciational", "discrete")){
 	model=match.arg(model, c("BM", "speciational", "discrete"))
 	if(model=="discrete"){
 		if(is.matrix(m)){
 			m=list(m)
+            for(j in 1:length(m)){
+                .check.Qmatrix(m[[j]])
+            }
 		}
 	} else {
-		if(is.numeric(m)) m=as.matrix(m) else stop("Supply 'model.matrix' as a matrix of rates")
+		if(is.numeric(m)) m=as.matrix(m) else stop("Supply 'm' as a matrix of rates")
+        if(any(diag(m)<0)) stop("'m' appears to have negative variance component(s)")
 	}
 	return(m)
-	
 }
-sim.char <-
-function(phy, par, nsim=1, model=c("BM", "speciational", "discrete"), root=1)
+
+sim.char <- function(phy, par, nsim=1, model=c("BM", "speciational", "discrete"), root=1)
 {
 	model=match.arg(model, c("BM", "speciational", "discrete"))
 	
-	model.matrix=.model.matrix(par, model)
+	model.matrix=.make.modelmatrix(par, model)
 	
 	nbranches<-nrow(phy$edge)
 	nspecies<-Ntip(phy)
+    
+    if(length(root)>1) stop("'root' should be a single value")
 	
 	if(model%in%c("BM", "speciational"))
 	{
@@ -43,9 +57,8 @@ function(phy, par, nsim=1, model=c("BM", "speciational", "discrete"), root=1)
 		}
 		
 		nchar<-nrow(model.matrix)
-		
-		rnd<-t(mvrnorm(nsim*nbranches, mu=rep(0, nchar), Sigma=model.matrix)) ## JME: using 'root'
-		rnd<-array(rnd, dim=c(nchar, nbranches, nsim));
+		rnd<-t(mvrnorm(nsim*nbranches, mu=rep(0, nchar), Sigma=model.matrix))
+        rnd<-array(rnd, dim=c(nchar, nbranches, nsim));
 		
 		simulate<-function(v, root) (m %*% as.matrix(v))+root;
 		
@@ -54,34 +67,38 @@ function(phy, par, nsim=1, model=c("BM", "speciational", "discrete"), root=1)
 		
 		rownames(result)<-phy$tip.label;
 	} else {
-		phy=new2old.phylo(phy)
+        rt=nspecies+1
+        zphy=reorder.phylo(phy, "postorder")
+        el=zphy$edge.length
 		nchar<-length(model.matrix);
-		node.value<-numeric(nbranches)
 		result<-array(0, dim=c(nspecies, nchar, nsim))
+        .get.state=function(s, p){
+            pp=cumsum(p[s,])
+            min(which(runif(1)<pp))
+        }
 		for(j in 1:nchar) {
-			m<-model.matrix[[j]];
-			if(!root%in%c(1:nrow(m))) stop(paste("'root' must be a character state from 1 to ", nrow(m), sep=""))
+            m=model.matrix[[j]]
+            if(!root%in%c(1:nrow(m))) stop(paste("'root' must be a character state from 1 to ", nrow(m), sep=""))
+            p=lapply(el, function(l) matexpo(m*l))
+            
 			for(k in 1:nsim) {
-	   			for(i in 1:nbranches) {
-					if(as.numeric(phy$edge[i,1])==-1) s<-root
-					else {
-						parent<-which(phy$edge[,2]==phy$edge[i,1])
-						s<-node.value[parent]
-					}	
-					p<-MatrixExp(m*phy$edge.length[i])
-					probs<-cumsum(p[s,])
-					r<-runif(1)
-					node.value[i]<-min(which(r<probs))
+                node.value<-numeric(nspecies+Nnode(zphy))
+                node.value[rt]<-root
+	   			for(i in nbranches:1) {
+                    cur=zphy$edge[i,2]
+                    anc=zphy$edge[i,1]
+                    curp=p[[i]]
+                    s=node.value[anc]
+					node.value[cur]=.get.state(s, curp)
 	   			}
-	   			result[,j,k]<-node.value[as.numeric(phy$edge[,2])>0]
-	   		}	
+	   			result[,j,k]<-node.value[1:nspecies]
+	   		}
 		}
-		rownames(result)<-phy$tip.label;
+		rownames(result)<-zphy$tip.label;
 		
-	}		
+	}
 	return(result);
 }
-
 
 
 .check.stoppingcrit=function(time, taxa){
@@ -199,7 +216,7 @@ function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, extinct=TRUE){
 	attr(obj, "seed")=seed
 	if(stop=="taxa"){
 		drp=obj$edge[min(which(obj$edge.length==0)),2]
-		obj=drop.tip(obj, obj$tip.label[drp])
+		obj=.drop.tip(obj, obj$tip.label[drp])
 		
 	}
 	obj$tip.label=paste("s", 1:Ntip(obj), sep="")

@@ -1,11 +1,18 @@
 
 ## FUNCTIONS from diversitree 0.9-4: commit ec08b1d2bd from 06-22-2012 @ 'https://github.com/richfitz/diversitree'
 
-drop.tip=function(phy, tip, trim.internal = TRUE, subtree = FALSE,
-         root.edge = 0, rooted = is.rooted(phy)) {
+.drop.tip=function(phy, tip, trim.internal = TRUE, subtree = FALSE, root.edge = 0, rooted = is.rooted(phy)){
+  
+  
+  if(missing(tip)) return(phy)
+  if (is.character(tip)) tip <- which(phy$tip.label %in% tip)
+  if(!length(tip)) return(phy)
+    
+  phy=as.phylo(phy)
   Ntip <- length(phy$tip.label)
-  if (is.character(tip)) 
-    tip <- which(phy$tip.label %in% tip)
+  tip=tip[tip%in%c(1:Ntip)]
+  if(!length(tip)) return(phy)
+
 
   phy <- reorder(phy)
   NEWROOT <- ROOT <- Ntip + 1
@@ -693,7 +700,7 @@ is.constrained <- function(x) inherits(x, "constrained")
 ## the "paired" parameters here to avoid using eval where
 ## unnecessary.  However, this makes the function substantially uglier
 ## for a very minor speedup.
-constrain <- function(f, ..., formulae=NULL, names=argn(f), extra=NULL) {
+.constrain <- function(f, ..., formulae=NULL, names=argn(f), extra=NULL) {
 	if ( is.constrained(f) ) {
         stop("'f' appears already constrained")
 		formulae <- c(attr(f, "formulae"), formulae)

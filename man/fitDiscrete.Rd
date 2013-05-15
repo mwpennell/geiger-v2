@@ -82,6 +82,9 @@ Options for \code{transform} are as follows:
 			If the Hessian is used, confidence intervals on the parameter estimates (\code{CI}) and the Hessian matrix (\code{hessian}) are also returned 
 		}
 }
+\note{
+    To speed the likelihood search, one may set an environment variable to make use of parallel processing, used by \code{\link[parallel]{mclapply}}. To set the environment variable, use \code{options(mc.cores=INTEGER)}, where \code{INTEGER} is the number of available cores. Alternatively, the \code{mc.cores} variable may be preset upon the initiation of an R session (see \code{\link[base]{Startup}} for details). 
+}
 \references{ 
 Yang Z. 2006. \emph{Computational Molecular Evolution}. Oxford University Press: Oxford.
 FitzJohn RG, WP Maddison, and SP Otto. 2009. Estimating trait-dependent speciation and extinction rates from incompletely resolved molecular phylogenies. \emph{Systematic Biology} 58:595-611.

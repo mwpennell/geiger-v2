@@ -88,6 +88,9 @@ Possible models are as follows:
 			If the Hessian is used, confidence intervals on the parameter estimates (\code{CI}) and the Hessian matrix (\code{hessian}) are also returned 
 		}
 }
+\note{
+    To speed the likelihood search, one may set an environment variable to make use of parallel processing, used by \code{\link[parallel]{mclapply}}. To set the environment variable, use \code{options(mc.cores=INTEGER)}, where \code{INTEGER} is the number of available cores. Alternatively, the \code{mc.cores} variable may be preset upon the initiation of an R session (see \code{\link[base]{Startup}} for details). 
+}
 \references{
 Blomberg SP, T Garland, and AR Ives. 2003. Testing for phylogenetic signal in comparative data: behavioral traits are more labile. \emph{Evolution} 57:717-745.
 

@@ -53,8 +53,8 @@ tip.disparity=function(phy, data, disp=c("avg.sq", "avg.manhattan",
 }
 
 ic.sigma=function(phy, data){
-	.deprecate("ic.sigma", "vcv.phylo")
-	vcv.phylo(phy=phy, data=data)
+	.deprecate("ic.sigma", "ratematrix")
+	ratematrix(phy=phy, dat=data)
 }
 
 rate.estimate=function(time=0, n=0, phy=NULL, epsilon = 0, missing = 0, crown=TRUE, kendall.moran=FALSE){
@@ -86,36 +86,36 @@ getAncStates=function(x, phy){
 }
 
 deltaTree = function(phy, delta, rescale=TRUE){
-    .deprecate("deltaTree", "transform.phylo")
-    f=transform.phylo(phy, model="delta")
+    .deprecate("deltaTree", "rescale.phylo")
+    f=rescale.phylo(phy, model="delta")
     f(delta=delta, rescale=rescale) 
 }
 
 lambdaTree = function(phy, lambda){
-    .deprecate("lambdaTree", "transform.phylo")
-    transform.phylo(phy, "lambda", lambda=lambda)
+    .deprecate("lambdaTree", "rescale.phylo")
+    rescale.phylo(phy, "lambda", lambda=lambda)
 }
 
 kappaTree = function(phy, kappa){
-    .deprecate("kappaTree", "transform.phylo")
-    transform.phylo(phy, "kappa", kappa=kappa)
+    .deprecate("kappaTree", "rescale.phylo")
+    rescale.phylo(phy, "kappa", kappa=kappa)
 }
 
 ouTree = function(phy, alpha){
-    .deprecate("ouTree", "transform.phylo")
-    transform.phylo(phy, "OU", alpha=alpha)
+    .deprecate("ouTree", "rescale.phylo")
+    rescale.phylo(phy, "OU", alpha=alpha)
 }
 
 tworateTree = function(phy, breakPoint, endRate){
-    .deprecate("tworateTree", "transform.phylo")
+    .deprecate("tworateTree", "rescale.phylo")
     mt=max(heights(phy))
     bk=breakPoint/mt
-    f=transform.phylo(phy, "nrate")
+    f=rescale.phylo(phy, "nrate")
     f(time=bk, rate=endRate, rescale=FALSE)
 }
 
 linearchangeTree = function(phy, endRate = NULL, slope=NULL){
-    .deprecate("linearchangeTree", "transform.phylo")
+    .deprecate("linearchangeTree", "rescale.phylo")
     flag="'endRate' or 'slope' must be supplied"
     if (is.null(slope) && is.null(endRate)) stop(flag)
     if(!is.null(slope) && !is.null(endRate)) stop(flag)
@@ -128,11 +128,11 @@ linearchangeTree = function(phy, endRate = NULL, slope=NULL){
         slope = toslope(endRate, rootdepth)
     }
     
-    transform.phylo(phy, "trend", slope=slope)
+    rescale.phylo(phy, "trend", slope=slope)
 }
 
 exponentialchangeTree = function(phy, endRate=NULL, a=NULL){
-    .deprecate("exponentialchangeTree", "transform.phylo")
+    .deprecate("exponentialchangeTree", "rescale.phylo")
     
     flag="'endRate' or 'a' must be supplied"
     if (is.null(a) && is.null(endRate)) stop(flag)
@@ -141,18 +141,18 @@ exponentialchangeTree = function(phy, endRate=NULL, a=NULL){
     rootdepth <- max(heights(phy))
     if (is.null(a)) a <- log(endRate)/rootdepth
     
-    transform.phylo(phy, "EB", a=a)
+    rescale.phylo(phy, "EB", a=a)
 }
 
 speciationalTree = function(phy){
-    .deprecate("speciationalTree", "transform.phylo")
-    transform.phylo(phy, "kappa", kappa=0)
+    .deprecate("speciationalTree", "rescale.phylo")
+    rescale.phylo(phy, "kappa", kappa=0)
 
 }
 
 rescaleTree = function(phy, totalDepth){
-    .deprecate("rescaleTree", "transform.phylo")
-    transform.phylo(phy, "depth", depth=totalDepth)
+    .deprecate("rescaleTree", "rescale.phylo")
+    rescale.phylo(phy, "depth", depth=totalDepth)
 
 }
 

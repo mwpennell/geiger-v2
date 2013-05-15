@@ -15,6 +15,7 @@
 \alias{argn.mkn}
 \alias{argn<-}
 \alias{argn<-.bm}
+\alias{as.phylo.hphylo}
 \alias{bf}
 \alias{bm.lik}
 \alias{cherries}
@@ -79,7 +80,6 @@
 \alias{sem}
 \alias{span.phylo}
 \alias{splitEdgeMatrixGeiger}
-\alias{transform}
 \alias{ultrametricize.phylo}
 \alias{unique.multiPhylo}
 \alias{unique.phylo}

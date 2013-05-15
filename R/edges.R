@@ -32,17 +32,6 @@
 	return(phy)
 }
 
-drop.tip<-function(phy, tip, trim.internal = TRUE, subtree = FALSE, root.edge = 0, rooted = is.rooted(phy), interactive = FALSE){
-	new=ape:::drop.tip(phy=phy, tip=tip, trim.internal =  trim.internal, subtree = subtree, root.edge = root.edge, 
-					   rooted = rooted, interactive = interactive)
-	if("hphylo"%in%class(phy)){
-		new$desc=NULL
-		new$hash=NULL
-		cc=class(new)
-		class(new)=cc[!cc%in%"hphylo"]
-	} 
-	new
-}
 
 hashes.phylo<-
 function(phy, tips=NULL){

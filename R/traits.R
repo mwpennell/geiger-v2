@@ -50,7 +50,6 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 	lik=bm.lik(phy,dat,SE,model,...)
 	argn=argn(lik)
 	
-	
     ## CONSTRUCT BOUNDS ##
 	mn=c(-500, -500, -1, -100, -100, -500, -500, -500, -500)
 	mx=c(100, 1, 1, 100, 100, 0, 0, log(2.999999), 100)
@@ -396,24 +395,6 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
     return(likfx)
 }
 
-## create 'standard' constraint likelihood function given a patterned matrix
-constrain.k=function(f, model=c("ER", "SYM", "ARD", "meristic"), ...){
-	e=environment(f)
-	k=e$k
-	
-	m=matrix(1:k^2,nrow=k,byrow=TRUE)
-	model=match.arg(model,c("ER", "SYM", "ARD", "meristic"))
-	mm=switch(model,
-			  ER=.er.matrix(m),
-			  SYM=.sym.matrix(m),
-			  ARD=.ard.matrix(m),
-			  meristic=.meristic.matrix(m, ...)
-			  )
-	attributes(mm)
-	ff=constrain.m(f,mm)
-	attr(ff,"constraint.m")=.reshape.constraint.m(mm)
-	ff
-}
 
 .reshape.constraint.m=function(m){
 	k=unique(dim(m))
@@ -840,11 +821,11 @@ transform=c("none", "EB", "lambda", "kappa", "delta", "white"),
 	if(!all(constrain=="ARD")){
 		if(is.character(constrain)){
 			cc=match.arg(constrain, c("ER","SYM","ARD","meristic"))
-			tmp=constrain.k(tmp, model=cc, ...)
+			tmp=.constrain.k(tmp, model=cc, ...)
 		} else {
 			if(is.matrix(constrain)){
 				if(ncol(constrain)==max(dat)){
-					tmp=constrain.m(tmp, m=constrain)
+					tmp=.constrain.m(tmp, m=constrain)
 				}
 			} else {
 				stop("'constrain' must be supplied as a dummy matrix representing constraints on transition classes")
@@ -882,7 +863,7 @@ aov.phylo=function(formula, phy, nsim=1000, test=c("Wilks", "Pillai", "Hotelling
     dat=as.matrix(yy[,-ncol(yy)])
     rownames(dat)=rownames(yy)
         
-    s<-vcv(phy, dat)
+    s<-ratematrix(phy, dat)
   
     multivar=ifelse(ncol(dat)>1, TRUE, FALSE)
     if(multivar){

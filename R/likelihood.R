@@ -1,7 +1,7 @@
 ## replacing prepare.data.bm
 make.bm.relaxed <- function(phy, dat, SE=NA, method=c("direct","vcv","reml")){
 #   method=match.arg(method, c("direct","vcv","reml"))
-    method=match.arg(method, c("direct","vcv")) ## REML not trusted currently
+    method=match.arg(method, c("direct","vcv"))
 
 	lik=switch(method,
 			   direct=.make.bm.relaxed.direct(phy, dat, SE),
@@ -312,12 +312,7 @@ function(rphy, ic) {
     }
     
     if(!all(is.na(SE) | SE >= 0)) stop("'SE' values should be positive (including 0) or NA")
-    
-    adjse=numeric(length(dat))
-    if(any(vv<-is.na(SE))) {
-        adjse[which(vv)]=1
-    }
-    
+  
     ## CACHE tree
     cache=.cache.tree(phy)
     N=cache$n.tip
@@ -328,28 +323,40 @@ function(rphy, ic) {
     g[1:N]=1
     m[]=NA; m[1:N]=dat
     s[1:N]=SE
+    adjse.idx=1:N
 
     ## RESOLVE nodes
     if(!is.null(nodes)){
-        if(is.numeric(nodes)){
-            nn=(N+1):(N+n)
-            if(!all(names(nodes)%in%nn)) stop("'nodes' must have (integer) names corresponding to the internal nodes of 'phy'") ## FI
+        adjse.idx=1:(N+n)
+        nn=(N+1):(N+n)
+        if(is.numeric(nodes) & is.vector(nodes)){
+        
+            if(!all(names(nodes)%in%nn)) stop("'nodes' must have (integer) names corresponding to the internal nodes of 'phy'") 
             nodes=data.frame(cbind(node=as.integer(names(nodes)), mean=nodes, SE=0), stringsAsFactors=FALSE)
         } else {
             if(!all(c("taxon1", "taxon2", "mean", "SE")%in%colnames(nodes))){
-                stop("'nodes' must minimally have column names: 'taxon1', 'taxon2', 'mean', and 'SE'")
+                flag=FALSE
+                if(!all(c("mean", "SE")%in%colnames(nodes)) | is.null(rownames(nodes))){
+                    flag=TRUE
+                } else if(!all(rr<-as.integer(rownames(nodes))%in%nn)){
+                    flag=TRUE
+                } 
+                if(flag) stop("'nodes' must minimally have column names: 'taxon1', 'taxon2', 'mean', and 'SE'")
+                nodes=as.data.frame(nodes)
+                nodes$node=as.integer(rownames(nodes))
+            } else {
+                nodes=as.data.frame(nodes)
+                if(!is.numeric(nodes$mean) | !is.numeric(nodes$SE)){
+                    stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
+                }
+                
+                if(!all(zz<-unique(c(as.character(nodes$taxon1), as.character(nodes$taxon2)))%in%phy$tip.label)){
+                    stop(paste("Some taxa appear missing from 'phy':\n\t", paste(zz[!zz%in%phy$tip.label], collapse="\n\t", sep=""), sep=""))
+                }
+                
+                nodes$node=apply(nodes[,c("taxon1", "taxon2")], 1, .mrca, phy=phy)
             }
             
-            nodes=as.data.frame(nodes)
-            if(!is.numeric(nodes$mean) | !is.numeric(nodes$SE)){
-                stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
-            }
-            
-            if(!all(zz<-unique(c(as.character(nodes$taxon1), as.character(nodes$taxon2)))%in%phy$tip.label)){
-                stop(paste("Some taxa appear missing from 'phy':\n\t", paste(zz[!zz%in%phy$tip.label], collapse="\n\t", sep=""), sep=""))
-            }
-            
-            nodes$node=apply(nodes[,c("taxon1", "taxon2")], 1, .mrca, phy=phy)
             if(!length(unique(nodes$node))==nrow(nodes)) {
                 stop("Some nodes multiply constrained:\n\t", paste(nodes$node[duplicated(nodes$node)], collapse="\n\t", sep=""), sep="")
             }
@@ -362,7 +369,7 @@ function(rphy, ic) {
 
     vec=rbind(m=m, s=s)
     attr(vec, "given")=g
-    attr(vec, "adjse")=adjse
+    attr(vec, "adjse")=as.numeric(is.na(s))[adjse.idx]
     	
 	cache$SE=SE
 	cache$dat=dat[match(phy$tip.label, names(dat))]

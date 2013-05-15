@@ -21,8 +21,8 @@ This function performs an ANOVA or MANOVA in a phylogenetic context.  First, the
 (one dependent variable) or MANOVA (more than one dependent variable) is calculated.  The null distribution 
 of this test statistic is then obtained by simulating new sets of dependent variables on the phylogenetic
 tree.  Simulations are run under a Brownian-motion model.  For ANOVA, the rate parameter is estimated from 
-the average squared independent contrast; for MANOVA the simulations use an estimated variance-covariance (vcv) 
-matrix from \code{\link[geiger]{vcv.phylo}}.
+the average squared independent contrast; for MANOVA the simulations use an estimated variance-covariance
+matrix from \code{\link[geiger]{ratematrix}}.
 
 For MANOVA, you can specify the test statistic for the summary table.  Wilks' statistic is most popular in the 
 literature and for further details, see \code{\link[stats]{summary.manova}}.
@@ -34,7 +34,7 @@ The function prints (and returns) a standard ANOVA or MANOVA table and p-value b
 Garland T Jr, AW Dickerman, CM Janis, and JA Jones. 1993. Phylogenetic analysis of covariance by computer simulation. \emph{Systematic Biology} 42(3):265-292.
 }
 \author{ LJ Harmon }
-\seealso{ \code{\link[stats]{aov}}; \code{\link[stats]{anova}}; \code{\link[stats]{summary.manova}}; \code{\link[geiger]{vcv.phylo}} }
+\seealso{ \code{\link[stats]{aov}}; \code{\link[stats]{anova}}; \code{\link[stats]{summary.manova}}; \code{\link[geiger]{ratematrix}} }
 \examples{
 
 geo=get(data(geospiza))

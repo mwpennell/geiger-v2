@@ -1,3 +1,246 @@
+
+medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA, model=c("mixed", "bd", "yule"), cut=c("both","stem","node"), init=c(r=0.05, epsilon=0.5), ...){
+  
+	## CHECK ARGUMENTS
+    verbose=FALSE
+    initialE=init[["epsilon"]]
+    initialR=init[["r"]]
+    
+#    mc=.check.parallel()
+#    num.cores=getOption("mc.cores", 1L)
+    fx=.get.parallel()
+    
+    if(!is.na(partitions)){
+        flag="'partitions' should either be NA or an integer, specifying the maximum number of piecewise models to consider"
+        if(!is.numeric(partitions)) stop(flag)
+        if(partitions<=0) stop(flag)
+        stop="partitions"
+    } else {
+        criterion=match.arg(criterion, choices=c("aicc", "aic"), several.ok=FALSE)
+        stop="threshold"
+    }
+    
+    #	stop=match.arg(stop, choices=c("threshold","partitions"), several.ok=FALSE)
+    if(stop=="threshold"){
+        #   criterion=match.arg(threshold, choices=c("aicc", "aic"), several.ok=FALSE)
+        npartitions=0
+    } else {
+        npartitions=partitions
+        criterion="aicc"
+    }
+
+	model=match.arg(model, choices=c("mixed", "bd", "yule"), several.ok=FALSE)
+	shiftCut=match.arg(cut, choices=c("both", "stem", "node"), several.ok=FALSE)
+    
+	## PREPARE DATA 
+	## Before determining model.limit, prune tree as necessary (from 'taxon' information in 'richness')
+    #	if (nexus) phy <- read.nexus(phy)
+	if(!any(c("phylo","multiPhylo")%in%class(phy))) stop("'phy' must either be a phylo or multiPhylo object")
+    richness=data.frame(richness, stringsAsFactors=FALSE)
+	phyData <- .treedata.medusa(phy=phy, richness=richness, ...) ## modified prune.tree.merge.data for multiple trees (jme)
+	## END -- jme
+	
+	# internal function for running a single tree and richness data.frame (jme)
+	medusa_runner=function(phy, richness){
+		## Limit on number of piecewise models fitted; based on tree size, aicc correction factor,
+		## and flavour of model fitted (i.e. # parameters estimated; birth-death or pure-birth)
+		model.limit <- .get.max.model.limit(richness=richness, stop=stop, npartitions=npartitions, model=model, verbose=verbose);
+		## Determine correct AICc threshold from tree size (based on simulations)
+		## Should be used for interpreting model-fit
+        N <- Ntip(phy)
+		threshold_N=ifelse(stop=="threshold", .threshold.medusa(N), 0)
+		#cat("Appropriate AICc threshold for tree of ", N, " tips is: ", threshold, ".\n\n", sep="");
+		
+		## Store pertinent information: branch times, richness, descendants
+		#cat("Preparing data for analysis... ");
+		obj <- .make.cache.medusa(phy=phy, richness=richness, fx=fx);
+		#cat("done.\n");
+		
+		## Keep track of all nodes, internal and pendant (for keeping track of breakpoints)
+		pend.nodes <- seq_len(length(phy$tip.label));   # Calculate pendant splits just once, keep track through various models
+		int.nodes <- (length(phy$tip.label)+2):max(phy$edge); # Omit root node
+		root.node <- length(phy$tip.label) + 1;
+		all.nodes <- c(pend.nodes, root.node, int.nodes);
+		
+		desc <- list(desc.stem=obj$desc.stem, desc.node=obj$desc.node)
+		
+		z <- z.orig <- obj$z;
+		
+		## Pre-fit pendant edges so these values need not be re(re(re))calculated; amounts to ~25% of all calculations
+		## Will show particular performance gain for edges with many fossil observations
+        #cat("Optimizing parameters for pendant edges... ");
+		tips <- NULL;
+		# Will always be shiftCut="stem"; if mixed model, keep only best fit and throw out other in .prefit.medusa
+
+        tips <- fx(pend.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="stem", criterion=criterion);
+		#cat("done.\n");
+		
+		## Pre-fit virgin internal nodes; should deliver performance gain for early models, and especially for large trees
+		## Remain useful until a spilt is accepted within the clade
+		## Need to incorporate cutAtStem here
+		#cat("Pre-calculating parameters for virgin internal nodes... ");
+		virgin.stem <- list(); virgin.node <- list();
+
+        if (shiftCut == "stem" || shiftCut == "both")
+        {
+            virgin.stem <- fx(int.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="stem", criterion=criterion);
+			if (shiftCut == "node" || shiftCut == "both")
+			{
+				virgin.node <- fx(int.nodes, .prefit.medusa, z=z, desc=desc, initialR=initialR, initialE=initialE, model=model, shiftCut="node", criterion=criterion);
+			}
+		} 
+        
+        virgin.nodes <- list(stem=virgin.stem, node=virgin.node);
+		#cat("done.\n\n");
+		
+		prefit <- list(tips=tips, virgin.nodes=virgin.nodes);
+		
+		## Needed downstream; do not recalculate
+		## Gives the number of tips associated with an internal node; determines whether a node is 'virgin' or not
+		num.tips <- list()
+
+        num.tips <- fx(all.nodes, function(x) length(obj$tips[[x]]))
+		
+		## Fit the base model
+		## 'fit' holds current results; useful for initializing subsequent models
+		fit <- list();
+		if (model == "mixed")
+		{
+			fit.bd <- .initial.medusa(z=z, initialR=initialR, initialE=initialE, model="bd");
+			fit.yule <- .initial.medusa(z=z, initialR=initialR, initialE=initialE, model="yule");
+			if (fit.bd[[criterion]] < fit.yule[[criterion]]) {
+				fit <- fit.bd;
+				fit$model <- "bd";
+			} else {
+				fit <- fit.yule;
+				fit$model <- "yule";
+			}
+		} else if (model == "bd") {
+			fit <- .initial.medusa(z=z, initialR=initialR, initialE=initialE, model="bd");
+			fit$model <- "bd";
+		} else {
+			fit <- .initial.medusa(z=z, initialR=initialR, initialE=initialE, model="yule");
+			fit$model <- "yule";
+		}
+        
+		models <- list(fit);
+		zz <- list(z)
+        
+		if (stop == "partitions")
+		{
+
+            #cat("Step 1 (of ", model.limit, "): best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
+			for (i in seq_len(model.limit-1))
+			{
+				node.list <- all.nodes[-fit$split.at];
+                res <- fx(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut);
+				
+				# Select model with best score according to the specific criterion employed (default aicc)
+				best <- which.min(unlist(lapply(res, "[[", criterion)));
+				models <- c(models, res[best]);
+				fit <- res[[best]];   # keep track of '$split.at' i.e. nodes already considered
+				
+				z <- zz[[i+1]] <- .split.z.at.node.medusa(node=node.list[best], z=z, desc=desc, shiftCut=fit$cut.at)$z;
+				
+                #cat("Step ", i+1, " (of ", model.limit, "): best likelihood = ", round(models[[i+1]]$lnLik, digits=7), "; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
+			}
+		} else if (stop == "threshold") {
+			i <- 1;
+			done <- FALSE;
+            #cat("Step 1: best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
+			while (!done & i < model.limit)
+            {
+				node.list <- all.nodes[-fit$split.at];
+				res <- fx(node.list, .update.fit.medusa, z=z, desc=desc, fit=fit, prefit=prefit, num.tips=num.tips, root.node=root.node, model=model, criterion=criterion, shiftCut=shiftCut);
+
+				# Select model with best score according to the specific criterion employed (default aicc)
+				best <- which.min(unlist(lapply(res, "[[", criterion)));
+				# Compare last accepted model to current best model
+				if (as.numeric(models[[length(models)]][criterion]) - as.numeric(res[[best]][criterion]) < threshold_N)
+				{
+                    #cat("\nNo significant increase in ", criterion, " score. Disregarding subsequent piecewise models.\n", sep="");
+					done <- TRUE;
+					break;
+				}
+				models <- c(models, res[best]);
+				fit <- res[[best]];   # keep track of '$split.at' i.e. nodes already considered
+				
+				z <- zz[[i+1]] <- .split.z.at.node.medusa(node=node.list[best], z=z, desc=desc, shiftCut=fit$cut.at)$z;
+				
+                #cat("Step ", i+1, ": best likelihood = ", models[[i+1]]$lnLik, "; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
+				i <- i+1;
+			}
+		}
+		
+		modelSummary <- .summary.modelfit.medusa(models=models, phy=phy, threshold=threshold_N)
+        
+		if (verbose)
+		{
+			cat("\n", "Model fit summary:", "\n\n", sep="");
+			print(modelSummary);
+			if (threshold_N > 0)
+			{
+				cat("\nAIC weights are not reported, as they are meaningless when using a threshold criterion.\n")
+			}
+		}
+		
+        
+		## SUMMARY
+		zSummary=function(id){
+            model.id=id
+            z=zz[[model.id]]
+			opt.model = data.frame(cut=modelSummary$cut[1:model.id], split=modelSummary$split[1:model.id], models[[model.id]]$par, lnLp=models[[model.id]]$lnLik.part, stringsAsFactors=FALSE)
+			break.pts = opt.model$split
+			cut.at = opt.model$cut
+			rownames(z)=phy$hash[z[,"dec"]] # identify identical edges among trees
+			
+			# collect shift times
+			internal=is.na(z[,"n.t"])
+			res=numeric(nrow(z))
+			res[]=NA
+			check=!is.na(break.pts)
+			cut.at=cut.at[check]
+			break.pts=break.pts[check]
+			if(length(break.pts)){
+				for(i in 1:length(break.pts)){
+					idx=which(z[,"dec"]==break.pts[i])
+					if(cut.at[i]=="node" && internal[idx]) {
+						res[idx]=z[idx,"t.1"]
+					} else if(cut.at[i]=="stem" || !internal[idx]){
+						res[idx]=z[idx,"t.0"]
+					} else {
+						stop("'cut' should either be stem or node")
+					}
+				}
+			}
+			anc=match(z[,"anc"],z[,"dec"])
+			z=cbind(z, shift=match(z[,"dec"], opt.model$split), t.shift=res)
+			z=cbind(z,r=opt.model[z[,"partition"],"r"],epsilon=opt.model[z[,"partition"],"epsilon"])
+			z=cbind(z, ancestral.r=z[anc,"r"], ancestral.epsilon=z[anc,"epsilon"])
+			return(z)
+		}
+        
+        model.id=nrow(modelSummary)
+		z.summary<-zSummary(id=model.id)
+		
+        control=list(stop=stop, threshold=structure(threshold_N, names=criterion), partitions=npartitions)
+		results <- list(control=control, cache=list(desc=desc, phy=phy, richness=richness), models=models, summary=modelSummary, FUN=zSummary);
+		return(results)
+	}
+	
+	if("multiPhylo"%in%class(phy)) { ## deal with multiple trees
+		res=lapply(phyData, function(x) medusa_runner(x$phy, x$richness))
+		names(res)=names(phy)
+		class(res)=c("multimedusaRAW",class(res))
+	} else {
+		phyData$phy=hashes.phylo(phyData$phy)
+		res=medusa_runner(phyData$phy, phyData$richness)
+		class(res)=c("medusaRAW",class(res))
+	}
+	
+	return(res)
+}
+
 ## Function to prune tree using 'richness' information, assumed to have minimally two columns, "taxon" and "n.taxa"
 ##   Perhaps relax on these column names, may cause too many problems
 ## May also include 'exemplar' column; in that case, rename relevant tip.label before pruning.
@@ -67,7 +310,7 @@
     richness <- structure(data.frame(taxon=rownames(rr), n.taxa=rr[,1], row.names=NULL))
     # Check the tree
 	#	plotNN(phy)					# Node numbers (ape-style) plotted
-    	
+    
 	return(list(phy=phy, richness=richness));
 }
 
@@ -75,8 +318,8 @@
 ## Original default was to fit 20 models (or less if the tree was small).
 ## Changing to a stop-criterion (stop="model.limit") e.g. when k = n-1 (i.e. when denominator of aicc correction is undefined).
 ## k <- (3*i-1) # when both birth and death are estimated, where i is the number of piecewise models
-  ## This occurs when i = n/3
-  ## If Yule, max i = n/2
+## This occurs when i = n/3
+## If Yule, max i = n/2
 ## n <- (2*num.taxa - 1) == (2*length(richness[,1]) - 1) # i.e. total number of nodes in tree (internal + pendant)
 ## Alternatively use aicc threshold itself as a stopping criterion (stop="threshold").
 # AICc = AIC + 2*k*(k+1)/(n-k-1);
@@ -151,12 +394,12 @@
 	n.tips <- length(phy$tip.label);
 	n.int <- nrow(phy$edge) - n.tips;
 	
-## Ape numbers the tips first
+    ## Ape numbers the tips first
 	i.int <- seq_len(n.int);
 	interior <- phy$edge[,2] %in% phy$edge[,1];
 	bt <- branching.times(phy);
 	
-# Consider only internal edges first
+    # Consider only internal edges first
 	edges.int <- phy$edge[interior,];
 	colnames(edges.int) <- c("anc", "dec");
 	
@@ -164,32 +407,32 @@
 	t.1 <- c(t.0[i.int] - phy$edge.length[interior]);
 	
 	z.internal <- cbind(edges.int, t.0, t.1, t.len=t.0 - t.1,
-		n.0=rep(1, n.int), n.t=rep(NA, n.int));
+    n.0=rep(1, n.int), n.t=rep(NA, n.int));
 	
-# Now, pendant edges; 
+    # Now, pendant edges;
 	edges.pendant <- phy$edge[match(seq_len(n.tips), phy$edge[,2]),];
 	colnames(edges.pendant) <- c("anc", "dec");
 	
 	t.0 <- bt[match(edges.pendant[,1], (n.tips+1):max(edges.pendant))];
 	t.1 <- rep(0, n.tips);
-# cannot assume richness ordering necessarily matches that of tip labels
+    # cannot assume richness ordering necessarily matches that of tip labels
 	ext.richness <- richness$n.taxa[match(phy$tip.label, richness$taxon)];
 	
 	z.pendant <- cbind(edges.pendant, t.0, t.1, t.len=t.0 - t.1,
-		n.0=rep(1, n.tips), n.t=ext.richness);
+    n.0=rep(1, n.tips), n.t=ext.richness);
 	
 	z <- rbind(z.internal, z.pendant);
 	z <- cbind(z,partition=rep(1, length(z[,1]))); # Stores piecewise model structure
 	rownames(z) <- NULL;
 	
-# Used for identifying descendant nodes below i.e. tracking breakpoints
+    # Used for identifying descendant nodes below i.e. tracking breakpoints
 	all.edges <- as.matrix(z[,c("anc","dec")]);
 	desc.stem <- list();
 	desc.node <- list();
-
+    
     desc.stem <- fx(seq_len(max(all.edges)), .descendants.cutAtStem.idx, all.edges=all.edges);
     desc.node <- fx(seq_len(max(all.edges)), .descendants.cutAtNode.idx, all.edges=all.edges);
-
+    
 	for (i in 1:length(desc.node))
 	{
 		if (length(desc.node[[i]]) == 0) # tips
@@ -266,8 +509,8 @@
 	
 	model.fit <- .calculate.modelfit.medusa(fit=obj, z=z);
 	
-	return(list(par=matrix(obj$par, nrow=1, dimnames=list(NULL,c("r", "epsilon"))), lnLik.part=obj$lnLik, 
-	   lnLik=obj$lnLik, split.at=rootnode, aic=round(model.fit$aic, digits=7), aicc=round(model.fit$aicc, digits=7), num.par=model.fit$k, cut.at="node"));
+	return(list(par=matrix(obj$par, nrow=1, dimnames=list(NULL,c("r", "epsilon"))), lnLik.part=obj$lnLik,
+    lnLik=obj$lnLik, split.at=rootnode, aic=round(model.fit$aic, digits=7), aicc=round(model.fit$aicc, digits=7), num.par=model.fit$k, cut.at="node"));
 }
 
 
@@ -279,10 +522,10 @@
 {
 	fitted.bd <- NULL;
 	fitted.yule <- NULL;
-#	fit <- NULL;
+    #	fit <- NULL;
 	
-## if model is mixed, grab the optimally fitted one, drop the other; it is cutAtStem that matters, as it is the sum of 2 break likelihoods
-  ## optimal alone may be different than optimal in tandem
+    ## if model is mixed, grab the optimally fitted one, drop the other; it is cutAtStem that matters, as it is the sum of 2 break likelihoods
+    ## optimal alone may be different than optimal in tandem
 	if (shiftCut == "stem")
 	{
 		if (model == "bd" || model == "mixed")
@@ -320,14 +563,14 @@
 			fitted.yule$cut.at <- "node";
 		}
 	}
-## Check which flavour of model fits best
+    ## Check which flavour of model fits best
 	if (is.null(fitted.bd) & !is.null(fitted.yule))
 	{
 		return(fitted.yule);
 	} else if (is.null(fitted.yule) & !is.null(fitted.bd)) {
 		return(fitted.bd);
 	} else {
-## Dealing with a 'mixed' model here; need to consider number of parameters.
+        ## Dealing with a 'mixed' model here; need to consider number of parameters.
 		bd.model.fit <- .calculate.modelfit.medusa(fit=fitted.bd, z=z);
 		yule.model.fit <- .calculate.modelfit.medusa(fit=fitted.yule, z=z);
 		element <- NULL;
@@ -350,7 +593,7 @@
 #medusa.ml.fit.partition
 .fit.partition.medusa <- function (partition, z, sp=c(0.1, 0.05), model)
 {
-# Construct likelihood function:
+    # Construct likelihood function:
 	lik <- .lik.partition.medusa(partition=(z[z[,"partition"] == partition,,drop=FALSE]), model=model);
 	foo <- function (x) {-lik(pars=exp(x));} # work with parameters in log-space to preserve precision
 	
@@ -403,7 +646,7 @@
 #medusa.ml.update
 .update.fit.medusa <- function (node, z, desc, fit, prefit, num.tips, root.node, model, criterion, shiftCut)
 {
-## various combinations possible
+    ## various combinations possible
 	fit1.stem <- NULL;
 	fit1.node <- NULL;
 	fit2.stem <- NULL;
@@ -420,7 +663,7 @@
 	
 	if (shiftCut == "stem" || shiftCut == "both")
 	{
-## First, diminshed clade
+        ## First, diminshed clade
 		obj.stem <- .split.z.at.node.medusa(node=node, z=z, desc=desc, shiftCut="stem");
 		z.stem <- obj.stem$z;
 		aff <- obj.stem$affected;
@@ -438,7 +681,7 @@
 			fit1.stem <- .fit.partition.medusa(partition=aff[1], z=z.stem, sp=sp, model=model);
 			fit1.stem$model <- model;
 		}
-## Second, new clade
+        ## Second, new clade
 		if (node < root.node) # tip, already calculated
 		{
 			fit2.stem <- prefit$tips[[node]];
@@ -459,14 +702,14 @@
 				fit2.stem.bd <- .fit.partition.medusa(aff[2], z.stem, sp=sp, model="bd");
 				fit2.stem.bd$model <- "bd";
 			}
-## Figure out which model fits best
+            ## Figure out which model fits best
 			if (is.null(fit2.stem.bd))
 			{
 				fit2.stem <- fit2.stem.yule;
 			} else if (is.null(fit2.stem.yule)) {
 				fit2.stem <- fit2.stem.bd;
 			} else {
-## Considering both places for a shift
+                ## Considering both places for a shift
 				fit2.stem.bd.val <- .calculate.modelfit.medusa(fit=fit2.stem.bd, z=z);
 				fit2.stem.yule.val <- .calculate.modelfit.medusa(fit=fit2.stem.yule, z=z);
 				
@@ -483,7 +726,7 @@
 	}
 	if (shiftCut == "node" || shiftCut == "both")
 	{
-## First, diminshed clade
+        ## First, diminshed clade
 		obj.node <- .split.z.at.node.medusa(node=node, z=z, desc=desc, shiftCut="node");
 		z.node <- obj.node$z;
 		aff <- obj.node$affected;
@@ -503,7 +746,7 @@
 			fit1.node <- .fit.partition.medusa(partition=aff[1], z=z.node, sp=sp, model=model);
 			fit1.node$model <- model;
 		}
-## Second, new clade
+        ## Second, new clade
 		if (node < root.node) # tip, already calculated
 		{
 			fit2.node <- prefit$tips[[node]];
@@ -527,14 +770,14 @@
 				fit2.node.bd <- .fit.partition.medusa(aff[2], z.node, sp, model="bd");
 				fit2.node.bd$model <- "bd";
 			}
-## Figure out which model fits best
+            ## Figure out which model fits best
 			if (is.null(fit2.node.bd))
 			{
 				fit2.node <- fit2.node.yule;
 			} else if (is.null(fit2.node.yule)) {
 				fit2.node <- fit2.node.bd;
 			} else {
-## Considering both places for a shift
+                ## Considering both places for a shift
 				fit2.node.bd.val <- .calculate.modelfit.medusa(fit=fit2.node.bd, z=z);
 				fit2.node.yule.val <- .calculate.modelfit.medusa(fit=fit2.node.yule, z=z);
 				
@@ -546,11 +789,11 @@
 				} else {
 					fit2.node <- fit2.node.yule;
 				}
-			}	
+			}
 		}
 	}
 	
-## Now, figure out which shift position is optimal	
+    ## Now, figure out which shift position is optimal
 	if (is.null(fit2.node))
 	{
 		fit1 <- fit1.stem;
@@ -561,7 +804,7 @@
 		fit2 <- fit2.node;
 		cut.at <- "node";
 	} else {
-## Considering both places for a shift
+        ## Considering both places for a shift
 		stem.lik <- (fit1.stem$lnLik + fit2.stem$lnLik);
 		stem.par <- rbind(fit1.stem$par, fit2.stem$par)
 		stem.val <- list(lnLik=stem.lik, par=stem.par);
@@ -572,20 +815,20 @@
 		node.val <- list(lnLik=node.lik, par=node.par);
 		node.fit <- .calculate.modelfit.medusa(fit=node.val, z=z);
 		
-#		element <- NULL;
-#		if (criterion == "aic") {element <- 1;} else {element <- 2;}
+        #		element <- NULL;
+        #		if (criterion == "aic") {element <- 1;} else {element <- 2;}
 		
 		if (stem.fit[[criterion]] < node.fit[[criterion]])
 		{
 			fit1 <- fit1.stem;
 			fit2 <- fit2.stem;
 			cut.at <- "stem";
-#			cat("Stem wins!\n");
+            #			cat("Stem wins!\n");
 		} else {
 			fit1 <- fit1.node;
 			fit2 <- fit2.node;
 			cut.at <- "node";
-#			cat("Node wins!\n");
+            #			cat("Node wins!\n");
 		}
 	}
 	op[aff[1],] <- fit1$par; # Replace parameters with new values for diminished clade
@@ -611,7 +854,7 @@
 #make.lik.medusa.part
 .lik.partition.medusa <- function (partition, model)
 {
-# Handle internal and pendant edges separately
+    # Handle internal and pendant edges separately
 	is.int <- is.na(partition[,"n.t"]);
 	is.pend <- !is.int;
 	
@@ -620,19 +863,19 @@
 	
 	if (n.int + n.pend != length(partition[,1])) stop("You messed up, yo.");
 	
-## Internal and pendant calculations differ; split'em up
+    ## Internal and pendant calculations differ; split'em up
 	int  <- partition[is.int,,drop=FALSE];
 	pend <- partition[is.pend,,drop=FALSE];
 	
 	sum.int.t.len <- sum(int[,"t.len"]);  # Simply sum all internal edges
 	int.t.0 <- int[,"t.0"];
 	
-# 'n.0' = Foote's 'a', initial diversity; 'n.t' = Foote's 'n', final diversity
+    # 'n.0' = Foote's 'a', initial diversity; 'n.t' = Foote's 'n', final diversity
 	pend.n.0 <- pend[,"n.0"]; # Foote's 'a': initial diversity
 	pend.n.t <- pend[,"n.t"]; # Foote's 'n': final diversity
 	pend.t.len <- pend[,"t.len"];
 	
-# User may pass in epsilon; don't change it, just estimate r
+    # User may pass in epsilon; don't change it, just estimate r
 	f <- function(pars)
 	{
 		if (model == "bd")
@@ -653,41 +896,41 @@
 		l.pend <- numeric();
 		
 		if (n.int == 0) {l.int <- 0;} else {
-## Likelihood of internal edges from Rabosky et al. (2007) equation (2.3):
+            ## Likelihood of internal edges from Rabosky et al. (2007) equation (2.3):
 			l.int <- n.int * log(r) - r * sum.int.t.len - sum(log(1 - (epsilon * exp(-r * int.t.0))));
 		}
 		
 		if (n.pend == 0) {l.pend <- 0} else {
-## Calculations are from the following:
-## Rabosky et al. 2007. Proc. Roy. Soc. 274: 2915-2923.
-## Foote et al. 1999. Science. 283: 1310-1314
-## Raup. 1985. Paleobiology 11: 42-52 [Foote et al. correct the equation [A18] where a > 1]
-## Bailey. 1964. The Elements Of Stochastic Processes, With Applications To The Natural Sciences
-## Kendall. 1948. Ann. Math. Stat. 19: 1–15.
-##
-## A = probability of extinction of one lineage over time 't'
-## B = A * (lambda/mu)
-##
-## When there is a single lineage at time 0 (a = 1), the calculation is
-##   log(1 - A) + log(1 - B) + (n - 1)*log(B)
-## but this is conditioned on survival by dividing by (1-A)
-## (subtracting log(1 - A) on a log scale) which cancels to give:
-##   log(1 - B) + (n - 1)*log(B)
-##      - for n.t == 1, reduces further to log(1-B)
-##
-## A = mu*(exp((lambda - mu)*t) - 1)) / (lambda*exp((lambda - mu)*t) - mu)
-##  let r = (lambda - mu); ert = exp((lambda - mu)*t)
-## A = mu*(ert - 1)/(lambda*ert - mu)
-##
-## B = A * (lambda/mu)
-##   = [mu*(ert - 1)/(lambda*ert - mu)] * (lambda/mu)
-##   = (lambda*(ert - 1))/(lambda*ert - mu)
-##   = (lambda*(ert - 1))/(lambda(ert - mu/lambda))
-##   = (ert - 1) / (ert - epsilon)
-
-## All pendant nodes begin with richness '1'; calculations simple.
-#			i.pend.n.t.1 <- which(pend.n.t == 1)   # calculations even simpler: log(1-B)
-#			i.pend.n.t.n1 <- which(pend.n.t != 1)
+            ## Calculations are from the following:
+            ## Rabosky et al. 2007. Proc. Roy. Soc. 274: 2915-2923.
+            ## Foote et al. 1999. Science. 283: 1310-1314
+            ## Raup. 1985. Paleobiology 11: 42-52 [Foote et al. correct the equation [A18] where a > 1]
+            ## Bailey. 1964. The Elements Of Stochastic Processes, With Applications To The Natural Sciences
+            ## Kendall. 1948. Ann. Math. Stat. 19: 1–15.
+            ##
+            ## A = probability of extinction of one lineage over time 't'
+            ## B = A * (lambda/mu)
+            ##
+            ## When there is a single lineage at time 0 (a = 1), the calculation is
+            ##   log(1 - A) + log(1 - B) + (n - 1)*log(B)
+            ## but this is conditioned on survival by dividing by (1-A)
+            ## (subtracting log(1 - A) on a log scale) which cancels to give:
+            ##   log(1 - B) + (n - 1)*log(B)
+            ##      - for n.t == 1, reduces further to log(1-B)
+            ##
+            ## A = mu*(exp((lambda - mu)*t) - 1)) / (lambda*exp((lambda - mu)*t) - mu)
+            ##  let r = (lambda - mu); ert = exp((lambda - mu)*t)
+            ## A = mu*(ert - 1)/(lambda*ert - mu)
+            ##
+            ## B = A * (lambda/mu)
+            ##   = [mu*(ert - 1)/(lambda*ert - mu)] * (lambda/mu)
+            ##   = (lambda*(ert - 1))/(lambda*ert - mu)
+            ##   = (lambda*(ert - 1))/(lambda(ert - mu/lambda))
+            ##   = (ert - 1) / (ert - epsilon)
+            
+            ## All pendant nodes begin with richness '1'; calculations simple.
+            #			i.pend.n.t.1 <- which(pend.n.t == 1)   # calculations even simpler: log(1-B)
+            #			i.pend.n.t.n1 <- which(pend.n.t != 1)
 			
 			ert <- exp(r * pend.t.len);
 			B <- (ert - 1) / (ert - epsilon); # Equivalently: B <- (bert - b) / (bert - d)
@@ -703,19 +946,19 @@
 #calculate.model.fit
 .calculate.modelfit.medusa <- function (fit, z)
 {
-## Sample size taken (for now) as the total num.nodes in the tree (internal + pendant)
-  # num.nodes = (2*length(phy$tip.label) - 1) == (2*length(richness[,1]) - 1) == length(z[,1]) + 1
-#	n <- (length(z[,1]) + 1) + sum(!is.na(z[,"n.f"]));
+    ## Sample size taken (for now) as the total num.nodes in the tree (internal + pendant)
+    # num.nodes = (2*length(phy$tip.label) - 1) == (2*length(richness[,1]) - 1) == length(z[,1]) + 1
+    #	n <- (length(z[,1]) + 1) + sum(!is.na(z[,"n.f"]));
 	
-# Since each edge defines a node (i.e. an 'observation'), need only add root node as final obervation
+    # Since each edge defines a node (i.e. an 'observation'), need only add root node as final obervation
 	n <- (length(z[,1]) + 1);
 	
- # Includes both formal parameters AND number of breaks. Note: first model does not involve a break.
-## Models where all parameters are estimated (i.e. BD model):
-  # 2 parameters for base model (no breakpoint) + 3 parameters (r, eps, breakpoint) for each subsequent model
-  
-  
-# Determine number of piecewise models currently involved
+    # Includes both formal parameters AND number of breaks. Note: first model does not involve a break.
+    ## Models where all parameters are estimated (i.e. BD model):
+    # 2 parameters for base model (no breakpoint) + 3 parameters (r, eps, breakpoint) for each subsequent model
+    
+    
+    # Determine number of piecewise models currently involved
 	if (length(fit$par) < 3) # i.e. base model
 	{
 		num.models <- 1;
@@ -723,8 +966,8 @@
 		num.models <- length(fit$par[,1]);
 	}
 	
-# Updated for more general models: check how many parameter values != NA
-#	k <- 2 + (3 * (num.models - 1))
+    # Updated for more general models: check how many parameter values != NA
+    #	k <- 2 + (3 * (num.models - 1))
 	k <- sum(!is.na(fit$par)) + (num.models - 1); # number of estimated parameters + number of breaks
 	
     ll = list(k=k, lnL=fit$lnLik)
@@ -761,20 +1004,20 @@
 	all.res[1,2] <- NA # root node for base model
     all.res$cut=as.character(cut.at)
     all.res=all.res[,c("partitions", "split", "cut", "lnL", "k", "aic", "aicc")]
-
+    
 	if (threshold == 0)
 	{
 		w.aic <- round(.daic(all.res$aic), digits=5);
 		w.aicc <- round(.daic(all.res$aicc), digits=5);
         all.res$w.aic=w.aic$w
         all.res$w.aicc=w.aicc$w
- 	} 
+ 	}
 	
     #	if (plot)
     #	{
-        #		dev.new();
+    #		dev.new();
     #		.plot.modelfit.medusa(all.res, ...);
-        #		if (!is.null(fig.title)) {title(main=fig.title, cex.main=0.75);}
+    #		if (!is.null(fig.title)) {title(main=fig.title, cex.main=0.75);}
     #	}
 	return(all.res);
 }
@@ -918,7 +1161,7 @@ plot.medusaRAW = function(x, col=c(aic="black", aicc="blue"), ...){
 #	points(all.res[,"partitions"],all.res[,"aicc"], col="blue", pch=21, bg="white");
 #	points(all.res[,"partitions"],all.res[,"aic"], col="black", type="l");
 #	points(all.res[,"partitions"],all.res[,"aic"], col="black", pch=21, bg="white");
-	
+
 #	legend("topleft", c("aicc","aic"), pch=21, pt.bg="white", lty=1, col=c("blue", "black"), inset = .05, cex=0.75, bty="n"); # 'bottomright' also works
 #}
 
@@ -931,7 +1174,7 @@ plot.medusaRAW = function(x, col=c(aic="black", aicc="blue"), ...){
 #	phy <- treeParameters$phy;
 #	z <- treeParameters$z;
 #	colour <- NULL;
-	
+
 #	dev.new();
 #
 #	if (color.tip.label)
@@ -970,7 +1213,7 @@ plot.medusaRAW = function(x, col=c(aic="black", aicc="blue"), ...){
 
 ## Print out tree with ape-style node-numbering
 ## Possibly of interest for users to identify numbers of node(s) off interest
- ## If this is the case, make sure to pass in pruned tree
+## If this is the case, make sure to pass in pruned tree
 #plotNN <- function (phy, time=TRUE, margin=TRUE, label.offset=0.5, cex=0.5, ...)
 #{
 #	phy$node.label <- (length(phy$tip.label) + 1):max(phy$edge);

@@ -232,7 +232,7 @@ subset.phylo=function(x, taxonomy, rank="", ...){
 	drop=apply(new, 1, function(x) if( any(is.na(x)) | any(x=="")) return(TRUE) else return(FALSE))
 	if(any(drop)){
 		warning(paste("Information for some tips is missing from 'taxonomy'; offending tips will be left unpruned:\n\t", paste(phy$tip.label[drop], collapse="\n\t"), sep=""))
-#		phy=drop.tip(phy, phy$tip.label[drop])
+#		phy=.drop.tip(phy, phy$tip.label[drop])
 #		new=new[!drop,]
 	}
 	
@@ -251,7 +251,7 @@ subset.phylo=function(x, taxonomy, rank="", ...){
             vv=which(pruned$tip.label%in%nonmon)
             pruned$tip.label[vv]=tax$tip[vv]
 #       }
-#		pruned=drop.tip(pruned, nonmon)
+#		pruned=.drop.tip(pruned, nonmon)
         
 	}
 		
@@ -273,7 +273,7 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 	ww=which(phy$tip.label%in%rownames(tax))
 	phy$tip.label[ww]=z[match(phy$tip.label[ww], rownames(tax))]
 	if(length(drp)) {
-		phy=drop.tip(phy, phy$tip.label[drp])
+		phy=.drop.tip(phy, phy$tip.label[drp])
 	}
 	phy
 }

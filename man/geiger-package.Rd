@@ -18,7 +18,7 @@ License: \tab GPL version 2 or greater?\cr
 
 }
 \author{
-LJ Harmon, J Weir, C Brock, RE Glor, W Challenger, G Hunt, R FitzJohn, MW Pennell, GJ Slater, JW Brown, and JM Eastman
+LJ Harmon, J Weir, C Brock, RE Glor, W Challenger, G Hunt, R FitzJohn, MW Pennell, GJ Slater, JW Brown, J Uyeda, and JM Eastman
 
 Maintainer: Jon Eastman <jonathan.eastman@gmail.com>
 }

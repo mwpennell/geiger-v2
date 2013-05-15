@@ -23,18 +23,6 @@
     uu
 }
 
-.TESTING_check.root=function(rootd, rootv, nd, d, v, ...){
-    open=nd[which(d==0)]
-    rooto=rootd[rootd%in%open]
-    if(length(rooto)){
-        uu=unique(v[nd%in%rooto])
-        if(!all(uu==rootv)) {
-            xx=as.list(...)
-            for(i in 1:length(xx)) print(xx[[i]])
-            stop("encountered unexpected error in link between 'rates' and 'root'")
-        }
-    }
-}
 
 rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, samp=100, type=c("jump-rbm", "rbm", "jump-bm", "bm"), ... )
 {
@@ -228,7 +216,7 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, samp=100, type=c("jump-rbm"
         if(is.na(lnPriorRatio)) {
             stop(print(nr))
         }
-        .TESTING_check.root(rootd, new.rootrate, nd, new.delta, new.rates, c(subprop, nr))
+        .check.root(rootd, new.rootrate, nd, new.delta, new.rates, c(subprop, nr))
         
 		ct$n.subprop[subprop]=ct$n.subprop[subprop]+1				
 		
@@ -271,4 +259,18 @@ rjmcmc.bm <- function ( phy, dat, SE=NA, ngen=50000, samp=100, type=c("jump-rbm"
 	# end rjMCMC
 	.cleanup.rjmcmc(ct, cache)
 }
+
+.check.root=function(rootd, rootv, nd, d, v, ...){
+    open=nd[which(d==0)]
+    rooto=rootd[rootd%in%open]
+    if(length(rooto)){
+        uu=unique(v[nd%in%rooto])
+        if(!all(uu==rootv)) {
+            xx=as.list(...)
+            for(i in 1:length(xx)) print(xx[[i]])
+            stop("encountered unexpected error in link between 'rates' and 'root'")
+        }
+    }
+}
+
 
