@@ -482,8 +482,10 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 	argn=unlist(argn(lik))
 	
 ## CONSTRUCT BOUNDS ##
-	mn=c(-10, -500, -500, -5, -500)
-	mx=c(10, 0, 0, log(2.999999), log(1000))
+	minTrans<-log(1)-log(sum(phy$edge.length))
+	maxTrans<- log(phy$Nnode)-log(sum(phy$edge.length))
+	mn=c(-10, -500, -500, -5, minTrans)
+	mx=c(10, 0, 0, log(2.999999), maxTrans)
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("nat", "exp", "exp", "exp", "exp")
 	rownames(bnds)=c("a", "lambda", "kappa", "delta", "trns")
