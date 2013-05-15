@@ -149,7 +149,7 @@ ROOT.ALL   <- ROOT.BOTH
 		} else {
 			extra <- setdiff(sort(unique(na.omit(states))), strict.vals)
 			if ( length(extra) > 0 )
-			stop(sprintf("Unknown states %d not allowed in states vector", paste(extra, collapse=", ")))
+			stop(sprintf("Unknown states %s not allowed in states vector", paste(extra, collapse=", ")))
 		}
 	}
 	
@@ -438,7 +438,7 @@ ROOT.ALL   <- ROOT.BOTH
 .make.cache.mkn <- function(tree, states, k, strict, control) {
 	method <- control$method
 	method=match.arg(method, "exp")
-	tree <- .check.tree(tree)
+	tree <- .check.tree(tree, ultrametric=F)
 	if ( !is.null(states) ) # for multitrait
     states <- .check.states(tree, states, strict.vals=1:k)
 	cache <- .make.cache(tree)
