@@ -169,7 +169,7 @@ sim.bdtree <- function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, ex
 			}
 			r <- runif(1);
 			if (r <= b/(b + d)) { ###4 #this creates a bifucation in the tree
-	          	random_lineage <- round(runif(1, min = 1, max = sum(alive)));
+				random_lineage <- round(runif(1, min = 1, max = sum(alive)));
 				e <- matrix(edge[alive,], ncol = 2);
 				parent <- e[random_lineage,2];
 				alive[alive][random_lineage] <- FALSE;
@@ -180,13 +180,13 @@ sim.bdtree <- function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, ex
 				x <- which(edge[,2] == parent);
 				edge.length[x] <- t - stem.depth[x];
 				edge.length<-c(edge.length, NA, NA)
-            }###4
+			}###4
 			
 			else {###4 This terminates one of the current lineages on the tree
-                random_lineage <- round(runif(1, min = 1, max = sum(alive)));
+				random_lineage <- round(runif(1, min = 1, max = sum(alive)));
 				edge.length[alive][random_lineage] <- t - stem.depth[alive][random_lineage];
-          	    alive[alive][random_lineage] <- FALSE;
-            }###4
+				alive[alive][random_lineage] <- FALSE;
+			}###4
 		}#1A
 		
 		if (return.all.extinct == TRUE | sum(alive) > 1) break;
@@ -215,7 +215,7 @@ sim.bdtree <- function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, ex
 		obj = .drop.tip(obj, obj$tip.label[drp]);
 	}
 	obj$tip.label = paste("s", 1:Ntip(obj), sep = "");
-    obj;
+	obj;
 }
 
 
