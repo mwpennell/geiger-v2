@@ -323,54 +323,17 @@ function(rphy, ic) {
     g[1:N]=1
     m[]=NA; m[1:N]=dat
     s[1:N]=SE
-    adjse.idx=1:N
 
     ## RESOLVE nodes
     if(!is.null(nodes)){
-        adjse.idx=1:(N+n)
         nn=(N+1):(N+n)
-        if(is.numeric(nodes) & is.vector(nodes)){
-        
-            if(!all(names(nodes)%in%nn)) stop("'nodes' must have (integer) names corresponding to the internal nodes of 'phy'") 
-            nodes=data.frame(cbind(node=as.integer(names(nodes)), mean=nodes, SE=0), stringsAsFactors=FALSE)
-        } else {
-            if(!all(c("taxon1", "taxon2", "mean", "SE")%in%colnames(nodes))){
-                flag=FALSE
-                if(!all(c("mean", "SE")%in%colnames(nodes)) | is.null(rownames(nodes))){
-                    flag=TRUE
-                } else if(!all(rr<-as.integer(rownames(nodes))%in%nn)){
-                    flag=TRUE
-                } 
-                if(flag) stop("'nodes' must minimally have column names: 'taxon1', 'taxon2', 'mean', and 'SE'")
-                nodes=as.data.frame(nodes)
-                nodes$node=as.integer(rownames(nodes))
-            } else {
-                nodes=as.data.frame(nodes)
-                if(!is.numeric(nodes$mean) | !is.numeric(nodes$SE)){
-                    stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
-                }
-                
-                if(!all(zz<-unique(c(as.character(nodes$taxon1), as.character(nodes$taxon2)))%in%phy$tip.label)){
-                    stop(paste("Some taxa appear missing from 'phy':\n\t", paste(zz[!zz%in%phy$tip.label], collapse="\n\t", sep=""), sep=""))
-                }
-                
-                nodes$node=apply(nodes[,c("taxon1", "taxon2")], 1, .mrca, phy=phy)
-            }
-            
-            if(!length(unique(nodes$node))==nrow(nodes)) {
-                stop("Some nodes multiply constrained:\n\t", paste(nodes$node[duplicated(nodes$node)], collapse="\n\t", sep=""), sep="")
-            }
-        }
-    
-        m[nodes$node]=as.numeric(nodes$mean)
-        s[nodes$node]=as.numeric(nodes$SE)
-        g[nodes$node]=1
-    } 
-
-    vec=rbind(m=m, s=s)
-    attr(vec, "given")=g
-    attr(vec, "adjse")=as.numeric(is.na(s))[adjse.idx]
-    	
+        vec=.cache.y.nodes(m, s, g, nn, phy, nodes=nodes)
+    } else {
+        vec=rbind(m=m, s=s)
+        attr(vec, "given")=g
+        attr(vec, "adjse")=as.numeric(is.na(s))[1:N]
+    }
+     	
 	cache$SE=SE
 	cache$dat=dat[match(phy$tip.label, names(dat))]
 	cache$phy=phy
@@ -380,6 +343,53 @@ function(rphy, ic) {
     return(cache)
 }
 
+.cache.y.nodes=function(m, s, g, nn, phy, nodes){
+    
+    if(is.numeric(nodes) & is.vector(nodes)){
+        if(!all(names(nodes)%in%nn)) stop("'nodes' must have (integer) names corresponding to the internal nodes of 'phy'")
+        nodes=data.frame(cbind(node=as.integer(names(nodes)), mean=nodes, SE=0), stringsAsFactors=FALSE)
+    } else {
+        if(!all(c("taxon1", "taxon2", "mean", "SE")%in%colnames(nodes))){
+            flag=FALSE
+            if(!all(c("mean", "SE")%in%colnames(nodes)) | is.null(rownames(nodes))){
+                flag=TRUE
+            } else if(!all(rr<-as.integer(rownames(nodes))%in%nn)){
+                flag=TRUE
+            }
+            if(flag) stop("'nodes' must minimally have column names: 'taxon1', 'taxon2', 'mean', and 'SE'")
+            nodes=as.data.frame(nodes)
+            nodes$node=as.integer(rownames(nodes))
+        } else {
+            nodes=as.data.frame(nodes)
+            if(!is.numeric(nodes$mean) | !is.numeric(nodes$SE)){
+                stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
+            }
+            
+            if(!all(zz<-unique(c(as.character(nodes$taxon1), as.character(nodes$taxon2)))%in%phy$tip.label)){
+                stop(paste("Some taxa appear missing from 'phy':\n\t", paste(zz[!zz%in%phy$tip.label], collapse="\n\t", sep=""), sep=""))
+            }
+            
+            nodes$node=apply(nodes[,c("taxon1", "taxon2")], 1, .mrca, phy=phy)
+        }
+        
+        if(!length(unique(nodes$node))==nrow(nodes)) {
+            stop("Some nodes multiply constrained:\n\t", paste(nodes$node[duplicated(nodes$node)], collapse="\n\t", sep=""), sep="")
+        }
+    }
+    
+    nidx=nodes$node
+    if(any(g[nidx]==1->zz)) stop("Some nodes already constrained:\n\t", paste(nidx[which(zz)], collapse="\n\t", sep=""), sep="")
+    
+    m[nidx]=as.numeric(nodes$mean)
+    s[nidx]=as.numeric(nodes$SE)
+    g[nidx]=1
+    
+ 	vec=rbind(m=m, s=s)
+   	attr(vec, "given")=g
+   	attr(vec, "adjse")=as.numeric(is.na(s))
+    
+	vec
+}
 
 .proc.lnR=function(gen, subprop, cur.lnL, new.lnL, lnp, lnh, heat=1, control){
 	if(is.infinite(cur.lnL)) stop("Starting point has exceptionally poor likelihood.")

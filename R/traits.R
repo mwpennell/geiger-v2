@@ -48,6 +48,7 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 	con=list(method="pruning",backend="C")
 	con[names(control)]=control
 	lik=bm.lik(phy,dat,SE,model,...)
+    attr(lik, "model")=model
 	argn=argn(lik)
 	
     ## CONSTRUCT BOUNDS ##
@@ -262,70 +263,75 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 }
 
 
-bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"), ...)
-{
-    ## SE: can be array of mixed NA and numeric values -- where SE == NA, SE will be estimated (assuming a global parameter for all species)
-	
+.slot.attribute=function(x, attb, pos=1L){
+	if(x%in%attb) {
+		return(attb)
+	} else {
+		y=character(length(attb)+length(x))
+		x.idx=c(pos:(pos+length(x)-1L))
+		attb.idx=(1:length(y))[-x.idx]
+		y[x.idx]=x
+		y[attb.idx]=attb
+		return(y)
+	}
+}
+
+
+
+.fix.root.bm=function(root, cache){
+    rtidx=cache$root
+    cache$y["m",rtidx]=root
+    attr(cache$y,"given")[rtidx]=as.integer(TRUE)
+    cache
+}
+
+bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"), ...){
 	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
-	
-    cache=.prepare.bm.univariate(phy, dat, SE=SE, ...)
+
+    cache=.prepare.bm.univariate(phy, dat, SE=SE, ...) 
     cache$ordering=attributes(cache$phy)$order ## SHOULD BE POSTORDER
+    cache$N = cache$n.tip
+    cache$n = cache$n.node
+    cache$nn = (cache$root+1):(cache$N+cache$n)
+    cache$intorder = as.integer(cache$order[-length(cache$order)])
+    cache$tiporder = as.integer(1:cache$N)
+    cache$z = length(cache$len)
     
-	# function for reshaping tree by model
+	# function for reshaping edges by model
 	FUN=switch(model,
-    BM=.null.cache(cache),
-    OU=.ou.cache(cache),
-    EB=.eb.cache(cache),
-    trend=.trend.cache(cache),
-    lambda=.lambda.cache(cache),
-    kappa=.kappa.cache(cache),
-    delta=.delta.cache(cache),
-    drift=.null.cache(cache),
-    white=.white.cache(cache)
+        BM=.null.cache(cache),
+        OU=.ou.cache(cache),
+        EB=.eb.cache(cache),
+        trend=.trend.cache(cache),
+        lambda=.lambda.cache(cache),
+        kappa=.kappa.cache(cache),
+        delta=.delta.cache(cache),
+        drift=.null.cache(cache),
+        white=.white.cache(cache)
     )
     
-    N = cache$n.tip
-    n = cache$n.node
-	z = length(cache$len)
-    rootidx = as.integer(cache$root)
-    
-    ## ADJUSTMENTS for SE (measurement error)
-    adjvar = as.integer(attributes(cache$y)$adjse)
-    adjSE=any(adjvar==1)
-    
-    ## ADJUSTMENTS for drift
-    if(model=="drift"){
-        adjDRIFT=TRUE
-        if(is.ultrametric(cache$phy)){
-            warning("likelihoods under 'drift' and 'BM' models will be indistinguishable with an ultrametric 'phy'")
-        }
-    } else {
-        adjDRIFT=FALSE
-    }
-    
-    given = as.integer(attributes(cache$y)$given)
-    
-    # cache object needed for 'bm_direct'
-    datc = list(
-    intorder = as.integer(cache$order[-length(cache$order)]),
-    tiporder = as.integer(1:N),
-    root = rootidx,
-    y = as.numeric(cache$y[1, ]),
-    var = as.numeric(cache$y[2, ]),
-    n = as.integer(z),
-    given = as.integer(given),
-    descRight = as.integer(cache$children[ ,1]),
-    descLeft = as.integer(cache$children[, 2]),
-    drift = 0
-    )
-	
-    ll.bm.direct = function(q, sigsq, se, drft, datc) {
-		if(is.null(argn(FUN))) new=FUN() else new=FUN(q)
-        if(adjDRIFT) datc$drift=drft
+    ll.bm.direct=function(cache, sigsq, q=NULL, drift=NULL, se=NULL){
+        n.cache=cache 
         
-		datc$len=as.numeric(new$len)
+        given=attr(n.cache$y,"given")
+
+        ## q
+        if(is.null(q)) {
+            llf=FUN() 
+        } else {
+            llf=FUN(q)
+        }
+        ll=llf$len
+
+        ## drift
+        dd=0
+        if(!is.null(drift)) dd=drift
+        
+        ## se
+        adjvar=as.integer(attr(n.cache$y,"adjse"))
+        adjSE=any(adjvar==1)
 		.xxSE=function(cache){
-            vv=cache$y[2,]^2
+            vv=cache$y["s",]^2
             ff=function(x){
 				if(any(adjvar==1->ww)){
 					vv[which(ww)]=x^2
@@ -336,54 +342,102 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 			}
 			return(ff)
 		}
-		modSE=.xxSE(cache)
-		
-		datc$var=as.numeric(modSE(se))
-		
-        out = .Call("bm_direct", dat = datc, pars = as.numeric(rep(sigsq, z)), package = "geiger")
+		modSE=.xxSE(n.cache)
+		vv=as.numeric(modSE(se))
+        
+        ## PARAMETERS
+        datC=list(
+            len = as.numeric(ll),
+            intorder = as.integer(n.cache$intorder),
+            tiporder = as.integer(n.cache$tiporder),
+            root = as.integer(n.cache$root),
+            y = as.numeric(n.cache$y["m", ]),
+            var = as.numeric(vv),
+            n = as.integer(n.cache$z),
+            given = as.integer(given),
+            descRight = as.integer(n.cache$children[ ,1]),
+            descLeft = as.integer(n.cache$children[, 2]),
+            drift = as.numeric(dd)
+        )
+        #print(datC)
+        parsC=as.numeric(rep(sigsq, n.cache$z))
+        
+        out = .Call("bm_direct", dat = datC, pars = parsC, package = "geiger")
         loglik <- sum(out$lq)
 		if(is.na(loglik)) loglik=-Inf
-        attr(loglik, "ROOT.MAX")=out$initM[datc$root]
+        attr(loglik, "ROOT.MAX")=out$initM[datC$root]
         class(loglik)=c("glnL", class(loglik))
         return(loglik)
     }
     class(ll.bm.direct) <- c("bm", "dtlik", "function")
 	
     ## EXPORT LIKELIHOOD FUNCTION
-    fx_exporter=function(adjSE, adjDRIFT, FUN){
-        attbFUN=argn(FUN)
-        attb=c(attbFUN, "sigsq")
-        if(adjSE) attb=c(attb, "SE")
-        if(adjDRIFT) attb=c(attb, "drift")
+    fx_exporter=function(){
+          
+        ## OPTIONAL arguments
+        attb=c()
         
+        if(!is.null(qq<-argn(FUN))){
+            adjQ=TRUE
+            attb=c(attb, qq)
+        } else {
+            adjQ=FALSE
+        }
+            
+        #sigsq
+        attb=c(attb, "sigsq")
+
+        #SE
+        if(any(attr(cache$y, "adjse")==1)) {
+            attb=c(attb, "SE")
+        } 
+
+        #drift
+        if(model=="drift") {
+            attb=c(attb, "drift")
+        }
+        
+        cache$attb=attb ## current attributes (potentially modified with 'recache' below)
+       
         lik <- function(pars, ...) {
             
-            ## ADJUSTMENTS for root state
-            rootmx=function(root=ROOT.MAX){
+            ## ADJUSTMENTS of cache
+            recache=function(nodes=NULL, root=ROOT.MAX, cache){
+                r.cache=cache
                 if(root==ROOT.MAX){
-                    return(TRUE)
+                    rtmx=TRUE
                 } else if(root%in%c(ROOT.OBS, ROOT.GIVEN)){
-                    return(FALSE)
+                    rtmx=FALSE
+                    r.cache$attb=c(cache$attb, "z0")
                 } else {
-                    stop("Unusable 'root' type specified")
+                    stop("unusable 'root' type specified")
                 }
+                r.cache$ROOT.MAX=rtmx
+                
+                if(!is.null(nodes)) {
+                    m=r.cache$y["m",]
+                    s=r.cache$y["s",]
+                    g=attr(r.cache$y, "given")
+                    nn=r.cache$nn
+                    r.cache$y=.cache.y.nodes(m, s, g, nn, r.cache$phy, nodes=nodes)
+                }
+                r.cache
             }
-            if(rtmx<-rootmx(...)) {
-                datc$given[rootidx]=0
-            } else {
-                datc$given[rootidx]=1
-                attb=c(attb, "z0")
-            }
-            
+            rcache=recache(..., cache=cache)
+            attb=rcache$attb
+                        
             if(missing(pars)) stop(paste("The following 'pars' are expected:\n\t", paste(attb, collapse="\n\t", sep=""), sep=""))
             
             pars=.repars(pars, attb)
             names(pars)=attb
-            if(adjDRIFT) drft=-pars[["drift"]] else drft=0
-            if(adjSE) se=pars[["SE"]] else se=NULL
-            if(!rtmx) datc$y[rootidx]=pars[["z0"]]
-            if(!is.null(attbFUN)) q = pars[[attbFUN]] else q = NULL
-            ll = ll.bm.direct(q = q, sigsq = pars[["sigsq"]], se = se, drft = drft, datc)
+            
+            if(adjQ) q = pars[[qq]] else q = NULL
+            sigsq = pars[["sigsq"]]
+            if("SE"%in%attb) se=pars[["SE"]] else se=NULL
+            if("drift"%in%attb) drift=-pars[["drift"]] else drift=0
+            if("z0"%in%attb) rcache=.fix.root.bm(pars[["z0"]], rcache)
+
+            ll = ll.bm.direct(cache=rcache, sigsq=sigsq, q=q, drift=drift, se=se)
             return(ll)
         }
         attr(lik, "argn") = attb
@@ -391,7 +445,7 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
         class(lik) = c("bm", "function")
         lik
     }
-    likfx=fx_exporter(adjSE=adjSE, adjDRIFT=adjDRIFT, FUN=FUN)
+    likfx=fx_exporter()
     return(likfx)
 }
 
@@ -406,20 +460,6 @@ bm.lik<-function (phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda"
 	m[]=map[z,2]
 	class(m)=c("constraint.m",class(m))
 	m
-}
-
-print.constraint.m=function(x, printlen=3, ...){
-	cat("matrix representation of unique and shared transitions \n")
-	tt=table(x)
-	if(any(tt==1)){
-		cat("\tunique transition classes:", paste(sort(as.integer(names(tt[tt==1]))), collapse=", "), "\n")
-	}
-	if(any(tt>1)){
-		cat("\tshared transition classes:", paste(sort(as.integer(names(tt[tt>1]))), collapse=", "),"\n")
-	}
-	cat("\n")
-	class(x)="matrix"
-	print(x)
 }
 
 
@@ -478,12 +518,14 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 	
 	
 	lik=mkn.lik(phy, dat, constrain=constrain, transform=model, ...)
+    attr(lik, "transform")=model
 	if(model=="white") return(list(opt=lik))
 	argn=unlist(argn(lik))
 	
 ## CONSTRUCT BOUNDS ##
-	minTrans<-log(1)-log(sum(phy$edge.length))
-	maxTrans<- log(phy$Nnode)-log(sum(phy$edge.length))
+#	minTrans<-log(1)-log(sum(phy$edge.length))
+    minTrans<--500
+	maxTrans<- log(100*Nedge(phy))-log(sum(phy$edge.length))
 	mn=c(-10, -500, -500, -5, minTrans)
 	mx=c(10, 0, 0, log(2.999999), maxTrans)
 	bnds=as.data.frame(cbind(mn, mx))
@@ -751,7 +793,7 @@ transform=c("none", "EB", "lambda", "kappa", "delta", "white"),
 	
 	if(trns=="white") return(FUN)
 	
-	ll.mkn=function(cache, control) {
+	ll.mkn=function(cache, control, ...) {
 		k <- cache$info$k
 		f.pars <- .make.pars.mkn(k)
 		f.pij <- .make.pij.mkn(cache$info, control)
@@ -789,11 +831,11 @@ transform=c("none", "EB", "lambda", "kappa", "delta", "white"),
 		
         # build likelihood function
 		attb=c(argn(FUN), cache$info$argn)
+        rt=function(root=ROOT.OBS, root.p=NULL){
+                    return(list(root=root, root.p=root.p))
+        }
 		if(is.null(argn(FUN))){ # NO TRANSFORM
 			ll=function(pars, ...){
-                rt=function(root=ROOT.OBS, root.p=NULL){
-                    return(list(root=root, root.p=root.p))
-                }
                 rx=rt(...)
 				qmat=f.pars(pars)
 				ans=.ll.mkn.exp(q=NULL, pars=qmat, intermediates=FALSE)
@@ -801,9 +843,6 @@ transform=c("none", "EB", "lambda", "kappa", "delta", "white"),
 			}
 		} else {
 			ll=function(pars, ...){ # TREE TRANSFORM
-                rt=function(root=ROOT.OBS, root.p=NULL){
-                    return(list(root=root, root.p=root.p))
-                }
                 rx=rt(...)
 				qmat=f.pars(pars[-1])
 				ans=.ll.mkn.exp(q=pars[1], pars=qmat, intermediates=FALSE)

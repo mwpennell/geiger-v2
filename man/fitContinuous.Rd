@@ -148,7 +148,7 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], " with SE ***
         \n", sep="")
 		tmp=fitContinuous(phy,dat[,trait],SE=NA, model=models[m],bounds=list(SE=c(0,0.5)))
-		print(tmp$opt)
+		print(tmp)
 		aic.se[m]=tmp$opt$aicc
 		lnl.se[m]=tmp$opt$lnL
 	}
@@ -162,7 +162,7 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], " ***
         \n", sep="")
 		tmp=fitContinuous(phy,dat[,trait],SE=0,model=models[m])
-		print(tmp$opt)
+		print(tmp)
 		aic[m]=tmp$opt$aicc
 		lnl[m]=tmp$opt$lnL
 	}

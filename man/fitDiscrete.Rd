@@ -105,6 +105,7 @@ lik(0.3336772, root=ROOT.OBS) #-7.119792
 lik(0.3336772, root=ROOT.FLAT) #-8.125354
 lik(0.3336772, root=ROOT.GIVEN, root.p=rep(1/3,3)) #-8.125354
 lik(0.3336772, root=ROOT.GIVEN, root.p=c(0, 1, 0)) #-7.074039
+lik(c(0.3640363), root=ROOT.GIVEN, root.p=rep(1,3)) #-7.020569 & comparable to ape:::ace solution
 
 \donttest{
 # general model (ARD)

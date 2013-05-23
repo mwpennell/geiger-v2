@@ -1,5 +1,8 @@
 CHANGES IN GEIGER
 2013-04-31
+  * adding print functions for classes gfit and gfits
+  * allowing bm.lik to use nodes (i.e., fossil data) argument
+  * allowing mkn.lik to use root arguments
   * optimized and parallelized fitContinuous and fitDiscrete
   * removing vcv.phylo
   * adding ratematrix for evolutionary rates matrix function 

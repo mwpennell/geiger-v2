@@ -93,26 +93,6 @@ logLik.gfits=function(object, ...){
 	return(execs)
 }
 
-print.rbm=function (x, printlen = 3, ...)
-{
-    cat("likelihood function for relaxed-rates univariate continuous trait evolution\n")
-	aa=names(argn(x))
-    cat("\targument names:", paste(aa, collapse = ", "))
-	cat("\n\n")
-	f=x
-	attributes(f)=NULL
-	cat("definition:\n")
-	print(f)
-	
-	cat("\n\nNOTE: 'rates' vector should be given in order given by the function 'argn()'")
-}
-
-
-print.gprior=function(x, printlen = 3, ...){
-    y=x
-    attributes(y)=NULL
-    print(y)
-}
 
 #rjmcmc utility for initiating a proposal width for Markov sampling
 #author: JM EASTMAN 2010
@@ -157,45 +137,6 @@ calibrate.rjmcmc <- function(phy, dat, nstep=10000, widths=2^(-3:3), type=c("bm"
 	mm
 }
 
-print.auteurRAW <- function(x, printlen=3, ...){
-	cat("raw reversible-jump Markov Chain Monte Carlo (MCMC) output:\n")
-	
-	cat("\t", paste(names(x), collapse=", "))
-}
-
-print.rjmcmc <- function (x, printlen=3, ...)
-{
-    cat("reversible-jump Markov Chain Monte Carlo (MCMC) output:\n\tstart =", start(x),
-    "\n\tend =", end(x), "\n\tthinning interval =", thin(x), "\n")
-	
-	nc=ncol(x)
-    cat("\ncolnames:\n")
-    if (nc > 2*printlen) {
-        cat(paste(paste(colnames(x)[1:printlen], collapse = ", "), ", ..., ", paste(colnames(x)[(nc-printlen+1):nc], collapse = ", "), "\n", sep = ""))
-    } else {
-		cat(paste(colnames(x), collapse=", "))
-	}
-}
-
-print.rjmcmcmc <- function (x, printlen=3, ...)
-{
-    cat("combined reversible-jump Markov Chain Monte Carlo (MCMC) output:\n\tstart =", start(x),
-    "\n\tend =", end(x), "\n\tthinning interval =", thin(x), "\n\tchains =", attr(x,"nrun"), "\n")
-	
-	nc=ncol(x)
-    cat("\ncolnames:\n")
-    if (nc > 2*printlen) {
-        cat(paste(paste(colnames(x)[1:printlen], collapse = ", "), ", ..., ", paste(colnames(x)[(nc-printlen+1):nc], collapse = ", "), "\n", sep = ""))
-    } else {
-		cat(paste(colnames(x), collapse=", "))
-	}
-}
-
-print.mcmc.list <- function(x, printlen=3, ...)
-{
-    cat("combined reversible-jump Markov Chain Monte Carlo (MCMC) output:\n\tstart =", start(x),
-    "\n\tend =", end(x), "\n\tthinning interval =", thin(x), "\n\tchains =", length(x), "\n")
-}
 
 load=function(x, ...){
 	tmp=all(sapply(x, function(y) file.info(y)$isdir==TRUE))

@@ -1089,51 +1089,6 @@ treedata<-function(phy, data, sort=FALSE, warnings=TRUE)
 rescale=function(x, ...) UseMethod("rescale")
 
 ## GENERIC
-print.transformer=function (x, printlen = 3, ...) 
-{
-    cat("function for tree transformation\n")
-    cat("\targument names:", paste(argn(x), collapse = ", "))		 
-	cat("\n\n")
-	f=x
-	attributes(f)=NULL
-	cat("definition:\n")
-	print(f)
-}
-
-## GENERIC
-print.glnL=function(x, ...){
-    print(as.numeric(x))
-}
-
-
-## GENERIC
-print.bm=function (x, printlen = 3, ...) 
-{
-    cat("likelihood function for univariate continuous trait evolution\n")
-    cat("\targument names:", paste(argn(x), collapse = ", "))		 
-	cat("\n\n")
-	f=x
-	attributes(f)=NULL
-	cat("definition:\n")
-	print(f)
-}
-
-## GENERIC
-print.mkn=
-function (x, printlen = 3, ...) 
-{
-    cat("likelihood function for univariate discrete trait evolution\n")
-    cat("\targument names:", paste(argn(x), collapse = ", "))	
-    if(!is.null(al<-attr(x, "levels"))) {
-        fmt=.format.levels.print(length(al))
-        cat("\n\n\tmapping\n\t\t", paste(sprintf(fmt, 1:length(al)), al, collapse="\n\t\t", sep=": "), sep="")
-    }
-	cat("\n\n")
-	f=x
-	attributes(f)=NULL
-	cat("definition:\n")
-	print(f)
-}
 
 ## GENERIC
 argn.default=function(x, ...){
