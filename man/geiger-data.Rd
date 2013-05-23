@@ -5,12 +5,14 @@
 \alias{primates}
 \alias{caudata}
 \alias{whales}
+\alias{carnivores}
 
 \title{example datasets}
 \description{providing access to comparative datasets}
 \usage{
 data(amphibia)
 data(caudata)
+data(carnivores)
 data(chelonia)
 data(geospiza)
 data(primates)
@@ -18,7 +20,7 @@ data(whales)
 }
 
 \details{
-The objects \code{caudata}, \code{chelonia}, \code{geospiza}, and \code{primates} each have at least two items, a \code{phy} object 
+The objects \code{caudata}, \code{chelonia}, \code{carnivores}, \code{geospiza}, and \code{primates} each have at least two items, a \code{phy} object 
 and a \code{dat} object. The \code{phy} object is a phylogenetic tree of class 'phylo' (see \code{\link[ape]{read.tree}}).  The \code{dat} object (e.g., \code{caudata$dat})
 is a named vector of (natural log-transformed) body sizes for each group. The salamander data (object \code{caudata}) also includes 
 the systematics for all recognized taxa (object \code{caudata$tax}) as well as a time-calibrated family-level phylogeny (\code{caudata$fam}) from Zhang and Wake (2009). The object \code{caudata$phy} is an unpublished glomogram of mostly family level phylogenies from the literature.  The backbone for that tree is from Zhang and Wake (2009). 
@@ -67,6 +69,15 @@ Data are from the following sources:
 		\item{Vos RA and AO Mooers. 2006. A new dated supertree of the Primates. Chapter 5. In: VOS RA (Ed.) \emph{Inferring large phylogenies: the big tree problem}. [Ph.D. thesis]. Burnaby BC, Canada: Simon Fraser University.}
 }
 	
+\code{CARNIVORES (carnivores)}
+
+\itemize{
+		\item{Eizirik E, WJ Murphy, K-P Koepfli, WE Johnson, JW Dragoo, RK Wayne, and SJ O'Brien. 2010. Pattern and timing of diversification of the mammalian order Carnivora inferred from multiple nuclear gene sequences. \emph{Molecular Phylogenetic and Evolution} 56:49-63.}
+        
+        \item{Wozencraft WC. 2005. Order Carnivora in Wilson DE and DM Reeder (Eds.) \emph{Mammal Species of the World}. Johns Hopkins University Press.}
+         
+        \item{Jones KE, J Bielby, M Cardillo, et al. 2009. \emph{Ecological Archives} E090-184.}
+}	
 
 	
 \code{TURTLES (chelonia)}
