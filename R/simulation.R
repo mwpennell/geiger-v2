@@ -127,100 +127,95 @@ sim.char <- function(phy, par, nsim=1, model=c("BM", "speciational", "discrete")
 }
 
 
-sim.bdtree <-
-function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, extinct=TRUE){
-	
+sim.bdtree <- function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, extinct=TRUE) {
 # December 6 2005 Jason T. Weir
 # Modified by Luke J. Harmon
 # Modified by JM Eastman
 # The following simulates Yule trees to a given time T
 	
-	stop=match.arg(stop, c("taxa", "time"))
+	stop = match.arg(stop, c("taxa", "time"));
+	time.stop <- taxa.stop <- 0;
+	if (stop == "taxa") taxa.stop = n + 1;
+	if (stop == "time") time.stop = t;
+	if (time.stop == 0 & taxa.stop == 0) stop("Stopping criterion ('n' or 't') must be provided");
+	if (seed == 0) {
+		seed = .set.seed.clock(print = FALSE);
+	} else {
+		set.seed(seed); # this condition was missing JWB
+	}
+	return.all.extinct = extinct;
 	
-	time.stop<-taxa.stop<-0
-	
-	if(stop=="taxa") taxa.stop=n+1
-	if(stop=="time") time.stop=t
-	
-	if(time.stop==0 & taxa.stop==0)
-	stop("Stopping criterion ('n' or 't') must be provided")
-	
-	if(seed==0) seed=.set.seed.clock(print=FALSE)
-	return.all.extinct=extinct
-	
-	while(1) {
-		
-		edge <- rbind(c(1, 2), c(1, 3)) # this is a starting edge matrix
-		edge.length <- rep(NA, 2)
-		stem.depth <- numeric(2)
-		alive<-rep(TRUE, 2) # marker for live lineages
-		t <- 0 #time at any point in the tree
-		next.node<-4
+	while (1) {
+		edge <- rbind(c(1, 2), c(1, 3)); # this is a starting edge matrix
+		edge.length <- rep(NA, 2);
+		stem.depth <- numeric(2);
+		alive <- rep(TRUE, 2); # marker for live lineages
+		t <- 0; # time at any point in the tree
+		next.node <- 4;
 		
 ############
-		repeat{
-			
-			
-			if(taxa.stop) if(sum(alive)>=taxa.stop) break;
-			if(sum(alive)==0) break;
-			dt<-rexp(1, sum(alive)*(b+d));
-			t<-t+dt;
-			if(time.stop) if(t>=time.stop) {
-				t<-time.stop;
-				break;
+		repeat {
+			if (taxa.stop) {
+				if (sum(alive) >= taxa.stop) break;
 			}
-			r<-runif(1)
-			if(r<=b/(b+d)) {###4 #this creates a bifucation in the tree
-	          	random_lineage <- round(runif(1, min=1, max=sum(alive)))
-				e<-matrix(edge[alive,], ncol=2)
-				parent<-e[random_lineage,2]
-				alive[alive][random_lineage]<-FALSE
-				edge<-rbind(edge, c(parent, next.node), c(parent, next.node+1))
-				next.node<-next.node+2
-				alive<-c(alive, TRUE, TRUE)
-				stem.depth<-c(stem.depth, t, t)
-				x<-which(edge[,2]==parent)
-				edge.length[x]<-t-stem.depth[x]
+			if (sum(alive) == 0) break;
+			dt <- rexp(1, sum(alive) * (b + d));
+			t <- t + dt;
+			if (time.stop) {
+				if (t >= time.stop) {
+					t <- time.stop;
+					break;
+				}
+			}
+			r <- runif(1);
+			if (r <= b/(b + d)) { ###4 #this creates a bifucation in the tree
+				random_lineage <- round(runif(1, min = 1, max = sum(alive)));
+				e <- matrix(edge[alive,], ncol = 2);
+				parent <- e[random_lineage,2];
+				alive[alive][random_lineage] <- FALSE;
+				edge <- rbind(edge, c(parent, next.node), c(parent, next.node + 1));
+				next.node <- next.node + 2;
+				alive <- c(alive, TRUE, TRUE);
+				stem.depth <- c(stem.depth, t, t);
+				x <- which(edge[,2] == parent);
+				edge.length[x] <- t - stem.depth[x];
 				edge.length<-c(edge.length, NA, NA)
-            }###4
+			}###4
 			
 			else {###4 This terminates one of the current lineages on the tree
-                random_lineage <- round(runif(1, min=1, max=sum(alive)))
-				edge.length[alive][random_lineage]<-t-stem.depth[alive][random_lineage];
-          	    alive[alive][random_lineage]<-FALSE
-            }###4
+				random_lineage <- round(runif(1, min = 1, max = sum(alive)));
+				edge.length[alive][random_lineage] <- t - stem.depth[alive][random_lineage];
+				alive[alive][random_lineage] <- FALSE;
+			}###4
 		}#1A
 		
-		if(return.all.extinct==TRUE | sum(alive)>1) break;
+		if (return.all.extinct == TRUE | sum(alive) > 1) break;
 	}
-	edge.length[alive]<-t-stem.depth[alive]
-	n<--1;
-	for(i in 1:max(edge)) {
-		if(any(edge[,1]==i)) {
-			edge[which(edge[,1]==i), 1]<-n
-			edge[which(edge[,2]==i), 2]<-n
-			n<-n-1
+	edge.length[alive] <- t - stem.depth[alive];
+	n <- -1;
+	for (i in 1:max(edge)) {
+		if (any(edge[,1] == i)) {
+			edge[which(edge[,1] == i), 1] <- n;
+			edge[which(edge[,2] == i), 2] <- n;
+			n <- n - 1;
 		}
 	}
 	
-	
-	edge[edge>0]<-1:sum(edge>0)
-	
-	tip.label<-1:sum(edge>0)
-	mode(edge) <- "character"
-	mode(tip.label) <- "character"
-	obj <- list(edge = edge, edge.length = edge.length, tip.label=tip.label)
-	class(obj) <- "phylo"
-	obj<-old2new.phylo(obj)
-	obj<-read.tree(text=write.tree(obj))	
-	attr(obj, "seed")=seed
-	if(stop=="taxa"){
-		drp=obj$edge[min(which(obj$edge.length==0)),2]
-		obj=.drop.tip(obj, obj$tip.label[drp])
-		
+	edge[edge > 0] <- 1:sum(edge > 0);
+	tip.label <- 1:sum(edge > 0);
+	mode(edge) <- "character";
+	mode(tip.label) <- "character";
+	obj <- list(edge = edge, edge.length = edge.length, tip.label=tip.label);
+	class(obj) <- "phylo";
+	obj <- old2new.phylo(obj);
+	obj <- read.tree(text = write.tree(obj));
+	attr(obj, "seed") = seed;
+	if (stop == "taxa") {
+		drp = obj$edge[min(which(obj$edge.length == 0)),2];
+		obj = .drop.tip(obj, obj$tip.label[drp]);
 	}
-	obj$tip.label=paste("s", 1:Ntip(obj), sep="")
-    obj
+	obj$tip.label = paste("s", 1:Ntip(obj), sep = "");
+	return (obj);
 }
 
 
@@ -232,38 +227,49 @@ function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, extinct=TRUE){
 ##STOCHASTIC SIMULATION OF A TIME-HOMOGENOUS BIRTH-DEATH PROCESS
 ##PARAMETERS: N0=starting number of lineages, ks=speciation rate, ep=relative rate of extinction, finaltime=endpoint for simulation
 ######################################################################################
-sim.bd <- function(b=1, d=0, n0=1, times=0:4) {
-	n <- n0
-	t <- 0
+sim.bd <- function (b=1, d=0, n0=1, times=0:4, seed=0) {
 	
-	times<-unique(c(0, sort(times)))
-	pop<-numeric(length(times))
-	pop[]=0
-	pop[1] <- n
-	
-	i=2
-	while(1) {
-		if(t>times[i]) {
-			m=max(which(t>times))
-			pop[i:m]=n;
-			i=m+1;	
-		}
-		
-		waittime <- rexp(1, rate=n*(b+d))
-		t <- t+ waittime
-		if(t > max(times)) {
-			break 
-		} else {
-			ran <- runif(1)
-			if(ran<=b/(b+d)) n <- n+1 else n <- n-1
-		}
-		if(n==0) break
+	if (seed == 0) {
+		seed = .set.seed.clock(print = FALSE);
+	} else {
+		set.seed(seed);
 	}
-	pop[i:length(times)]=n
-	res=cbind(times, pop)
-	colnames(res)=c("time", "n")		
-	return(res)
-}	
+	
+	n <- n0;
+	t <- 0;
+
+	times <- unique(c(0, sort(times)));
+	pop <- numeric(length(times));
+	pop[] <- 0;
+	pop[1] <- n;
+
+	i <- 2;
+	while (1) {
+		if (t > times[i]) {
+			m = max(which(t > times));
+			pop[i:m] = n;
+			i = m + 1;
+		}
+
+		waittime <- rexp(1, rate = n * (b + d));
+		t <- t + waittime;
+		if (t > max(times)) {
+			break;
+		} else {
+			ran <- runif(1);
+			if (ran <= b/(b + d)) {
+				n <- n + 1;
+			} else {
+				n <- n - 1;
+			}
+		}
+		if (n == 0) break;
+	}
+	pop[i:length(times)] = n;
+	res = cbind(times, pop);
+	colnames(res) = c("time", "n");
+	return (res);
+}
 
 
 

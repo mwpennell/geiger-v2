@@ -5,7 +5,7 @@
 	simulating phylogenetic trees under a uniform birth-death process
 }
 \usage{
-sim.bdtree(b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed = 0, extinct=TRUE)
+sim.bdtree(b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, extinct=TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -51,7 +51,7 @@ p2<-sim.bdtree(b=0.2, d=0.05, stop="time", t=20, extinct=FALSE)
 plot(p2)
 
 # Previous tree with extinct taxa removed
-drop.extinct(p2)->p3
+p3<-drop.extinct(p2)
 
 }
 \keyword{arith}

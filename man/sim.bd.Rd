@@ -6,13 +6,14 @@
 	birth-death process	
 }
 \usage{
-sim.bd(b=1, d=0, n0=1, times=0:4) 
+sim.bd(b=1, d=0, n0=1, times=0:4, seed=0) 
 }
 \arguments{
   \item{b}{per-lineage birth (speciation) rate}
   \item{d}{per-lineage death (extinction) rate}
   \item{n0}{number of taxa at starting time zero}
   \item{times}{vector of times where extant species are counted}
+  \item{seed}{random number seed (default is to seed based on the clock)}
 }
 \details{
 	This function simulates species diversification under a uniform birth-death process. This differs 
