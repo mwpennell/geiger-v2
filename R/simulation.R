@@ -215,7 +215,7 @@ sim.bdtree <- function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, ex
 		obj = .drop.tip(obj, obj$tip.label[drp]);
 	}
 	obj$tip.label = paste("s", 1:Ntip(obj), sep = "");
-	obj;
+	return (obj);
 }
 
 
@@ -227,38 +227,49 @@ sim.bdtree <- function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, ex
 ##STOCHASTIC SIMULATION OF A TIME-HOMOGENOUS BIRTH-DEATH PROCESS
 ##PARAMETERS: N0=starting number of lineages, ks=speciation rate, ep=relative rate of extinction, finaltime=endpoint for simulation
 ######################################################################################
-sim.bd <- function(b=1, d=0, n0=1, times=0:4) {
-	n <- n0
-	t <- 0
+sim.bd <- function (b=1, d=0, n0=1, times=0:4, seed=0) {
 	
-	times<-unique(c(0, sort(times)))
-	pop<-numeric(length(times))
-	pop[]=0
-	pop[1] <- n
-	
-	i=2
-	while(1) {
-		if(t>times[i]) {
-			m=max(which(t>times))
-			pop[i:m]=n;
-			i=m+1;	
-		}
-		
-		waittime <- rexp(1, rate=n*(b+d))
-		t <- t+ waittime
-		if(t > max(times)) {
-			break 
-		} else {
-			ran <- runif(1)
-			if(ran<=b/(b+d)) n <- n+1 else n <- n-1
-		}
-		if(n==0) break
+	if (seed == 0) {
+		seed = .set.seed.clock(print = FALSE);
+	} else {
+		set.seed(seed);
 	}
-	pop[i:length(times)]=n
-	res=cbind(times, pop)
-	colnames(res)=c("time", "n")		
-	return(res)
-}	
+	
+	n <- n0;
+	t <- 0;
+
+	times <- unique(c(0, sort(times)));
+	pop <- numeric(length(times));
+	pop[] <- 0;
+	pop[1] <- n;
+
+	i <- 2;
+	while (1) {
+		if (t > times[i]) {
+			m = max(which(t > times));
+			pop[i:m] = n;
+			i = m + 1;
+		}
+
+		waittime <- rexp(1, rate = n * (b + d));
+		t <- t + waittime;
+		if (t > max(times)) {
+			break;
+		} else {
+			ran <- runif(1);
+			if (ran <= b/(b + d)) {
+				n <- n + 1;
+			} else {
+				n <- n - 1;
+			}
+		}
+		if (n == 0) break;
+	}
+	pop[i:length(times)] = n;
+	res = cbind(times, pop);
+	colnames(res) = c("time", "n");
+	return (res);
+}
 
 
 
