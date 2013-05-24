@@ -1007,8 +1007,8 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
     
 	if (threshold == 0)
 	{
-		w.aic <- round(.daic(all.res$aic), digits=5);
-		w.aicc <- round(.daic(all.res$aicc), digits=5);
+		w.aic <- round(aicw(all.res$aic), digits=5);
+		w.aicc <- round(aicw(all.res$aicc), digits=5);
         all.res$w.aic=w.aic$w
         all.res$w.aicc=w.aicc$w
  	}
@@ -1026,8 +1026,9 @@ medusa <- function(phy, richness=NULL, criterion=c("aicc", "aic"), partitions=NA
 ## Self explanatory
 ## These are meaningless when using a threshold criterion
 #calculate.model.weights
-.daic <- function (aic)
+aicw <- function (x)
 {
+    aic=x
 	best <- min(aic);
 	delta <- aic-best;
 	sumDelta <- sum(exp(-0.5 * delta));

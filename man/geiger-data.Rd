@@ -6,13 +6,15 @@
 \alias{caudata}
 \alias{whales}
 \alias{carnivores}
+\alias{caniformia}
 
 \title{example datasets}
 \description{providing access to comparative datasets}
 \usage{
 data(amphibia)
-data(caudata)
+data(caniformia)
 data(carnivores)
+data(caudata)
 data(chelonia)
 data(geospiza)
 data(primates)
@@ -79,6 +81,13 @@ Data are from the following sources:
         \item{Jones KE, J Bielby, M Cardillo, et al. 2009. \emph{Ecological Archives} E090-184.}
 }	
 
+
+\code{CANIFORMS (caniformia)}
+
+\itemize{
+
+		\item{Slater GJ, LJ Harmon, and ME Alfaro. 2012. Integrating fossils with molecular phylogenies improves inference of trait evolution. \emph{Evolution} 66:3931-3944. }
+}
 	
 \code{TURTLES (chelonia)}
 

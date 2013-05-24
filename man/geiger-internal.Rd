@@ -77,6 +77,7 @@
 \alias{print.transformer}
 \alias{resplitEdgeMatrixGeiger}
 \alias{root.phylo}
+\alias{sim.mecca}
 \alias{sem}
 \alias{span.phylo}
 \alias{splitEdgeMatrixGeiger}

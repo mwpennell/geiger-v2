@@ -552,6 +552,7 @@ function(summaries, stdz, lambda, GM, boxcox) {
 	
 	}
 
+#mecca.dat<-mecca.lm<-NA
 calibrate.mecca <-
 #calibrateMECCA <-
 function(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(priorSigma = c(-4.961845, 4.247066), priorMean = c(-10, 10)), Ncalibrations = 10000, sigmaPriorType = "uniform", rootPriorType = "uniform", divSampleFreq = 0, initPars = "ML", propWidth = 0.1, SigmaBounds = c(-4.961845, 4.247066), hotclade = NULL, BOXCOX = TRUE, optimRange =c(-1000, 10)) {
@@ -697,15 +698,21 @@ function(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(p
 			stat[ ,i] <- 1+(stat[ ,i] - myMin[i])/(myMax[i]-myMin[ i]);
 			
 			}
+        
+        lmreturn=function(stati, param, ...){
+            ## FIXME: unable to figure out how to make .mecca.maxboxcox work without mecca.lm and mecca.env exported to global environment (prompting a NOTE from R CMD check -- JME)
+            
+            mecca.dat=as.data.frame(cbind(y=stati, param))
+            mecca.lm<<-as.formula(mecca.dat)
+            mecca.env<<-environment(mecca.lm)
+            optimize(.mecca.maxboxcox, ..., linmod = lm(mecca.lm, data=mecca.env$object))$maximum
+        }
 			for(i in 1:length(stat)) {
                #JME d <<- cbind(stat[,i], param);  
-                d <- cbind(stat[,i], param)
                #JME d <<- as.data.frame(d)
-                d <- as.data.frame(d)
+                
+                lambda[i] = lmreturn(stat[,i], param, interval = optimRange, maximum = TRUE)
                #JME mylm <<- lm(as.formula(d), data=d);
-                mylm <- lm(as.formula(d), data=d);
-
-                lambda[i] <- optimize(.mecca.maxboxcox, interval = optimRange, maximum = TRUE, linmod = mylm)$maximum
                 print(paste(colnames(stat)[i], lambda[i]))
 			}	
 			

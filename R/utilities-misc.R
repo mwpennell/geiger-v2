@@ -1,3 +1,6 @@
+.geigerwarn=function(...) warning("the called function is currently in development and is not fully vetted", ...)
+
+
 coef.gfit=function(object, ...){
     if(is.constrained(object$lik)) p=names(object$lik(argn(object$lik),pars.only=TRUE)) else p=argn(object$lik)
     if("bm"%in%class(object$lik)) p=c(p, "z0")

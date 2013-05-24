@@ -1,4 +1,228 @@
-.geigerwarn=function(...) warning("the called function is currently in development and is not fully vetted", ...)
+
+.slot.attribute=function(x, attb, pos=1L){
+	if(x%in%attb) {
+		return(attb)
+	} else {
+		y=character(length(attb)+length(x))
+		x.idx=c(pos:(pos+length(x)-1L))
+		attb.idx=(1:length(y))[-x.idx]
+		y[x.idx]=x
+		y[attb.idx]=attb
+		return(y)
+	}
+}
+
+
+
+.fix.root.bm=function(root, cache){
+    rtidx=cache$root
+    cache$y["m",rtidx]=root
+    attr(cache$y,"given")[rtidx]=as.integer(TRUE)
+    cache
+}
+
+.fossil.bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"), ...){
+	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
+
+    cache=.prepare.bm.univariate(phy, dat, SE=SE, ...) 
+    cache$ordering=attributes(cache$phy)$order ## SHOULD BE POSTORDER
+    cache$N = cache$n.tip
+    cache$n = cache$n.node
+    cache$nn = (cache$root+1):(cache$N+cache$n)
+    cache$intorder = as.integer(cache$order[-length(cache$order)])
+    cache$tiporder = as.integer(1:cache$N)
+    cache$z = length(cache$len)
+    
+	# function for reshaping edges by model
+	FUN=switch(model,
+        BM=.null.cache(cache),
+        OU=.ou.cache(cache),
+        EB=.eb.cache(cache),
+        trend=.trend.cache(cache),
+        lambda=.lambda.cache(cache),
+        kappa=.kappa.cache(cache),
+        delta=.delta.cache(cache),
+        drift=.null.cache(cache),
+        white=.white.cache(cache)
+    )
+    
+    ll.bm.direct=function(cache, sigsq, q=NULL, drift=NULL, se=NULL){
+        n.cache=cache 
+        
+        given=attr(n.cache$y,"given")
+
+        ## q
+        if(is.null(q)) {
+            llf=FUN() 
+        } else {
+            llf=FUN(q)
+        }
+        ll=llf$len
+
+        ## drift
+        dd=0
+        if(!is.null(drift)) dd=drift
+        
+        ## se
+        adjvar=as.integer(attr(n.cache$y,"adjse"))
+        adjSE=any(adjvar==1)
+		.xxSE=function(cache){
+            vv=cache$y["s",]^2
+            ff=function(x){
+				if(any(adjvar==1->ww)){
+					vv[which(ww)]=x^2
+					return(vv)
+				} else {
+					return(vv)
+				}
+			}
+			return(ff)
+		}
+		modSE=.xxSE(n.cache)
+		vv=as.numeric(modSE(se))
+        
+        ## PARAMETERS
+        datC=list(
+            len = as.numeric(ll),
+            intorder = as.integer(n.cache$intorder),
+            tiporder = as.integer(n.cache$tiporder),
+            root = as.integer(n.cache$root),
+            y = as.numeric(n.cache$y["m", ]),
+            var = as.numeric(vv),
+            n = as.integer(n.cache$z),
+            given = as.integer(given),
+            descRight = as.integer(n.cache$children[ ,1]),
+            descLeft = as.integer(n.cache$children[, 2]),
+            drift = as.numeric(dd)
+        )
+        #print(datC)
+        parsC=as.numeric(rep(sigsq, n.cache$z))
+        
+        out = .Call("bm_direct", dat = datC, pars = parsC, package = "geiger")
+        loglik <- sum(out$lq)
+		if(is.na(loglik)) loglik=-Inf
+        attr(loglik, "ROOT.MAX")=out$initM[datC$root]
+        class(loglik)=c("glnL", class(loglik))
+        return(loglik)
+    }
+    class(ll.bm.direct) <- c("bm", "dtlik", "function")
+	
+    ## EXPORT LIKELIHOOD FUNCTION
+    fx_exporter=function(){
+          
+        ## OPTIONAL arguments
+        attb=c()
+        
+        if(!is.null(qq<-argn(FUN))){
+            adjQ=TRUE
+            attb=c(attb, qq)
+        } else {
+            adjQ=FALSE
+        }
+            
+        #sigsq
+        attb=c(attb, "sigsq")
+
+        #SE
+        if(any(attr(cache$y, "adjse")==1)) {
+            attb=c(attb, "SE")
+        } 
+
+        #drift
+        if(model=="drift") {
+            attb=c(attb, "drift")
+        }
+        
+        cache$attb=attb ## current attributes (potentially modified with 'recache' below)
+       
+        lik <- function(pars, ...) {
+            
+            ## ADJUSTMENTS of cache
+            recache=function(nodes=NULL, root=ROOT.MAX, cache){
+                r.cache=cache
+                if(root==ROOT.MAX){
+                    rtmx=TRUE
+                } else if(root%in%c(ROOT.OBS, ROOT.GIVEN)){
+                    rtmx=FALSE
+                    r.cache$attb=c(cache$attb, "z0")
+                } else {
+                    stop("unusable 'root' type specified")
+                }
+                r.cache$ROOT.MAX=rtmx
+                
+                if(!is.null(nodes)) {
+                    m=r.cache$y["m",]
+                    s=r.cache$y["s",]
+                    g=attr(r.cache$y, "given")
+                    nn=r.cache$nn
+                    r.cache$y=.cache.y.nodes(m, s, g, nn, nodes=nodes)
+                }
+                r.cache
+            }
+            rcache=recache(..., cache=cache)
+            attb=rcache$attb
+            
+            ## REFIGURE optional arguments
+            #           attb=c()
+            
+            #q
+            #            if(!is.null(qq<-argn(FUN))){
+            #                adjQ=TRUE
+            #                attb=c(attb, qq)
+            #            } else {
+            #                adjQ=FALSE
+            #            }
+            
+            #sigsq
+            #            attb=c(attb, "sigsq")
+            
+            #SE
+            #            if(any(attr(rcache$y, "adjse")==1)) {
+            #                adjSE=TRUE
+            #                attb=c(attb, "SE")
+            #            } else {
+            #                adjSE=FALSE
+            #            }
+            
+            #drift
+            #            if(model=="drift") {
+            #                adjDRIFT=TRUE
+            #                attb=c(attb, "drift")
+            #            } else {
+            #                adjDRIFT=FALSE
+            #            }
+            
+            #z0
+            #            if(!rcache$ROOT.MAX) {
+            #                adjROOT=TRUE
+            #                attb=c(attb, "z0")
+            #            } else {
+            #                adjROOT=FALSE
+            #            }
+            
+            if(missing(pars)) stop(paste("The following 'pars' are expected:\n\t", paste(attb, collapse="\n\t", sep=""), sep=""))
+            
+            pars=.repars(pars, attb)
+            names(pars)=attb
+            
+            if(adjQ) q = pars[[qq]] else q = NULL
+            sigsq = pars[["sigsq"]]
+            if("SE"%in%attb) se=pars[["SE"]] else se=NULL
+            if("drift"%in%attb) drift=-pars[["drift"]] else drift=0
+            if("z0"%in%attb) rcache=.fix.root.bm(pars[["z0"]], rcache)
+
+            ll = ll.bm.direct(cache=rcache, sigsq=sigsq, q=q, drift=drift, se=se)
+            return(ll)
+        }
+        attr(lik, "argn") = attb
+        attr(lik, "cache") <- cache
+        class(lik) = c("bm", "function")
+        lik
+    }
+    likfx=fx_exporter()
+    return(likfx)
+}
+    
 
 .mcmc=function(lik, prior=list(), start=NULL, proposal=NULL, control=list(n=1e4, s=100, w=1)){
 #mcmc(lik, start=c(sigsq=1, SE=1, z0=4), prior=list(sigsq=function(x) dexp(x, 1/1000, log=TRUE), SE=function(x) dexp(x, 1/1000, log=TRUE), z0=function(x) dnorm(x, mean=mean(dat), sd=100, log=TRUE)), control=list(n=20000, s=50))max=max(bounds[x,]))))

@@ -30,6 +30,18 @@ citEntry(entry="Article",
         textVersion = "Eastman Jonathan M, Michael E Alfaro, Paul Joyce, Andrew L Hipp, and Luke J Harmon. 2011. A novel comparative method for identifying shifts in the rate of character evolution on trees. Evolution 65:3578-3589.")
 
 citEntry(entry="Article",
+	header="MECCA",
+	title = "Fitting models of continuous trait evolution to incompletely sampled comparative data using approximate Bayesian computation",
+        author = personList(as.person("GJ Slater"),as.person("LJ Harmon"),as.person("D Wegmann"),as.person("P Joyce"),as.person("LJ Revell"),as.person("ME Alfaro")),
+	journal = "Evolution",
+  	year = "2012",
+	volume = "66",
+	pages = "752-762",
+
+        textVersion = "Slater Graham J, Luke J Harmon, Daniel Wegmann, Paul Joyce, Liam J Revell, and Michael E Alfaro. 2012. Fitting models of continuous trait evolution to incompletely sampled comparative data using approximate Bayesian computation. Evolution 66:752-762.")
+
+
+citEntry(entry="Article",
 	header="geiger",
 	title = "GEIGER: investigating evolutionary radiations",
         author = personList(as.person("LJ Harmon"),as.person("JT Weir"), as.person("CD Brock"),as.person("RE Glor"),as.person("W Challenger")),
