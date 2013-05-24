@@ -14,3 +14,4 @@ Description: macroevolutionary simulation and parameter estimation
         phylogenetic data
 License: GPL (>= 2)
 URL: http://www.webpages.uidaho.edu/~lukeh/software.html
+ByteCompile: yes
