@@ -38,11 +38,10 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 	## PREPARE DATA 
 	## Before determining model.limit, prune tree as necessary (from 'taxon' information in 'richness')
-#   if (nexus) phy <- read.nexus(phy)
 	if (!any(c("phylo", "multiPhylo") %in% class(phy))) {
 		stop("'phy' must either be a phylo or multiPhylo object");
 	}
-	#richness <- data.frame(richness, stringsAsFactors = FALSE);
+	richness <- .check.richness(richness);
 	phyData <- .treedata.medusa(phy = phy, richness = richness, ...); ## modified prune.tree.merge.data for multiple trees (jme)
 	## END -- jme
 	
@@ -55,7 +54,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		## Should be used for interpreting model-fit
 		N <- Ntip(phy);
 		threshold_N <- ifelse(stop == "threshold", .threshold.medusa(N), 0);
-		#cat("Appropriate AICc threshold for tree of ", N, " tips is: ", threshold, ".\n\n", sep="");
+		cat("Appropriate AICc threshold for tree of ", N, " tips is: ", threshold_N, ".\n\n", sep="");
 		
 		## Store pertinent information: branch times, richness, descendants
 		#cat("Preparing data for analysis... ");
@@ -89,21 +88,21 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		virgin.node <- list();
 
 		if (shiftCut == "stem" || shiftCut == "both") {
-			virgin.stem <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, initialR = initialR, initialE = initialE, model = model, shiftCut = "stem", criterion = criterion);
+			virgin.stem <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, initialR = initialR, initialE = initialE,
+				model = model, shiftCut = "stem", criterion = criterion);
 			if (shiftCut == "node" || shiftCut == "both") {
-				virgin.node <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, initialR = initialR, initialE = initialE, model = model, shiftCut = "node", criterion = criterion);
+				virgin.node <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, initialR = initialR, initialE = initialE,
+					model = model, shiftCut = "node", criterion = criterion);
 			}
 		}
 
 		virgin.nodes <- list(stem = virgin.stem, node = virgin.node);
 		#cat("done.\n\n");
-		
 		prefit <- list(tips = tips, virgin.nodes = virgin.nodes);
 
 		## Needed downstream; do not recalculate
 		## Gives the number of tips associated with an internal node; determines whether a node is 'virgin' or not
 		num.tips <- list();
-
 		num.tips <- fx(all.nodes, function (x) length(obj$tips[[x]]));
 
 		## Fit the base model
@@ -132,7 +131,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 		if (stop == "partitions") {
 
-			#cat("Step 1 (of ", model.limit, "): best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
+			cat("Step 1 (of ", model.limit, "): best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
 			for (i in seq_len(model.limit - 1)) {
 				node.list <- all.nodes[-fit$split.at];
 				res <- fx(node.list, .update.fit.medusa, z = z, desc = desc, fit = fit, prefit = prefit, num.tips = num.tips,
@@ -142,15 +141,16 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 				best <- which.min(unlist(lapply(res, "[[", criterion)));
 				models <- c(models, res[best]);
 				fit <- res[[best]]; # keep track of '$split.at' i.e. nodes already considered
-
 				z <- zz[[i + 1]] <- .split.z.at.node.medusa(node = node.list[best], z = z, desc = desc, shiftCut = fit$cut.at)$z;
 
-				#cat("Step ", i+1, " (of ", model.limit, "): best likelihood = ", round(models[[i+1]]$lnLik, digits=7), "; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
+				cat("Step ", i+1, " (of ", model.limit, "): best likelihood = ", round(models[[i+1]]$lnLik, digits=7),
+					"; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model,
+					"; cut=", models[[i+1]]$cut.at, "\n", sep="");
 				}
 		} else if (stop == "threshold") {
 			i <- 1;
 			done <- FALSE;
-			#cat("Step 1: best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
+			cat("Step 1: best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
 			while (!done & i < model.limit) {
 				node.list <- all.nodes[-fit$split.at];
 				res <- fx(node.list, .update.fit.medusa, z = z, desc = desc, fit = fit, prefit = prefit, num.tips = num.tips,
@@ -166,19 +166,19 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 				}
 				models <- c(models, res[best]);
 				fit <- res[[best]]; # keep track of '$split.at' i.e. nodes already considered
-
 				z <- zz[[i + 1]] <- .split.z.at.node.medusa(node = node.list[best], z = z, desc = desc, shiftCut = fit$cut.at)$z;
 
-				#cat("Step ", i+1, ": best likelihood = ", models[[i+1]]$lnLik, "; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
+				cat("Step ", i+1, ": best likelihood = ", models[[i+1]]$lnLik, "; AICc = ", models[[i+1]]$aicc, "; break at node ",
+					models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
 				i <- i + 1;
 			}
 		}
 
-		modelSummary <- .summary.modelfit.medusa(models = models, phy = phy, threshold = threshold_N)
+		modelSummary <- .summary.modelfit.medusa(models = models, phy = phy, threshold = threshold_N);
 
 		if (verbose) {
 			cat("\n", "Model fit summary:", "\n\n", sep = "");
-			print(modelSummary)
+			print(modelSummary);
 			if (threshold_N > 0) {
 				cat("\nAIC weights are not reported, as they are meaningless when using a threshold criterion.\n");
 			}
@@ -224,7 +224,8 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		z.summary <- zSummary(id = model.id);
 
 		control <- list(stop = stop, threshold = structure(threshold_N, names = criterion), partitions = npartitions);
-		results <- list(control = control, cache = list(desc = desc, phy = phy, richness = richness), models = models, summary = modelSummary, FUN = zSummary);
+		results <- list(control = control, cache = list(desc = desc, phy = phy, richness = richness), models = models,
+			summary = modelSummary, FUN = zSummary);
 		return(results);
 	}
 
@@ -241,21 +242,37 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	return(res);
 }
 
+# make sure things are in the correct order and of correct format
+.check.richness <- function (richness = NULL) {
+	if (is.null(richness)) {
+		richness <- data.frame(taxon = phy$tip.label, n.taxa = 1);
+	} else {
+		richness = data.frame(richness, stringsAsFactors = FALSE);
+		if (length(richness[1, ]) == 2) {
+			if (colnames(richness)[1] != "taxon" || colnames(richness)[2] != "n.taxa") {
+				if (class(richness[, 1]) == "factor" & class(richness[, 2]) == "integer") {
+					colnames(richness) = c("taxon", "n.taxa");
+				} else if (class(richness[, 1]) == "integer" & class(richness[, 2]) == "factor") {
+					colnames(richness) = c("n.taxa", "taxon");
+				} else {
+					stop("'richness' data appear incorrectly formated: see medusa()");
+				}
+			}
+		}
+	}
+	return(richness);
+}
+
+
 ## Function to prune tree using 'richness' information, assumed to have minimally two columns, "taxon" and "n.taxa"
 ##   Perhaps relax on these column names, may cause too many problems
 ## May also include 'exemplar' column; in that case, rename relevant tip.label before pruning.
 #prune.tree.merge.data
 .treedata.medusa <- function (phy, richness = NULL, ...) {
-	
-	if (is.null(richness)) {
-		richness <- data.frame(taxon = phy$tip.label, n.taxa = 1);
-	} else {
-		richness = data.frame(richness, stringsAsFactors = FALSE);
-	}
-	
+		
 	## MODIFIED -- jme
 	if ("multiPhylo" %in% class(phy)) { ## deal with multiple trees
-		res = lapply(phy, .treedata.medusa, richness);
+		res = lapply(phy, .treedata.medusa, richness, ...);
 		tips = c();
 		for (i in 1:length(res)) {
 			tips = union(tips, res[[i]]$phy$tip.label);
@@ -278,19 +295,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		# Ordering in richness file should NOT be assumed to match order of tip.labels
 		i.na <- is.na(richness$exemplar);
 		phy$tip.label[match(richness$exemplar[!i.na], phy$tip.label)] <- as.character(richness$taxon[!i.na]);
-	}
-
-	# make sure things are in the correct order and of correct format
-	if (length(richness[1, ]) == 2) {
-		if (colnames(richness)[1] != "taxon" || colnames(richness)[2] != "n.taxa") {
-			if (class(richness[, 1]) == "factor" & class(richness[, 2]) == "integer") {
-				colnames(richness) = c("taxon", "n.taxa");
-			} else if (class(richness[, 1]) == "integer" & class(richness[, 2]) == "factor") {
-				colnames(richness) = c("n.taxa", "taxon");
-			} else {
-				stop("'richness' data appear incorrectly formated: see medusa()");
-			}
-		}
 	}
 
 	# checking for typo; if same size, nothing should be dropped

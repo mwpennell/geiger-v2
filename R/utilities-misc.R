@@ -1,25 +1,23 @@
-.geigerwarn <- function (...) warning("the called function is currently in development and is not fully vetted", ...)
+.geigerwarn <- function (...) warning("the called function is currently in development and is not fully vetted", ...);
 
 
 coef.gfit <- function (object, ...) {
-    if (is.constrained(object$lik)) p=names(object$lik(argn(object$lik),pars.only=TRUE)) else p=argn(object$lik)
-    if ("bm"%in%class(object$lik)) p=c(p, "z0")
-    unlist(object$opt[p])
+    if (is.constrained(object$lik)) p=names(object$lik(argn(object$lik),pars.only=TRUE)) else p=argn(object$lik);
+    if ("bm"%in%class(object$lik)) p=c(p, "z0");
+    unlist(object$opt[p]);
 }
 
 coef.gfits <- function (object, ...) {
-    lapply(object, coef)
+    lapply(object, coef);
 }
 
 logLik.gfit <- function (object, ...) {
-    object$opt$lnL
+    object$opt$lnL;
 }
 
 logLik.gfits <- function (object, ...) {
-    lapply(object, function(x) x$opt$lnL)
+    lapply(object, function(x) x$opt$lnL);
 }
-
-
 
 #general printing utility for ensuring equal numbers of characters within columns and defining spacing between columns
 #author: JM EASTMAN 2010
@@ -42,9 +40,8 @@ logLik.gfits <- function (object, ...) {
 
 
 .get.parallel <- function (...) {
-	
 	if (.check.parallel()) {
-		if (Sys.getenv("R_PARALLEL")=="FALSE") {
+		if (Sys.getenv("R_PARALLEL") == "FALSE") {
             fx <- function (X,FUN,...) lapply(X,FUN,...)
         } else {
             fx <- function (X,FUN,...) mclapply(X,FUN,...,mc.silent=TRUE)
@@ -53,16 +50,16 @@ logLik.gfits <- function (object, ...) {
         fx <- function (X,FUN,...) lapply(X,FUN,...)
 	}
 	
-	fx
+	return(fx);
 }
 
 .check.parallel <- function () {
-	tmp=rownames(installed.packages())
+	tmp <- rownames(installed.packages());
 	if ("parallel"%in%tmp) {
-		require(parallel)
-		return(TRUE)
+		require(parallel);
+		return(TRUE);
 	} else {
-		return(FALSE)
+		return(FALSE);
 	}
 }
 
@@ -75,25 +72,26 @@ logLik.gfits <- function (object, ...) {
 
 .withinrange <- function (x, min, max) 
 {
-    a = sign(x - min)
-    b = sign(x - max)
-    if (abs(a + b) == 2) 
-	return(FALSE)
-    else return(TRUE)
+    a = sign(x - min);
+    b = sign(x - max);
+    if (abs(a + b) == 2) {
+    	return(FALSE);
+    } else {
+    	return(TRUE);
+    }
 }
 
 .basename.noext <- function (path="") {
-	return(sub("[.][^.]*$", "", basename(path), perl=TRUE))
-	
+	return(sub("[.][^.]*$", "", basename(path), perl=TRUE));
 }
 
 
 
 .resolve.executable <- function (package="geiger") {
-	packagedir=system.file(package=package)
-	execs=lapply(d<-dir(paste(packagedir,"exec",sep="/")), function(x) {paste(packagedir, "exec", x, sep="/")})
-	names(execs)=.basename.noext(d)
-	return(execs)
+	packagedir <- system.file(package=package);
+	execs <- lapply(d<-dir(paste(packagedir,"exec",sep="/")), function(x) {paste(packagedir, "exec", x, sep="/")});
+	names(execs) <- .basename.noext(d);
+	return(execs);
 }
 
 
@@ -101,8 +99,7 @@ logLik.gfits <- function (object, ...) {
 #author: JM EASTMAN 2010
 #modified: 02.26.2011 to use spline() in computation of best prop.width
 #deprecates calibrate.proposalwidth
-calibrate.rjmcmc <- function(phy, dat, nstep=10000, widths=2^(-3:3), type=c("bm",
-"rbm", "jump-bm", "jump-rbm"), ...) {
+calibrate.rjmcmc <- function(phy, dat, nstep=10000, widths=2^(-3:3), type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...) {
 	model=match.arg(type, c("bm",
     "rbm", "jump-bm", "jump-rbm"))
     
@@ -394,8 +391,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...) {
 	return(mats)
 }
 
-.coda=function (data = NA, start = 1, end = numeric(0), thin = 1) ## from coda:::mcmc
-{
+.coda=function (data = NA, start = 1, end = numeric(0), thin = 1) { ## from coda:::mcmc
     if (is.matrix(data)) {
         niter <- nrow(data)
         nvar <- ncol(data)
@@ -1176,11 +1172,3 @@ function(i, proposal, mod.cur, mod.new, lnR, lnPrior, lnHastings, errorLog) {
 	}
 	.load.rjmcmc(control)
 }
-
-
-
-
-
-
-
-
