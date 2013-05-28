@@ -1,5 +1,5 @@
 medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitions = NA, model = c("mixed", "bd", "yule"),
-	cut = c("both", "stem", "node"), init = c(r = 0.05, epsilon = 0.5), ...) {
+	cut = c("both", "stem", "node"), init = c(r = 0.05, epsilon = 0.5), ncores = NULL, ...) {
 
 	## CHECK ARGUMENTS
 	verbose <- FALSE;
@@ -8,7 +8,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 	# mc<-.check.parallel()
 	# num.cores<-getOption("mc.cores", 1L)
-	fx <- .get.parallel();
+	fx <- .get.parallel(ncores);
 
 	if (!is.na(partitions)) {
 		flag <- "'partitions' should either be NA or an integer, specifying the maximum number of piecewise models to consider";
@@ -41,7 +41,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	if (!any(c("phylo", "multiPhylo") %in% class(phy))) {
 		stop("'phy' must either be a phylo or multiPhylo object");
 	}
-	richness <- .check.richness(richness);
+	richness <- .check.richness(phy, richness);
 	phyData <- .treedata.medusa(phy = phy, richness = richness, ...); ## modified prune.tree.merge.data for multiple trees (jme)
 	## END -- jme
 	
@@ -131,7 +131,8 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 		if (stop == "partitions") {
 
-			cat("Step 1 (of ", model.limit, "): best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
+			cat("Step 1 (of ", model.limit, "): best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc,
+				"; model = ", models[[1]]$model, "\n", sep="");
 			for (i in seq_len(model.limit - 1)) {
 				node.list <- all.nodes[-fit$split.at];
 				res <- fx(node.list, .update.fit.medusa, z = z, desc = desc, fit = fit, prefit = prefit, num.tips = num.tips,
@@ -243,8 +244,11 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 }
 
 # make sure things are in the correct order and of correct format
-.check.richness <- function (richness = NULL) {
+.check.richness <- function (phy, richness = NULL) {
 	if (is.null(richness)) {
+		if ("multiPhylo" %in% class(phy)) {
+			phy <- phy[[1]];
+		}
 		richness <- data.frame(taxon = phy$tip.label, n.taxa = 1);
 	} else {
 		richness = data.frame(richness, stringsAsFactors = FALSE);
@@ -1123,7 +1127,112 @@ plot.medusaRAW = function (x, col = c(aic = "black", aicc = "blue"), ...) {
 	legend("topleft", c("aicc", "aic"), pch = 21, pt.bg = "white", lty = 1, col = c(col[["aicc"]], col[["aic"]]), inset = 0.05, cex = 0.75, bty = "n");
 }
 
+## Consider removing previously-fit rate shifts
+backStep <- function (currentModel, z, step, model, fixPar, criterion) {
+## As a first step, only consider removing entire shifts. Later deal with individual parameters.
+	z.opt <- z;
+	bestModel <- currentModel;
+	bestScore <- as.numeric(bestModel[criterion]);
+	allDeletedShifts <- NULL;
+	bestRemoved <- NULL;
+	improve <- T;
+	
+	while (improve) { # may be possible to remove > 1 previously fit shift
+		allDeletedShifts <- c(allDeletedShifts, bestRemoved);
+		currentModel <- bestModel;
+		z <- z.opt;
+		cuts <- bestModel$cut.at;
+		nodes <- bestModel$split.at;
+		pars <- bestModel$par;
+		numModels <- length(bestModel$par)/2;
+		improve <- F;
+		
+		if (numModels > 2) {
+			for (i in 2:(numModels - 1)) { # don't waste time removing last shift
+				fitModel <- currentModel;
+				obj <- dissolveSplit(z, cut=cuts[i], node=nodes[i], aff=i);
+				aff <- obj$affected;
+				z.temp <- obj$z[obj$z[,"partition"] == aff,,drop=FALSE];
+				
+		## set par to weighted mean of 2 affected partitions
+			## updated to reflect total path length rather than number of tips
+			## really only influences weighted parameter starting values
+			
+				weights <- c(sum(z[which(z[,"partition"] == aff),"t.len"]), sum(z[which(z[,"partition"] == i),"t.len"]));
+				sp <- c(weighted.mean(pars[c(aff,i),1], weights), weighted.mean(pars[c(aff,i),2], weights, na.rm=T));
+				fit <- getOptimalModelFlavour(z=z.temp, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
+				
+#				weights.old <- c(sum(z[,"partition"] == aff), sum(z[,"partition"] == i)); # weight from number of edges involved
+#				sp.old <- c(weighted.mean(pars[c(aff,i),1], weights.old), weighted.mean(pars[c(aff,i),2], weights.old, na.rm=T));
+#				fit.old <- getOptimalModelFlavour(z=z.temp, sp=sp.old, model=model, fixPar=fixPar, criterion=criterion);
 
+		## Update fit values
+				fitModel$par[aff,] <- fit$par;
+				fitModel$par <- fitModel$par[-i,];
+				fitModel$lnLik.part[aff] <- fit$lnLik;
+				fitModel$lnLik.part <- fitModel$lnLik.part[-i];
+				fitModel$lnLik <- sum(fitModel$lnLik.part);
+				model.fit <- calculateModelFit(fit=fitModel, z=z);
+				fitModel$aic <- model.fit[1];
+				fitModel$aicc <- model.fit[2];
+				fitModel$num.par <- model.fit[3];
+				
+				if (fitModel[criterion] < bestScore) {
+					fitModel$split.at <- fitModel$split.at[-i];
+					fitModel$model[aff] <- fit$model;
+					fitModel$model <- fitModel$model[-i];
+					fitModel$cut.at <- fitModel$cut.at[-i];
+					bestModel <- fitModel;
+					bestScore <- as.numeric(fitModel[criterion]);
+					z.opt <- updateZ(z=obj$z, deletedPart=i);
+					bestRemoved <- nodes[i];
+					improve <- T;
+				}
+			}
+			if (improve) {step <- rbind(step, c("remove", bestRemoved));}
+		}
+	}
+	return(list(fit=bestModel, z=z.opt, step=step, remove=bestRemoved));
+}
+
+
+## Remove previously-fit rate shift
+dissolveSplit <- function (z, cut, node, aff) {
+## Grab ancestral branch partition membership
+	anc <- z[which(z[,"dec"] == node)];
+	root <- min(z[,"anc"]);
+	tag <- NULL;
+	
+	if (cut == "node") {
+		tag <- as.numeric(z[which(z[,"dec"] == node),"partition"]);
+	} else if (cut == "stem" && anc > root) {
+		tag <- as.numeric(z[which(z[,"dec"] == anc),"partition"]);
+	} else if (cut == "stem" && anc == root) { # need to take other side of root
+		dec <- z[which(z[,"anc"] == root),"dec"];
+		tag <- as.numeric(z[which(z[,"dec"] == dec[which(dec != node)]),"partition"]); # ug. li.
+	}
+	
+	idx <- which(z[,"partition"] == aff);
+	z[idx,"partition"] <- tag;
+	
+	return(list(z=z, affected=tag));
+}
+
+
+## reduce partition IDs to reflect dissolved split
+updateZ <- function (z, deletedPart) {
+	idx <- z[,"partition"] > deletedPart;
+	z[idx,"partition"] <- z[idx,"partition"] - 1;
+	return(z);
+}
+
+
+## Only print if model improves AIC score
+printRemovedShifts <- function (remove) {
+	for (i in 1:length(remove)) {
+		cat("  Removing shift at node #", remove[i], "\n", sep="");
+	}
+}
 
 ## Create a plot of model-fit vs. model-size
 #plotModelFit
