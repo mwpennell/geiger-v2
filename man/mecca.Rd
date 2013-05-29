@@ -8,7 +8,11 @@ running a MECCA analysis
 Runs MECCA's hybrid ABC-MCMC algorithm to jointly estimate diversification rates and trait evolution from incompletely sampled comparative data. Many of the arguments taken by this function are the same as those in calibrateMecca().
 }
 \usage{
-mecca(phy, richness, cladeMean, cladeVariance, model = c("BM", "Trend", "twoRate"), prior.list = list(priorSigma = c(-4.961845, 4.247066), priorMean = c(-10, 10)), start = start, Ngens = 10000, printFreq = 100, sigmaPriorType = "uniform", rootPriorType = "uniform", SigmaBounds = c(-4.961845, 4.247066), hotclade = NULL, divPropWidth = 0.1, scale = 1, divSampleFreq = 0, BoxCox = TRUE, outputName = "mecca")
+mecca(phy, richness, cladeMean, cladeVariance, model = c("BM", "Trend", "twoRate"),
+   prior.list = list(priorSigma = c(-4.961845, 4.247066), priorMean = c(-10, 10)),
+   start = start, Ngens = 10000, printFreq = 100, sigmaPriorType = "uniform",
+   rootPriorType = "uniform", SigmaBounds = c(-4.961845, 4.247066), hotclade = NULL,
+   divPropWidth = 0.1, scale = 1, divSampleFreq = 0, BoxCox = TRUE, outputName = "mecca")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -108,8 +112,8 @@ params <- Cal$trait[, c(1,2)]; ## extract the calibration BM parameters
 stats <- Cal$trait[, -c(1,2)]; ## extract the calibration summary stats
 
 ## now we run pls, determining combinations of summaries that explain variation in our parameters
-
-myPlsr<-plsr(as.matrix(params) ~ as.matrix(stats), scale=F, ncomp = 2); ## run PLS. For BM, 2 components is sufficient. For more complex models, more componenets will be required.
+## For BM, 2 components is sufficient. For more complex models, more componenets will be required.
+myPlsr<-plsr(as.matrix(params) ~ as.matrix(stats), scale=F, ncomp = 2);
 
 plot(RMSEP(myPlsr)); ## Look at Root Mean Square error plots
 
@@ -130,7 +134,10 @@ start <- startingpt.mecca(Cal, phy, cladeMean, cladeVariance, tolerance = 0.05, 
 
 
 ## MECCA (far too short for a real analysis)
-mecca(phy, richness, cladeMean, cladeVariance, model = "BM", prior.list = priors, start = start, Ngens = 1000, printFreq = 100, sigmaPriorType = "uniform", rootPriorType = "uniform", SigmaBounds = c(-4.5, 4.5), divPropWidth = 0.1, scale = 2, divSampleFreq = 0, BoxCox = TRUE, outputName ="MeccaBM.txt")
+mecca(phy, richness, cladeMean, cladeVariance, model = "BM", prior.list = priors, start = start,
+   Ngens = 1000, printFreq = 100, sigmaPriorType = "uniform", rootPriorType = "uniform",
+   SigmaBounds = c(-4.5, 4.5), divPropWidth = 0.1, scale = 2, divSampleFreq = 0, BoxCox = TRUE,
+   outputName ="MeccaBM.txt")
 
 ## PASTE UNCOMMENTED FOLLOWING LINE TO DROP FILES CREATED BY MECCA
  # unlink(dir(pattern=paste(r)),recursive=TRUE)
