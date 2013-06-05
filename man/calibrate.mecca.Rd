@@ -22,7 +22,7 @@ A named vector of species richnesses corresponding to tips in the tree; if a tip
 The model of trait evolution to be used. Options currently implemented are: "BM" = Brownian Motion, "Trend" = Brownian moton with a trend, "twoRate" = two Brownian rate model (see hotclade below).
 }
   \item{prior.list}{
-A namedlist containing prior distribution parameters. If no values are specified, default values will be used. 
+A namedlist containing prior distribution parameters. If no values are specified, default values will be used. Default values for the BM rate are taken from the range reported in Harmon et al. 2010.
 }
   \item{Ncalibrations}{
 The number of calibration simulations to use. No fewer than 10,000 are recommended.
@@ -65,7 +65,7 @@ Optimization range for the lambda parameter for Box-Cox. Default params should w
 }
 \references{
 Slater, GJ, Harmon, LJ, Wegmann D, Joyce, P., Revell, LJ, Alfaro ME. in press. Evolution, also Wegmann D, Leuenberger C, Excoffier L. 2009. Genetics 182:1207-1218.
-}
+Harmon LJ et al. 2010. Early Bursts of body size and shape evolution are rare in comparative data. Evolution 64: 2385 - 2396}
 \author{
 Graham J Slater, Luke Harmon, Dan Wegmann
 }
@@ -81,7 +81,4 @@ Tree simulation is done using modified code from Tanja Stadler's TreeSim package
 example(mecca)
 }
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+

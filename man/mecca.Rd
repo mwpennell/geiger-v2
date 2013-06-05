@@ -97,36 +97,36 @@ The numbers printed to the screen during the run give the current generation, ac
 
 \examples{
 \donttest{
-data(carnivores);
-phy <- carnivores$phy;
-data <- carnivores$dat;
-richness <- data[,1];
-names(richness) <- rownames(data);
+data(carnivores)
+phy <- carnivores$phy
+data <- carnivores$dat
+richness <- data[,1]
+names(richness) <- rownames(data)
 
-priors <- list(priorSigma = c(-4.5, 4.5), priorMean = c(-5, 2));
+priors <- list(priorSigma = c(-4.5, 4.5), priorMean = c(-5, 2))
 
 ## CALIBRATION (far too short for a real analysis)
-Cal <- calibrate.mecca(phy, richness, model = "BM", prior.list = priors, Ncalibrations = 1000);
+Cal <- calibrate.mecca(phy, richness, model = "BM", prior.list = priors, Ncalibrations = 1000)
 
-params <- Cal$trait[, c(1,2)]; ## extract the calibration BM parameters
-stats <- Cal$trait[, -c(1,2)]; ## extract the calibration summary stats
+params <- Cal$trait[, c(1,2)] ## extract the calibration BM parameters
+stats <- Cal$trait[, -c(1,2)] ## extract the calibration summary stats
 
 ## now we run pls, determining combinations of summaries that explain variation in our parameters
 ## For BM, 2 components is sufficient. For more complex models, more componenets will be required.
-myPlsr<-plsr(as.matrix(params) ~ as.matrix(stats), scale=F, ncomp = 2);
+myPlsr<-plsr(as.matrix(params) ~ as.matrix(stats), scale=F, ncomp = 2)
 
-plot(RMSEP(myPlsr)); ## Look at Root Mean Square error plots
+plot(RMSEP(myPlsr)) ## Look at Root Mean Square error plots
 
-summary(myPlsr); ## take a look at % variance explained
+summary(myPlsr) ## take a look at % variance explained
 
-plsdat <- myPlsr$loadings;
+plsdat <- myPlsr$loadings
 
 ## extract means and variances from the carnivore data ##
 
-cladeMean<-data[,2];
-names(cladeMean)<-rownames(data);
-cladeVariance<-data[,3];
-names(cladeVariance)<-rownames(data);
+cladeMean<-data[,2]
+names(cladeMean)<-rownames(data)
+cladeVariance<-data[,3]
+names(cladeVariance)<-rownames(data)
 
 ## STARTING POINT
 ## And now we can compute starting values for the ABC-MCMC
@@ -144,7 +144,3 @@ mecca(phy, richness, cladeMean, cladeVariance, model = "BM", prior.list = priors
 
 }
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

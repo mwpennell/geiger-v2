@@ -27,11 +27,7 @@ Graham Slater
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \examples{
-AIC.scores <- c(3,7,-5, 6);
-names(AIC.scores) <- c("model1", "model2", "model3", "model4"); 
-aicw(AIC.scores);
+AIC.scores <- c(3,7,-5, 6)
+names(AIC.scores) <- c("model1", "model2", "model3", "model4")
+aicw(AIC.scores)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
