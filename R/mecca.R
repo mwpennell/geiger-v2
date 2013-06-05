@@ -698,9 +698,12 @@ function(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(p
 			stat[ ,i] <- 1+(stat[ ,i] - myMin[i])/(myMax[i]-myMin[ i]);
 			
 			}
+			
+        mecca.lm <- mecca.env <- NULL
         
         lmreturn=function(stati, param, ...){
             ## FIXME: unable to figure out how to make .mecca.maxboxcox work without mecca.lm and mecca.env exported to global environment (prompting a NOTE from R CMD check -- JME)
+            ## fixed by GJS following RF, but check...
             
             mecca.dat=as.data.frame(cbind(y=stati, param))
             mecca.lm<<-as.formula(mecca.dat)
