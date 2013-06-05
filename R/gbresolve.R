@@ -43,6 +43,16 @@ gbcontain=function(x, rank="species", within="", ...){
 #    gb=gb[gb$ridx<=lidx,]
     
 
+	#FUN=function(id){
+	#	keep=c()
+    #		wx=which(gb[,"parent_id"]==id & ss)
+	#	if(length(wx)){
+	#		keep=c(keep, gb[wx[drop<-which(gb[wx,"rank"]==rank)],"node"])
+	#		if(length(drop)) wx=wx[-drop]
+	#		if(length(wx)) keep=c(keep, unlist(lapply(gb[wx,"id"], FUN)))
+	#	}
+	#	return(keep)
+	#}
     
     FUN=function(id){
         rr=match(gb[,"rank"], Linnaean)

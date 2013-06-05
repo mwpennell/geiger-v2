@@ -449,6 +449,15 @@ ROOT.ALL   <- ROOT.BOTH
 	if ( !is.null(states) ) # for multitrait
     states <- .check.states(tree, states, strict.vals=1:k)
 	cache <- .make.cache(tree)
+#	if ( method == "mk2" )
+#   cache$info <- .make.info.mk2(tree)
+#	else
+    cache$info <- .make.info.mkn(k, tree)
+	cache$states  <- states
+#	if ( method == "ode" ) {
+#		cache$y <- initial.tip.mkn.ode(cache)
+#		cache$info$name.ode <- "mknode"
+#	}
 	
 	cache
 }
@@ -581,6 +590,44 @@ ROOT.ALL   <- ROOT.BOTH
 		flist <- list(fmat=0, tmat=0, imat=0, ModelForc=NULL)
 		elag <- list(islag=0L)
 		
+##----- eliminated foreign-function call for CRAN check ## JME 03.27.2013
+#		sol <- function(vars, times, pars) {
+#			if ( length(vars) != ny )
+#			stop("Incorrect variable length")
+#			if ( length(times) <= 1 )
+#			stop("Need >= 2 times")
+#			storage.mode(vars) <- storage.mode(times) <- "numeric"
+
+#			ret <- 
+#			.Call("call_lsoda", vars, times, derivs, pars,
+#				  rtol, atol,
+#				  NULL,      # rho: environment
+#				  NULL,      # tcrit: critical times
+#				  jacfunc,
+#				  initfunc,
+#				  NULL,      # eventfunc [New in 1.6]
+#				  INTZERO,   # verbose (false)
+#				  INTONE,    # itask
+#				  rwork,
+#				  iwork,
+#				  jactype,   # Jacobian type (2=full, 5=banded [1 up and down])
+#				  INTZERO,   # nOut (no global variables)
+#				  lrw,       # size of workspace (real)
+#				  liw,       # size of workspace (int)
+#				  INTONE,    # Solver
+#				  NULL,      # rootfunc
+#				  INTZERO,   # nRoot
+#				  0,         # rpar: no extra real parameters
+#				  INTZERO,   # ipar: no extra integer parameters
+#				  INTZERO,   # Type
+#				  flist,     # [New in 1.5]
+#				  list(),    # elist [New in 1.6]
+#				  elag,      # [New in 1.7]
+#				  PACKAGE="deSolve")
+#			if ( max(abs(ret[1,] - times)) > 1e-6 )
+#			stop("Integration error: integration stopped prematurely")
+#			ret[-1,-1,drop=FALSE]
+#		}
     stop("unsupported call")
 	}
 }
