@@ -12,7 +12,8 @@ summarizing piecewise diversification models estimated by MEDUSA
 \usage{
 	\method{summary}{medusaRAW}(object, criterion=c("aicc", "aic"), model=NULL, \dots)
 	\method{plot}{medusaRAW}(x, col = c(aic = "black", aicc = "blue"), \dots)
-	\method{plot}{medusa}(x, partitions = list(cex = 2, bg = "gray", alpha = 0.75, col = "black", lwd = 1), ...)
+	\method{plot}{medusa}(x, partitions = list(cex = 2, bg = "gray", alpha = 0.75, 
+	col = "black", lwd = 1), ...)
 
 }
 
@@ -58,7 +59,8 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     plot(res, col=c(aic="gray", aicc="black")) 
     
     # model selection based on AICc -- invoking summary.medusaRAW()
-    s1=summary(res, criterion="aicc") # select best model based on AICc (showing the third model as best)
+    s1=summary(res, criterion="aicc") 
+    # select best model based on AICc (showing the third model as best)
     plot(s1, cex=0.5, label.offset=1) # using plot.medusa()
     title("AICc-chosen model")
     
