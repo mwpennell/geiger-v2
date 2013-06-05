@@ -598,7 +598,7 @@ function(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(p
 	}
 	
 	if(model == "Trend") { 
-		if (is.null(prior.list$priorMu)) {prior.list$priorMu = c(-0.5,0.5); print("warning: no mu prior specified for Trend model. using default prior of -0.5:0.5") }
+		if (is.null(prior.list$priorMu)) {prior.list$priorMu = c(-0.5,0.5); warning("No mu prior specified for Trend model. Using default prior of -0.5:0.5") }
 		}	
 	
 	output <- .mecca.makecaloutput(model, Ncalibrations, Nclades);
@@ -1294,7 +1294,7 @@ function(phy, richness, cladeMean, cladeVariance, model = c("BM", "Trend", "twoR
 
 
 	if(model == "Trend") { 
-		if (is.null(prior.list$priorMu)) {prior.list$priorMu = c(-0.5,0.5); print("warning: no mu prior specified for Trend model. using default prior of -0.5:0.5") }
+		if (is.null(prior.list$priorMu)) {prior.list$priorMu = c(-0.5,0.5); warning("No mu prior specified for Trend model. Using default prior of -0.5:0.5") }
 		}	
 
 
