@@ -1,3 +1,5 @@
+medusaVersion = 1.01;
+
 medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitions = NA, model = c("mixed", "bd", "yule"),
 	cut = c("both", "stem", "node"), init = c(r = 0.05, epsilon = 0.5), ncores = NULL, ...) {
 
@@ -47,9 +49,11 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	
 	# internal function for running a single tree and richness data.frame (jme)
 	medusa_runner <- function (phy, richness) {
+		
 		## Limit on number of piecewise models fitted; based on tree size, aicc correction factor,
 		## and flavour of model fitted (i.e. # parameters estimated; birth-death or pure-birth)
 		model.limit <- .get.max.model.limit(richness = richness, stop = stop, npartitions = npartitions, model = model, verbose = verbose);
+		
 		## Determine correct AICc threshold from tree size (based on simulations)
 		## Should be used for interpreting model-fit
 		N <- Ntip(phy);
@@ -77,7 +81,8 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		tips <- NULL;
 		# Will always be shiftCut="stem"; if mixed model, keep only best fit and throw out other in .prefit.medusa
 		
-		tips <- fx(pend.nodes, .prefit.medusa, z = z, desc = desc, initialR = initialR, initialE = initialE, model = model, shiftCut = "stem", criterion = criterion);
+		tips <- fx(pend.nodes, .prefit.medusa, z = z, desc = desc, initialR = initialR,
+			initialE = initialE, model = model, shiftCut = "stem", criterion = criterion);
 		#cat("done.\n");
 		
 		## Pre-fit virgin internal nodes; should deliver performance gain for early models, and especially for large trees
@@ -226,7 +231,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 		control <- list(stop = stop, threshold = structure(threshold_N, names = criterion), partitions = npartitions);
 		results <- list(control = control, cache = list(desc = desc, phy = phy, richness = richness), models = models,
-			summary = modelSummary, FUN = zSummary);
+			summary = modelSummary, FUN = zSummary, medusaVersion = medusaVersion);
 		return(results);
 	}
 
@@ -503,10 +508,11 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 .base.medusa <- function (z, initialR, initialE, model) {
 	rootnode <- min(z[, "anc"]);
 	obj <- .fit.partition.medusa(partition = 1, z = z, sp = c(initialR, initialE), model = model);
-
 	model.fit <- .calculate.modelfit.medusa(fit = obj, z = z);
-
-	return(list(par = matrix(obj$par, nrow = 1, dimnames = list(NULL, c("r", "epsilon"))), lnLik.part = obj$lnLik, lnLik = obj$lnLik, split.at = rootnode, aic = round(model.fit$aic, digits = 7), 
+	steps <- c("add", as.numeric(min(z[,"anc"])));
+	
+	return(list(par = matrix(obj$par, nrow = 1, dimnames = list(NULL, c("r", "epsilon"))), lnLik.part = obj$lnLik,
+		lnLik = obj$lnLik, split.at = rootnode, aic = round(model.fit$aic, digits = 7), 
 		aicc = round(model.fit$aicc, digits = 7), num.par = model.fit$k, cut.at = "node"));
 }
 
