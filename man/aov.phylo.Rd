@@ -33,7 +33,7 @@ The function prints (and returns) a standard ANOVA or MANOVA table and p-value b
 \references{
 Garland T Jr, AW Dickerman, CM Janis, and JA Jones. 1993. Phylogenetic analysis of covariance by computer simulation. \emph{Systematic Biology} 42(3):265-292.
 }
-\author{ LJ Harmon }
+\author{ JM Eastman and LJ Harmon }
 \seealso{ \code{\link[stats]{aov}}; \code{\link[stats]{anova}}; \code{\link[stats]{summary.manova}}; \code{\link[geiger]{ratematrix}} }
 \examples{
 

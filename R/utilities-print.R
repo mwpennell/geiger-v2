@@ -150,9 +150,10 @@ print.gfit=function(x, format=c("default", "oldestyle"), ...){
             sum(aa)/length(aa)
         }
         
-        ## CONVERGENCE
-        cat(paste("GEIGER-fitted comparative model of", type, "data", sep=" "),"\n\n convergence diagnostics:\n\toptimization iterations = ",nrow(x$res),"\n\tfailed iterations = ", sum(rownames(x$res)=="FAIL"), "\n\tfrequency of best fit = ", sprintf("%.2f", solnfreq(x)), "\n", sep="")
         
+        ## OVERVIEW
+        cat(paste("GEIGER-fitted comparative model of", type, "data", sep=" "))
+
         lik=x$lik
         att=attributes(lik)
         
@@ -187,6 +188,11 @@ print.gfit=function(x, format=c("default", "oldestyle"), ...){
         names(rr)=c("log-likelihood", "AIC", "AICc")
 
         cat("\n model summary:\n\t", paste(names(rr), sprintf("%f",rr), sep=" = ", collapse="\n\t"), "\n\tfree parameters = ", x$opt$k, "\n", sep="")
+        
+        
+        ## CONVERGENCE
+        cat("\nConvergence diagnostics:\n\toptimization iterations = ",nrow(x$res),"\n\tfailed iterations = ", sum(rownames(x$res)=="FAIL"), "\n\tfrequency of best fit = ", sprintf("%.2f", solnfreq(x)), "\n", sep="")
+        
         
         ## OBJECT SUMMARY
         cat("\n object summary:\n\t'lik' -- likelihood function\n\t'bnd' -- bounds for likelihood search\n\t'res' -- optimization iteration summary\n\t'opt' -- maximum likelihood parameter estimates\n")

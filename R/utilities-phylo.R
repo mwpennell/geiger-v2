@@ -1037,7 +1037,7 @@ treedata<-function(phy, data, sort=FALSE, warnings=TRUE)
 		data.names<-rownames(data)
 	}
 #	}
-	nc<-.treedata(phy, data)
+	nc<-name.check(phy, data)
 	if(is.na(nc[[1]][1]) | nc[[1]][1]!="OK") {
 		if(length(nc[[1]]!=0)) {
 			phy=.drop.tip(phy, as.character(nc[[1]]))
