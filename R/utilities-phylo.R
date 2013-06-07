@@ -944,7 +944,7 @@ phylo.lookup=function(taxonomy) {
 }
 
 
-.treedata <-
+name.check <-
 function(phy, data)
 {
 	
@@ -981,12 +981,6 @@ cherries <- function(phy){
     return(mat)
 }
 
-
-# Treedata is a function internal to GEIGER
-# that makes sure that the names of the taxa 
-# in the tree and data file match, and prunes 
-# things accordingly; it returns a list with 
-# two elements: phy and data
 
 tips <- function(phy, node)
 {

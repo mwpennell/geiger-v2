@@ -575,7 +575,7 @@ function(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(p
 		
 	## house keeping block - check everything is in the correct order, get rid of node labels and generate a vector of clade age values ##
 	
-	.treedata(phy, richness)->nc;
+	name.check(phy, richness)->nc;
 	if(!nc == "OK") { stop("names in tree and data do not match") }
 	if(!sum(is.na(richness) == 0)) { stop("richness contains missing values") }
 	Nclades <- length(richness);
@@ -1246,7 +1246,7 @@ function(phy, richness, cladeMean, cladeVariance, model = c("BM", "Trend", "twoR
 	
 
 	## house keeping block - check everything is in the correct order, get rid of node labels and generate a vector of clade age values ##	
-	.treedata(phy, richness) -> nc;
+	name.check(phy, richness) -> nc;
 	if(!nc == "OK") { stop("names in tree and data do not match") }
 	if(!sum(is.na(richness) == 0)) { stop("richness contains missing values") }
 	if(!sum(is.na(cladeMean) == 0)) { stop("cladeMeans contains missing values") }
