@@ -71,7 +71,9 @@ export(lookup.phylo)
 export(make.bm.relaxed)
 export(make.gbm)
 export(mecca)
-export(medusa)
+
+export(gmedusa)
+
 export(mkn.lik)
 export(name.check)
 export(nh.test)

@@ -1,5 +1,5 @@
-\name{medusa}
-\alias{medusa}
+\name{gmedusa}
+\alias{gmedusa}
 \title{
 MEDUSA: modeling evolutionary diversification using stepwise AIC
 }
@@ -8,9 +8,9 @@ fitting piecewise diversification models according to phylogenetic and taxonomic
 }
 
 \usage{
-medusa(phy, richness = NULL, criterion = c("aicc", "aic"),
+gmedusa(phy, richness = NULL, criterion = c("aicc", "aic"),
     partitions=NA, model = c("mixed", "bd", "yule"), 
-    cut = c("both","stem","node"), 
+    cut = c("both","stem","node"), stepBack = TRUE, 
     init = c(r=0.05, epsilon=0.5), ncores = NULL, \dots)
 }
 
@@ -21,6 +21,7 @@ medusa(phy, richness = NULL, criterion = c("aicc", "aic"),
   \item{partitions}{the number of models to be considered regardless of fit}
   \item{model}{the flavor of piecewise models to consider (see \bold{Details})}
   \item{cut}{determines where shifts are placed on the tree (see \bold{Details})}
+  \item{stepBack}{determines whether parameter/model removal is considered. default = TRUE. (see \bold{Details})}
   \item{init}{initial conditions for net diversification and relative extinction}
   \item{ncores}{the number of processor cores to using in parallel processing. default = all}
   \item{...}{additional arguments to be passed to \code{\link[geiger]{treedata}}}
