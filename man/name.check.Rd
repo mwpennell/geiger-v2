@@ -1,6 +1,5 @@
 \name{name.check}
 \alias{name.check}
-\alias{treedata}
 \title{ Compares taxa in data and tree }
 \description{
 This function is a general tool for checking for concordance between a data file and a phylogenetic

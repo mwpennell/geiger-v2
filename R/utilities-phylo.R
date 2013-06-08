@@ -944,27 +944,27 @@ phylo.lookup=function(taxonomy) {
 }
 
 
-name.check <-
-function(phy, data)
-{
+name.check <- function(phy, data, data.names = NULL) {
 	
-#	if(is.null(data.names)) 
-#	{
-	if(is.vector(data)){
-		data.names<-names(data)
-	} else {
-		data.names<-rownames(data)
+	if (is.null(data.names)) {
+		if (is.vector(data)) {
+			data.names <- names(data);
+		} else {
+			data.names <- rownames(data);
+		}
 	}
-#	}
-	t<-phy$tip.label
-	r1<-t[is.na(match(t,data.names))]
-	r2<-data.names[is.na(match(data.names,t))]
+	t <- phy$tip.label;
+	r1 <- t[is.na(match(t, data.names))];
+	r2 <- data.names[is.na(match(data.names, t))];
 	
-	r<-list(sort(r1), sort(r2))
+	r <- list(sort(r1), sort(r2));
 	
-	names(r)<-cbind("tree_not_data", "data_not_tree")
-	if(length(r1)==0 && length(r2)==0) return("OK")
-	else return(r)
+	names(r) <- cbind("tree_not_data", "data_not_tree")
+	if (length(r1) == 0 && length(r2) == 0) {
+		return("OK");
+	} else {
+		return(r);
+	}
 }
 
 cherries <- function(phy){
@@ -1008,27 +1008,27 @@ span.phylo=function(phy){
 
 # data.names is optional, and will replace the names or rownames
 # of data when matching data to the tree
+# ?!? data.names is not involved here - JWB
 
 # if sort is T, data will have rows in the same order
 # as the taxon names in phy$tip.label
 
-treedata<-function(phy, data, sort=FALSE, warnings=TRUE)
-{
+treedata <- function(phy, data, sort=FALSE, warnings=TRUE) {
 	
 	dm=length(dim(data))
 	
-	if(is.vector(data)) {
+	if (is.vector(data)) {
 		data<-as.matrix(data)
 	}
-	if(is.factor(data)) {
+	if (is.factor(data)) {
 		data<-as.matrix(data)
 	}
-	if(is.array(data) & length(dim(data))==1) {
+	if (is.array(data) & length(dim(data))==1) {
 		data<-as.matrix(data)
 	}
 	
-#	if(is.null(data.names)) {
-	if(is.null(rownames(data))) {
+#	if (is.null(data.names)) {
+	if (is.null(rownames(data))) {
 		stop("names for 'data' must be supplied")
 #JME				data.names<-phy$tip.label
 #JME				if(warnings)
@@ -1038,10 +1038,10 @@ treedata<-function(phy, data, sort=FALSE, warnings=TRUE)
 	}
 #	}
 	nc<-name.check(phy, data)
-	if(is.na(nc[[1]][1]) | nc[[1]][1]!="OK") {
-		if(length(nc[[1]]!=0)) {
+	if (is.na(nc[[1]][1]) | nc[[1]][1]!="OK") {
+		if (length(nc[[1]]!=0)) {
 			phy=.drop.tip(phy, as.character(nc[[1]]))
-			if(warnings) {
+			if (warnings) {
 				warning(paste("The following tips were not found in 'data' and were dropped from 'phy':\n\t",
 							  paste(nc[[1]], collapse="\n\t"), sep=""))
 #JME			print(nc[[1]])
@@ -1065,12 +1065,11 @@ treedata<-function(phy, data, sort=FALSE, warnings=TRUE)
 	
 	rownames(data)<-phy$tip.label[order]
 	
-	if(sort) {
-		
+	if (sort) {
     	index <- match(phy$tip.label, rownames(data))
    		data <- as.matrix(data[index,])
 	} 
-	if(dm==2){
+	if (dm==2){
 		data <- as.matrix(data)
 	}
 	

@@ -15,7 +15,6 @@
 \alias{kappaTree}
 \alias{lambdaTree}
 \alias{linearchangeTree}
-\alias{name.check}
 \alias{node.leaves}
 \alias{node.sons}
 \alias{ouTree}
