@@ -41,31 +41,32 @@ logLik.gfits=function(object, ...){
 }
 
 
-.get.parallel=function(...){
-	
-	if(.check.parallel()) {
-		if(Sys.getenv("R_PARALLEL")=="FALSE") {
-            fx=function(X,FUN,...) lapply(X,FUN,...)
-        } else {
-            fx=function(X,FUN,...) mclapply(X,FUN,...,mc.silent=TRUE)
-        }
+# turn off if GUI
+.get.parallel <- function(ncores = NULL, ...) {
+	if (.check.parallel()) {
+		if ((Sys.getenv("R_PARALLEL") == "FALSE") || (!is.na(Sys.getenv()["R_GUI_APP_VERSION"]))) {
+			fx <- function(X, FUN, ...) lapply(X, FUN, ...);
+		} else {
+			if (is.null(ncores)) {
+				ncores <- parallel:::detectCores();
+			}
+			fx <- function(X, FUN, ...) mclapply(X, FUN, ..., mc.silent = TRUE, mc.cores = ncores);
+		}
 	} else {
-        fx=function(X,FUN,...) lapply(X,FUN,...)
+		fx <- function(X, FUN, ...) lapply(X, FUN, ...);
 	}
-	
-	fx
+	return(fx)
 }
 
-.check.parallel=function(){
-	tmp=rownames(installed.packages())
-	if("parallel"%in%tmp) {
-		require(parallel)
-		return(TRUE)
+.check.parallel <- function() {
+	tmp <- rownames(installed.packages());
+	if ("parallel" %in% tmp) {
+		require(parallel);
+		return(TRUE);
 	} else {
-		return(FALSE)
+		return(FALSE);
 	}
 }
-
 
 .transparency <- function (col, alpha) 
 {
