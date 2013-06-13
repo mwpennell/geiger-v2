@@ -126,14 +126,30 @@ unique.multiPhylo=function(x, incomparables=FALSE, ...){
 	}
 }
 
+# wrapper for plot.phylo: plot tree with internal nodes labelled with ape numbering
+plotNN <- function (phy, time = TRUE, margin = TRUE, ...) {
+    phy$node.label <- (length(phy$tip.label) + 1):max(phy$edge);
+    plot.phylo(phy, show.node.label = TRUE, no.margin = !margin, cex = 0.5, ...);
+    if (time && margin) {
+        axisPhylo(cex.axis = 0.75);
+    }
+}
+
+# Get b and d values from r (b-d) and epsilson (d/b)
+# Used in previous version of program; now in terms of r and epsilon
+# Possibly of use to users wishing to translate results
+get.bd <- function (r, epsilon) {
+      b <- r/(1 - epsilon);
+      d <- b - r;   # Alternatively: d <- epsilon * r/(1 - epsilon)
+      return(list(b = b, d = d));
+}
 
 
 #general phylogenetic utility for determining whether a node is the root of the phylogeny
 #author: JM EASTMAN 2011
 
-is.root <-
-function(node,phy) {
-	if(node==Ntip(phy)+1) return(TRUE) else return(FALSE)
+is.root <- function (node,phy) {
+	if (node == (Ntip(phy) + 1)) return(TRUE) else return(FALSE);
 }
 
 
@@ -1237,11 +1253,12 @@ argn.mkn=function(x, ...){
 }
 
 
-.aic=function(v, n){
+.aic <- function (v, n) {
 # v: has object 'lnL' and 'k'
-	v$aic <- 2 * v$k - 2 * v$lnL
-    v$aicc <- 2 * v$k * (n - 1)/(n - v$k - 2) - 2 * v$lnL
-	v
+	v$aic <- 2 * v$k - 2 * v$lnL;
+    #v$aicc <- 2 * v$k * (n - 1)/(n - v$k - 2) - 2 * v$lnL; # wrong
+    v$aicc <- 2 * v$k * (n/(n - v$k - 1)) - (2 * v$lnL);
+	return (v);
 }
 
 
