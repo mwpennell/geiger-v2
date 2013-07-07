@@ -1252,16 +1252,6 @@ argn.mkn=function(x, ...){
 	ss
 }
 
-
-.aic <- function (v, n) {
-# v: has object 'lnL' and 'k'
-	v$aic <- 2 * v$k - 2 * v$lnL;
-    #v$aicc <- 2 * v$k * (n - 1)/(n - v$k - 2) - 2 * v$lnL; # wrong
-    v$aicc <- 2 * v$k * (n/(n - v$k - 1)) - (2 * v$lnL);
-	return (v);
-}
-
-
 # compute path length from root to tip
 .paths.cache=function(cache){
 	
@@ -1819,16 +1809,17 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	z
 }
 
-white.mkn=function(dat){
-	tt=table(dat)
-	n=sum(tt)
-	p=tt/n
-	ll=sum(log(p^tt))
-	
-	k=length(tt)-1
-	opt=list(lnL=ll, method="MLE", k=k)
-	opt=.aic(opt, n)
-	opt
+white.mkn <- function(dat) {
+	tt <- table(dat);
+	n <- sum(tt);
+	p <- tt/n;
+	ll <- sum(log(p^tt));
+
+	k <- length(tt) - 1;
+	opt <- list(lnL = ll, method = "MLE", k = k);
+	opt <- .aic(opt, n);
+	#opt <- .aic(lnL = opt$lnL, n = n, k = k); # changed .aic args
+	return(opt);
 }
 
 drop.extinct<-function (phy, tol = .Machine$double.eps^0.5) 

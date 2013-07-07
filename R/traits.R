@@ -252,7 +252,8 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 		warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
 	}
 	
-	mm=.aic(mm, n=length(dat))
+	mm <- .aic(mm, n=length(dat));
+	#mm <- .aic(lnL = mm$lnL, n = length(dat), k = mm$k);
 	
     # RETURN OBJECT
 	mm$CI=CI
@@ -720,8 +721,8 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 	mm=as.list(mmcomplete)
 	mm$method=mod
 	mm$k=k
-	mm=.aic(mm, n=length(dat))
-	
+	mm <- .aic(mm, n=length(dat));
+	#mm <- .aic(lnL = mm$lnL, n = length(dat), k = mm$k);
 	
 # check estimates against bounds #
 	range=as.data.frame(cbind(min, max))

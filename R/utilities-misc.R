@@ -1,30 +1,27 @@
-.geigerwarn=function(...) warning("the called function is currently in development and is not fully vetted", ...)
+.geigerwarn <- function(...) warning("the called function is currently in development and is not fully vetted", ...);
 
-
-coef.gfit=function(object, ...){
-    if(is.constrained(object$lik)) p=names(object$lik(argn(object$lik),pars.only=TRUE)) else p=argn(object$lik)
-    if("bm"%in%class(object$lik)) p=c(p, "z0")
-    unlist(object$opt[p])
+coef.gfit <- function(object, ...) {
+    if (is.constrained(object$lik)) p=names(object$lik(argn(object$lik),pars.only=TRUE)) else p=argn(object$lik)
+    if ("bm"%in%class(object$lik)) p=c(p, "z0");
+    unlist(object$opt[p]);
 }
 
-coef.gfits=function(object, ...){
-    lapply(object, coef)
+coef.gfits <- function(object, ...) {
+    lapply(object, coef);
 }
 
-logLik.gfit=function(object, ...){
-    object$opt$lnL
+logLik.gfit <- function(object, ...) {
+    object$opt$lnL;
 }
 
-logLik.gfits=function(object, ...){
-    lapply(object, function(x) x$opt$lnL)
+logLik.gfits <- function(object, ...) {
+    lapply(object, function(x) x$opt$lnL);
 }
-
 
 
 #general printing utility for ensuring equal numbers of characters within columns and defining spacing between columns
 #author: JM EASTMAN 2010
 #note: works only for numeric dataframes
-
 .print.table=function(df,digits=4,buffer=5){
 	if(length(buffer) != ncol(df) | length(buffer)==1) buffer=rep(buffer[1],ncol(df))
 	if(length(digits) != ncol(df) | length(digits)==1) digits=rep(digits[1],ncol(df))
@@ -40,25 +37,27 @@ logLik.gfits=function(object, ...){
 	print(pr.df)
 }
 
-
-# turn off if GUI
+# ooh, this is nice.
 .get.parallel <- function(ncores = NULL, ...) {
-	if (.check.parallel()) {
-		if ((Sys.getenv("R_PARALLEL") == "FALSE") || (!is.na(Sys.getenv()["R_GUI_APP_VERSION"]))) {
-			fx <- function(X, FUN, ...) lapply(X, FUN, ...);
-		} else {
+	if ((Sys.getenv("R_PARALLEL") == "FALSE")) {
+		fx <- function(X, FUN, ...) lapply(X, FUN, ...);
+	} else {
+		if (.check.parallel()) {
 			if (is.null(ncores)) {
 				ncores <- parallel:::detectCores();
 			}
 			fx <- function(X, FUN, ...) mclapply(X, FUN, ..., mc.silent = TRUE, mc.cores = ncores);
+		} else {
+			fx <- function(X, FUN, ...) lapply(X, FUN, ...);
 		}
-	} else {
-		fx <- function(X, FUN, ...) lapply(X, FUN, ...);
 	}
-	return(fx)
+	return(fx);
 }
 
 .check.parallel <- function() {
+	if (.gui.check()) {
+		return (FALSE);
+	}
 	tmp <- rownames(installed.packages());
 	if ("parallel" %in% tmp) {
 		require(parallel);
@@ -68,27 +67,59 @@ logLik.gfits=function(object, ...){
 	}
 }
 
-.transparency <- function (col, alpha) 
-{
-    tmp <- col2rgb(col)/255
-    rgb(tmp[1, ], tmp[2, ], tmp[3, ], alpha = alpha)
+# prevent parallel from loading if gui
+.gui.check <- function () {
+	if (!is.na(Sys.getenv()["R_GUI_APP_VERSION"])) {
+		return (TRUE);
+	} else {
+		return (FALSE);
+	}
 }
 
-.withinrange <- function (x, min, max) 
-{
-    a = sign(x - min)
-    b = sign(x - max)
-    if (abs(a + b) == 2) 
-	return(FALSE)
-    else return(TRUE)
+.transparency <- function (col, alpha) {
+    tmp <- col2rgb(col)/255;
+    rgb(tmp[1, ], tmp[2, ], tmp[3, ], alpha = alpha);
 }
 
-.basename.noext=function(path=""){
-	return(sub("[.][^.]*$", "", basename(path), perl=TRUE))
-	
+.withinrange <- function (x, min, max) {
+    a <- sign(x - min);
+    b <- sign(x - max);
+    if (abs(a + b) == 2) {
+		return(FALSE);
+    } else {
+    	return(TRUE);
+    }
 }
 
+.basename.noext <- function(path="") {
+	return(sub("[.][^.]*$", "", basename(path), perl=TRUE));
+}
 
+# make this more general. joe shmo won't expect v to contain lik + k; split'em up
+# .aic <- function (lnL, n, k) {
+	# res <- NULL;
+	# res$aic <- 2 * k - 2 * lnL;
+	# res$aicc <- 2 * k * (n/(n - k - 1)) - (2 * lnL);
+	# return(res);
+#}
+
+# v: has object 'lnL' and 'k'
+# .aic <- function (v, n) {
+	# res <- NULL;
+	# res$aic <- 2 * v$k - 2 * lnL;
+	# res$aicc <- 2 * v$k * (n/(n - v$k - 1)) - (2 * v$lnL);
+	# return(res);
+# }
+
+
+
+.aic <- function (v, n) {
+# v: has object 'lnL' and 'k'
+	v$aic <- 2 * v$k - 2 * v$lnL;
+    #v$aicc <- 2 * v$k * (n - 1)/(n - v$k - 2) - 2 * v$lnL; # wrong
+    v$aicc <- 2 * v$k * (n/(n - v$k - 1)) - (2 * v$lnL);
+	return (v);
+}
 
 .resolve.executable=function(package="geiger"){
 	packagedir=system.file(package=package)

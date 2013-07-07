@@ -1,5 +1,5 @@
-\name{gmedusa}
-\alias{gmedusa}
+\name{medusa}
+\alias{medusa}
 \title{
 MEDUSA: modeling evolutionary diversification using stepwise AIC
 }
@@ -8,10 +8,10 @@ fitting piecewise diversification models according to phylogenetic and taxonomic
 }
 
 \usage{
-gmedusa(phy, richness = NULL, criterion = c("aicc", "aic"),
+medusa(phy, richness = NULL, criterion = c("aicc", "aic"),
     partitions=NA, model = c("mixed", "bd", "yule"), 
     cut = c("both","stem","node"), stepBack = TRUE, 
-    init = c(r=0.05, epsilon=0.5), ncores = NULL, \dots)
+    init = c(r=0.05, epsilon=0.5), ncores = NULL, verbose = FALSE, \dots)
 }
 
 \arguments{
@@ -24,6 +24,7 @@ gmedusa(phy, richness = NULL, criterion = c("aicc", "aic"),
   \item{stepBack}{determines whether parameter/model removal is considered. default = TRUE. (see \bold{Details})}
   \item{init}{initial conditions for net diversification and relative extinction}
   \item{ncores}{the number of processor cores to using in parallel processing. default = all}
+  \item{verbose}{print out extra information. default = FALSE}
   \item{...}{additional arguments to be passed to \code{\link[geiger]{treedata}}}
 }
 
@@ -34,7 +35,7 @@ The algorithm first fits a single diversification model to the entire dataset. A
 
 Two stopping criteria are available for the MEDUSA algorithm. The user can either determine the number of models explored by MEDUSA or this number may be determined based on model fits. A number of model partitions to be explored may be given a priori (if given a non-zero number through the \code{partitions} argument) or an information \code{criterion} is used to choose sufficient model complexity. If the latter stopping criterion is used, one needs to specify whether to use Akaike information criterion (\code{"aic"}) or sample-size corrected AIC (\code{"aicc"}). The algorithm defaults to using AICc. An appropriate threshold in AICc differences between different MEDUSA models has been shown to be dependent on tree size. The threshold used for model selection is computed internally (and is based on extensive simulation study). This value is reported to the user after the algorithm finishes. 
 
-The user will almost certainly want to summarize the object returned from MEDUSA with the function, \code{\link[geiger]{summary.medusaRAW}}. 
+The user will almost certainly want to summarize the object returned from MEDUSA with the function TBA. 
 }
 
 \value{
@@ -57,8 +58,6 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
 }
 
 \seealso{
-\code{\link[geiger]{summary.medusaRAW}}
-\code{\link[geiger]{plot.medusaRAW}}
 \code{\link[geiger]{plot.medusa}}
 }
 
@@ -80,9 +79,6 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     s2=summary(res2, criterion="aicc") # select best model based on AICc (again showing the third model as best)
     
     ## PLOTTING RESULTS
-    # plot model fit by model complexity for AIC and AICc
-    plot(res2, col=c(aic="gray", aicc="black")) # invoking plot.medusaRAW()
-    
     # plot breakpoints for the best model chosen by AICc
     plot(s2, cex=0.5, partitions=list(cex=5), label.offset=1, edge.width=2) # invoking plot.medusa()
     }
