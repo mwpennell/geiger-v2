@@ -4,7 +4,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	cut = c("both", "stem", "node"), stepBack = TRUE, init = c(r = 0.05, epsilon = 0.5), ncores = NULL, verbose = FALSE, ...) {
 
 	## CHECK ARGUMENTS
-	#verbose <- FALSE; # this should be an argument above
 	initialE <- init[["epsilon"]];
 	initialR <- init[["r"]];
 	sp = c(initialR, initialE);
@@ -83,7 +82,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		
 		
 		## update this to use medusaFitOptimal
-		fit <- list();
 		fit <- .fit.base.medusa (z = z, sp = sp, model = model, criterion = criterion);
 		
 		# if (model == "mixed") {
@@ -114,13 +112,12 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 			
 		## Needed downstream; do not recalculate
 		## Gives the number of tips associated with an internal node; determines whether a node is 'virgin' or not
-			num.tips <- list();
 			num.tips <- fx(all.nodes, function (x) length(obj$tips[[x]]));
 		
 		## Pre-fit pendant edges so these values need not be re(re(re))calculated; amounts to ~25% of all calculations
 		## Will show particular performance gain for edges with many fossil observations
 			#cat("Optimizing parameters for pendant edges... ");
-			tips <- NULL;
+			#tips <- NULL;
 			# Will always be shiftCut="stem"; if mixed model, keep only best fit and throw out other in .prefit.medusa
 			#tips <- fx(pend.nodes, .prefit.medusa, z = z, desc = desc, sp = sp, model = model, shiftCut = "stem", criterion = criterion);
 			tips <- fx(pend.nodes, .prefit.tip.medusa, z = z, sp = sp, model = model, criterion = criterion);
@@ -765,17 +762,33 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 .prefit.tip.medusa <- function (node, z, sp, model, criterion) {
 	z.tip <- z[z[,"dec"] == node,,drop=FALSE];
 	
-	if (all(z.tip[,"n.t"] == 1) && (model == "yule" || model == "mixed")) {
-		return(list(par=c(0, NA), lnLik=0, model="yule"));
-	}
 	# tips are always better fit by yule. don't bother with BD.
-	#fit <- .get.optimal.model.flavour(z=z.tip, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
 	if (model == "yule" || model == "mixed") {
-		return(.get.optimal.model.flavour(z=z.tip, sp=sp, model="yule", criterion=criterion));
-	} else { # at the moment, only BD will get through. but eventually constrained models also
+		if (z.tip[,"n.t"] == 1) { # single tip. nothing has happened along edge, so r = 0
+			return(list(par=c(0, NA), lnLik=0, model="yule"));
+		} else { # unresolved clade
+			# no t.len information available, only depth
+			# MLE birth rate is: log(n.t) / depth
+			r <- as.numeric(log(z.tip[,"n.t"]) / z.tip[,"t.len"]);
+			lik <- as.numeric(-z.tip[,"t.len"] * r + (z.tip[,"n.t"] - 1) * log(1 - exp(-z.tip[,"t.len"] * r)));
+			return(list(par=c(r, NA), lnLik=-lik, model="yule"));
+		}
+	}
+	
+	# the 'all' below doesn't seem necessary
+	#if (all(z.tip[,"n.t"] == 1) && (model == "yule" || model == "mixed")) {
+	#	return(list(par=c(0, NA), lnLik=0, model="yule"));
+	#}
+	
+	#fit <- .get.optimal.model.flavour(z=z.tip, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
+	#if (model == "yule" || model == "mixed") {
+	#	return(.get.optimal.model.flavour(z=z.tip, sp=sp, model="yule", criterion=criterion));
+	#} 
+	else { # at the moment, only BD will get through. but eventually constrained models also
 		return(.get.optimal.model.flavour(z=z.tip, sp=sp, model=model, criterion=criterion));
 	}
 }
+
 
 
 
@@ -860,29 +873,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 # }
 
 
-## sp = initializing values for r & epsilon
-## Default values should never be used (except for first model), as the values from the previous model are passed in
-#medusa.ml.fit.partition
-#.fit.partition.medusa <- function (partition, z, sp = c(0.1, 0.05), model) {
-.fit.partition.medusa <- function (z, sp = c(0.1, 0.05), model) {
-	# Construct likelihood function:
-	#lik <- .lik.partition.medusa(partition = (z[z[, "partition"] == partition, , drop = FALSE]), model = model);
-	lik <- .lik.partition.medusa(partition = z, model = model);
-	foo <- function (x) {
-		-lik(pars = exp(x));
-	} # work with parameters in log-space to preserve precision
-
-	if (model == "bd") {
-		fit <- optim(fn = foo, par = log(sp), method = "N"); # last argument connotes maximization
-		return(list(par = exp(fit$par), lnLik = -fit$value));
-	} else {
-		fit <- optimize(f = foo, interval = c(-25, 1));
-		par <- c(exp(fit$minimum), NA);
-		return(list(par = par, lnLik = -fit$objective));
-	}
-}
-
-
 ## Split the edge matrix 'z' by adding a partition rooted at node 'node'.
 ##   Note: in original MEDUSA parlance, this is cutAtStem=T.
 ## The list 'desc' is a list of descendants (see make.cache.medusa, above).
@@ -890,6 +880,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 ##   z: new medusa matrix, with the new partition added
 ##   affected: indices of the partitions affected by the split (n == 2).
 ## This is where 'shiftCut' matters
+## Arg 'extract' determines whether only the new clade should be returned. Used in prefitting.
 #medusa.split
 .split.z.at.node.medusa <- function (node, z, desc, shiftCut, extract=FALSE) {
 	descendants <- NULL;
@@ -1161,6 +1152,25 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 
 
+## sp = initializing values for r & epsilon
+## Default values should never be used (except for first model), as the values from the previous model are passed in
+#medusa.ml.fit.partition
+#.fit.partition.medusa <- function (partition, z, sp = c(0.1, 0.05), model) {
+.fit.partition.medusa <- function (z, sp = c(0.1, 0.05), model) {
+	# Construct likelihood function:
+	#lik <- .lik.partition.medusa(partition = (z[z[, "partition"] == partition, , drop = FALSE]), model = model);
+	lik <- .lik.partition.medusa(partition = z, model = model);
+	foo <- function (x) {-lik(pars = exp(x));} # work with parameters in log-space to preserve precision
+
+	if (model == "bd") {
+		fit <- optim(fn = foo, par = log(sp), method = "N"); # last argument connotes maximization
+		return(list(par = exp(fit$par), lnLik = -fit$value));
+	} else {
+		fit <- optimize(f = foo, interval = c(-25, 1));
+		par <- c(exp(fit$minimum), NA);
+		return(list(par = par, lnLik = -fit$objective));
+	}
+}
 
 
 ### NEED TO PUT IN ALL OTHER MODELS HERE!!! ###
