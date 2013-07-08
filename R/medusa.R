@@ -771,30 +771,20 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 			# MLE birth rate is: log(n.t) / depth
 			r <- as.numeric(log(z.tip[,"n.t"]) / z.tip[,"t.len"]);
 			lik <- as.numeric(-z.tip[,"t.len"] * r + (z.tip[,"n.t"] - 1) * log(1 - exp(-z.tip[,"t.len"] * r)));
-			return(list(par=c(r, NA), lnLik=-lik, model="yule"));
+			return(list(par=c(r, NA), lnLik=lik, model="yule"));
 		}
-	}
-	
-	# the 'all' below doesn't seem necessary
-	#if (all(z.tip[,"n.t"] == 1) && (model == "yule" || model == "mixed")) {
-	#	return(list(par=c(0, NA), lnLik=0, model="yule"));
-	#}
-	
-	#fit <- .get.optimal.model.flavour(z=z.tip, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
-	#if (model == "yule" || model == "mixed") {
-	#	return(.get.optimal.model.flavour(z=z.tip, sp=sp, model="yule", criterion=criterion));
-	#} 
-	else { # at the moment, only BD will get through. but eventually constrained models also
+	} else { # at the moment, only BD will get through. but eventually constrained models also
 		return(.get.optimal.model.flavour(z=z.tip, sp=sp, model=model, criterion=criterion));
 	}
 }
 
 
-
-
-	
+# prefitting ensure that clades are intact. this can enable shortcuts for certain configurations/models.
 .prefit.medusa <- function (node, z, desc, sp, model, shiftCut, criterion) {
 	zz <- .split.z.at.node.medusa(node = node, z = z, desc = desc, shiftCut = shiftCut, extract = TRUE)$z;
+	#if (all(zz[,"n.t"] == 1)) {
+	#	
+	#}
 	#fit <- .get.optimal.model.flavour(z=z.node, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
 	fit <- .get.optimal.model.flavour(z = zz, sp = sp, model = model, criterion = criterion);
 	return(fit);
