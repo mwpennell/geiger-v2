@@ -197,8 +197,8 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 				#cat("Step ", i+1, " (of ", model.limit, "): best likelihood = ", round(models[[i+1]]$lnLik, digits=7),
 				#	"; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model,
 				#	"; cut=", models[[i+1]]$cut.at, "\n", sep="");
-				cat("Step ", i, ": lnLik=", round(fit$lnLik, digits=7),
-					"; AICc=", fit$aicc, "; shift at node ", tail(fit$split.at,1), "; model=",
+				cat("Step ", i, ": lnLik=", round(fit$lnLik, digits=7), "; ", criterion, "=",
+					round(as.numeric(optModel[criterion]), digits=7), "; shift at node ", tail(fit$split.at,1), "; model=",
 					tail(fit$model,1), "; cut=", tail(fit$cut.at,1), "; # shifts=", length(fit$split.at) - 1, "\n", sep="");
 			}
 			return(optModel);
@@ -215,6 +215,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 				round(as.numeric(optModel[criterion]), digits=7), "; model=", optModel$model[1], "\n", sep="");
 			
 			while (!done & i < model.limit) {
+				i <- i + 1;
 				node.list <- all.nodes[-fit$split.at];
 				res <- fx(node.list, .update.fit.medusa, z = z, desc = desc, fit = fit, prefit = prefit, num.tips = num.tips,
 					root.node = root.node, model = model, criterion = criterion, shiftCut = shiftCut);
@@ -268,10 +269,9 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 					
 					#cat("Step ", i+1, ": best likelihood = ", models[[i+1]]$lnLik, "; AICc = ", models[[i+1]]$aicc, "; break at node ",
 					#	models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
-					cat("Step ", i+1, ": lnLik=", round(fit$lnLik, digits=7),
-						"; AICc=", fit$aicc, "; shift at node ", tail(fit$split.at,1), "; model=",
+					cat("Step ", i, ": lnLik=", round(fit$lnLik, digits=7), "; ", criterion, "=",
+						round(as.numeric(optModel[criterion]), digits=7), "; shift at node ", tail(fit$split.at,1), "; model=",
 						tail(fit$model,1), "; cut=", tail(fit$cut.at,1), "; # shifts=", length(fit$split.at) - 1, "\n", sep="");
-					i <- i + 1;
 				}
 			}
 			optModel$z <- z;
