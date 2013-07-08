@@ -1,4 +1,4 @@
-medusaVersion = 1.05;
+medusaVersion = 1.1;
 
 medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitions = NA, model = c("mixed", "bd", "yule"),
 	cut = c("both", "stem", "node"), stepBack = TRUE, init = c(r = 0.05, epsilon = 0.5), ncores = NULL, verbose = FALSE, ...) {
@@ -40,24 +40,15 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	richness <- .check.richness(phy = phy, richness = richness);
 	phyData <- .treedata.medusa(phy = phy, richness = richness, warnings = FALSE); ## modified prune.tree.merge.data for multiple trees (jme)
 	
-	# set threshold/model.limit once instead of for every tree
+	## Determine correct AICc threshold from tree size (based on simulations)
 	threshold_N <- ifelse(stop == "threshold", .threshold.medusa(phyData$phy), 0);
+	
+	## Limit on number of piecewise models fitted; based on tree size, aicc correction factor,
+	## and flavour of model fitted (i.e. # parameters estimated; birth-death or pure-birth)
 	model.limit <- .get.max.model.limit(richness = richness, stop = stop, npartitions = npartitions, model = model, verbose = verbose);
 	
 	# internal function for running a single tree and richness data.frame (jme)
 	medusa_runner <- function (phy, richness) {
-		
-	## move both of the following 2 outside of the function. arg.
-		
-		## Limit on number of piecewise models fitted; based on tree size, aicc correction factor,
-		## and flavour of model fitted (i.e. # parameters estimated; birth-death or pure-birth)
-		#model.limit <- .get.max.model.limit(richness = richness, stop = stop, npartitions = npartitions, model = model, verbose = verbose);
-		
-		## Determine correct AICc threshold from tree size (based on simulations)
-		## Should be used for interpreting model-fit
-		#N <- Ntip(phy);
-		#threshold_N <- ifelse(stop == "threshold", .threshold.medusa(N), 0);
-		#cat("Appropriate AICc threshold for tree of ", N, " tips is: ", threshold_N, ".\n\n", sep="");
 		
 		## Keep track of all nodes, internal and pendant (for keeping track of breakpoints)
 		pend.nodes <- seq_len(length(phy$tip.label)); # Calculate pendant splits just once, keep track through various models
@@ -71,40 +62,11 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		#cat("done.\n");
 		desc <- list(stem = obj$desc.stem, node = obj$desc.node);
 		
-		# update to this:
-		#desc <- list(stem = obj$desc.stem, node = obj$desc.node);
-		
-		# WTF is z.orig doing here? motherfucker...
+		# z.orig is no longer used, but helpful when debugging
 		z <- z.orig <- obj$z;
 		
-		## Fit the base model
-		## 'fit' holds current results; useful for initializing subsequent models
-		
-		
-		## update this to use medusaFitOptimal
+		## Fit single model to entire tree
 		fit <- .fit.base.medusa (z = z, sp = sp, model = model, criterion = criterion);
-		
-		# if (model == "mixed") {
-			# fit.bd <- .base.medusa(z = z, sp = sp, model = "bd");
-			# fit.yule <- .base.medusa(z = z, sp = sp, model = "yule");
-			# if (fit.bd[[criterion]] < fit.yule[[criterion]]) {
-				# fit <- fit.bd;
-				# fit$model <- "bd";
-			# } else {
-				# fit <- fit.yule;
-				# fit$model <- "yule";
-			# }
-		# } else if (model == "bd") {
-			# fit <- .base.medusa(z = z, sp = sp, model = "bd");
-			# fit$model <- "bd";
-		# } else {
-			# fit <- .base.medusa(z = z, sp = sp, model = "yule");
-			# fit$model <- "yule";
-		# }
-		#fit$z <- z;
-
-		#models <- list(fit); # get rid of this bullshit...
-		#zz <- list(z); # get rid of this bullshit...
 		
 	# If only one model is desired (i.e. base model), don't bother with all of the precalculations.
 		prefit <- NULL;
@@ -117,49 +79,35 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		## Pre-fit pendant edges so these values need not be re(re(re))calculated; amounts to ~25% of all calculations
 		## Will show particular performance gain for edges with many fossil observations
 			#cat("Optimizing parameters for pendant edges... ");
-			#tips <- NULL;
 			# Will always be shiftCut="stem"; if mixed model, keep only best fit and throw out other in .prefit.medusa
-			#tips <- fx(pend.nodes, .prefit.medusa, z = z, desc = desc, sp = sp, model = model, shiftCut = "stem", criterion = criterion);
 			tips <- fx(pend.nodes, .prefit.tip.medusa, z = z, sp = sp, model = model, criterion = criterion);
 			#cat("done.\n");
 			
 		## Pre-fit virgin internal nodes; should deliver performance gain for early models, and especially for large trees
 		## Remain useful until a split is accepted within the clade
-			## Need to incorporate cutAtStem here
-			#cat("Pre-calculating parameters for virgin internal nodes... ");
 			virgin.stem <- list();
 			virgin.node <- list();
 	
 			if (shiftCut == "stem" || shiftCut == "both") {
-				#virgin.stem <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, sp = sp,
-				#	model = model, shiftCut = "stem", criterion = criterion);
 				virgin.stem <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, sp = sp,
 					model = model, shiftCut = "stem", criterion = criterion);
 			}
 			if (shiftCut == "node" || shiftCut == "both") {
-				#virgin.node <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, sp = sp,
-				#	model = model, shiftCut = "node", criterion = criterion);
 				virgin.node <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, sp = sp,
 					model = model, shiftCut = "node", criterion = criterion);
 			}
-			
 			virgin.nodes <- list(stem = virgin.stem, node = virgin.node);
 			#cat("done.\n\n");
 			prefit <- list(tips = tips, virgin.nodes = virgin.nodes);
 		}
 		
-		# this is turned off for the moment
-		#if (stop == "partitions") {
 		stopOnLimit <- function(fit) { # not likely to be used. get rid of it?
 			optModel <- fit;
 			i <- 1;
 			
-			#cat("Step 1 (of ", model.limit, "): best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc,
-			#	"; model = ", models[[1]]$model, "\n", sep="");
 			cat("Step 1: lnLik=", round(optModel$lnLik, digits=7), "; ", criterion, "=",
 				round(as.numeric(optModel[criterion]), digits=7), "; model=", optModel$model[1], "\n", sep="");
 			
-			#for (i in seq_len(model.limit - 1)) {
 			while (i < model.limit) {
 				i <- i + 1;
 				node.list <- all.nodes[-fit$split.at];
@@ -167,13 +115,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 					root.node = root.node, model = model, criterion = criterion, shiftCut = shiftCut);
 
 			# Select model with best score according to the specific criterion employed (default aicc)
-				#best <- which.min(unlist(lapply(res, "[[", criterion)));
 				fit <- res[[which.min(unlist(lapply(res, "[[", criterion)))]];
-				
-				#models <- c(models, res[best]);
-				#fit <- res[[best]]; # keep track of '$split.at' i.e. nodes already considered
-				#z <- zz[[i + 1]] <- .split.z.at.node.medusa(node = node.list[best], z = z, desc = desc, shiftCut = fit$cut.at)$z;
-				
 				z.best <- .split.z.at.node.medusa(node = tail(fit$split.at, 1), z = z, desc = desc, shiftCut = tail(fit$cut.at, 1))$z;
 				step <- rbind(optModel$step, c("add", tail(fit$split.at, 1)));
 				
@@ -194,9 +136,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 				optModel <- fit;
 				z <- z.best;
 				
-				#cat("Step ", i+1, " (of ", model.limit, "): best likelihood = ", round(models[[i+1]]$lnLik, digits=7),
-				#	"; AICc = ", models[[i+1]]$aicc, "; break at node ", models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model,
-				#	"; cut=", models[[i+1]]$cut.at, "\n", sep="");
 				cat("Step ", i, ": lnLik=", round(fit$lnLik, digits=7), "; ", criterion, "=",
 					round(as.numeric(optModel[criterion]), digits=7), "; shift at node ", tail(fit$split.at,1), "; model=",
 					tail(fit$model,1), "; cut=", tail(fit$cut.at,1), "; # shifts=", length(fit$split.at) - 1, "\n", sep="");
@@ -204,13 +143,11 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 			return(optModel);
 		}
 		
-		#else if (stop == "threshold") {
 		stopOnThreshold <- function (fit) {
 			optModel <- fit;
 			i <- 1;
 			done <- FALSE;
 			
-			#cat("Step 1: best likelihood = ", models[[1]]$lnLik, "; AICc = ", models[[1]]$aicc, "; model = ", models[[1]]$model, "\n", sep="");
 			cat("Step 1: lnLik=", round(optModel$lnLik, digits=7), "; ", criterion, "=",
 				round(as.numeric(optModel[criterion]), digits=7), "; model=", optModel$model[1], "\n", sep="");
 			
@@ -221,38 +158,19 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 					root.node = root.node, model = model, criterion = criterion, shiftCut = shiftCut);
 
 			# Select model with best score according to the specific criterion employed (default aicc)
-				#best <- which.min(unlist(lapply(res, "[[", criterion)));
-				#best <- res[[which.min(unlist(lapply(res, "[[", criterion)))]];
 				fit <- res[[which.min(unlist(lapply(res, "[[", criterion)))]];
-				
-			# node gives all nodes. doh...
-			# this doesn't seem necessary anymore...
-				#node <- best$split.at;
-				#node <- tail(best$split.at, 1);
-				#cut <- best$cut.at;
-				
-			# here be the problem. this doesn't seem necessary anymore...
-			#	fit <- .update.fit.medusa (node = node, z = z, desc = desc, fit = fit, prefit = prefit, num.tips = num.tips,
-			#		root.node = root.node, model = model, criterion = criterion, shiftCut = cut);
-				#z <- .split.z.at.node.medusa(node = tail(best$split.at, 1), z = z, desc = desc, shiftCut = tail(best$cut.at, 1))$z;
-				#step <- rbind(optModel$step, c("add", tail(best$split.at, 1)));
-				
 				z.best <- .split.z.at.node.medusa(node = tail(fit$split.at, 1), z = z, desc = desc, shiftCut = tail(fit$cut.at, 1))$z;
 				step <- rbind(optModel$step, c("add", tail(fit$split.at, 1)));
 				
 			# Consider parameter removal
 				if (stepBack) {
-					#backFit <- .back.step.medusa(currentModel = fit, z = z, step = step, model = model, fixPar = fixPar, criterion = criterion);
-					#backFit <- .back.step.medusa(currentModel = best, z = z, step = step, model = model, criterion = criterion);
 					backFit <- .back.step.medusa(currentModel = fit, z = z.best, step = step, model = model, criterion = criterion);
 					fit <- backFit$fit;
 					z.best <- backFit$z;
 					step <- backFit$step;
 				}
-				#fit$z <- z;
 				fit$step <- step;
 			# Compare last accepted model to current best model
-				#if (as.numeric(models[[length(models)]][criterion]) - as.numeric(res[[best]][criterion]) < threshold_N) {
 				if (as.numeric(optModel[criterion]) - as.numeric(fit[criterion]) < threshold_N) {
 					cat("\nNo significant increase in ", criterion, " score. Disregarding subsequent piecewise models.\n\n", sep="");
 					done <- TRUE;
@@ -263,12 +181,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 					optModel <- fit;
 					z <- z.best;
 					
-					#models <- c(models, res[best]);
-					#fit <- res[[best]]; # keep track of '$split.at' i.e. nodes already considered
-					#z <- zz[[i + 1]] <- .split.z.at.node.medusa(node = node.list[best], z = z, desc = desc, shiftCut = fit$cut.at)$z;
-					
-					#cat("Step ", i+1, ": best likelihood = ", models[[i+1]]$lnLik, "; AICc = ", models[[i+1]]$aicc, "; break at node ",
-					#	models[[i+1]]$split.at[i+1], "; model=", models[[i+1]]$model, "; cut=", models[[i+1]]$cut.at, "\n", sep="");
 					cat("Step ", i, ": lnLik=", round(fit$lnLik, digits=7), "; ", criterion, "=",
 						round(as.numeric(optModel[criterion]), digits=7), "; shift at node ", tail(fit$split.at,1), "; model=",
 						tail(fit$model,1), "; cut=", tail(fit$cut.at,1), "; # shifts=", length(fit$split.at) - 1, "\n", sep="");
@@ -278,21 +190,9 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 			return(optModel);
 		}
 		
-	# temporarily turning off 'stopOnLimit', although probably should be pitched altogether
-		#if (stop == "partitions") optModel <- stopOnLimit(fit = fit) else optModel <- stopOnThreshold(fit = fit);
 		if (stop == "threshold") optModel <- stopOnThreshold(fit = fit) else optModel <- stopOnLimit(fit = fit);
 		
-		#modelSummary <- .summary.modelfit.medusa(models = models, phy = phy, threshold = threshold_N);
 		modelSummary <- .summary.modelfit.medusa(optModel);
-
-		#if (verbose) {
-		#	cat("Model fit summary:", "\n\n", sep = "");
-		#	print(modelSummary);
-		#	cat("\n");
-		#	# if (threshold_N > 0) {
-		#		# cat("\nAIC weights are not reported, as they are meaningless when using a threshold criterion.\n");
-		#	# }
-		#}
 
 		## SUMMARY - this uses a long lost format
 		# just output the summary, instead of the function
@@ -342,12 +242,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 			return(z);
 		}
 
-		#model.id <- nrow(modelSummary);
-		# z.summary <- zSummary(id = model.id);
-
 		control <- list(stop = stop, threshold = structure(threshold_N, names = criterion), partitions = npartitions);
-		#results <- list(control = control, cache = list(desc = desc, phy = phy, richness = richness), model = optModel,
-		#	summary = modelSummary, FUN = zSummary);
 		results <- list(control = control, cache = list(desc = desc, phy = phy), model = optModel,
 			summary = modelSummary, zSummary = zSummary(), medusaVersion = medusaVersion);
 		return(results);
@@ -361,7 +256,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		names(res) <- names(phy);
 		class(res) <- c("multimedusa", class(res));
 	} else {
-		# phyData$phy <- hashes.phylo(phyData$phy);
 		res <- medusa_runner(phyData$phy, phyData$richness);
 		
 		# add profile likelihoods on parameter values
@@ -659,10 +553,10 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 ## Needed for determining whether nodes are virgin nodes
 # ?!? this isn't even used anywhere...
 #get.num.tips
-.ntips <- function (node, phy) {
-	n <- length(tips(phy, node));
-	return(n);
-}
+# .ntips <- function (node, phy) {
+	# n <- length(tips(phy, node));
+	# return(n);
+# }
 
 ## Only used for base model
 #.fit.base.medusa <- function (z, sp, model, fixPar, criterion) {
@@ -672,9 +566,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	model.fit <- .calculate.modelfit.medusa(fit = fit, z = z);
 	steps <- c("add", as.numeric(min(z[,"anc"])));
 	
-	#return(list(par=matrix(fit$par, nrow=1, dimnames=list(NULL,c("r", "epsilon"))), lnLik.part=fit$lnLik, lnLik=fit$lnLik,
-	#	split.at=min(z[,"anc"]), aic=round(model.fit$aic, digits=7), aicc=round(model.fit$aicc, digits=7), num.par=model.fit$k,
-	#	cut.at="node", model=fit$model, z=z, step=matrix(steps, nrow=1, dimnames=list(NULL,c("step", "node")))));
 	return(list(par=matrix(fit$par, nrow=1, dimnames=list(NULL,c("r", "epsilon"))), lnLik.part=fit$lnLik, lnLik=fit$lnLik,
 		split.at=min(z[,"anc"]), aic=round(model.fit$aic, digits=7), aicc=round(model.fit$aicc, digits=7), num.par=model.fit$k,
 		cut.at="node", model=fit$model, step=matrix(steps, nrow=1, dimnames=list(NULL,c("step", "node")))));
@@ -785,21 +676,10 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	if (all(zz[,"n.t"] == 1, na.rm=T)) {
 		fit <- .get.optimal.simple(z = zz, sp = sp, model = model, criterion = criterion);
 	} else {
-		#fit <- .get.optimal.model.flavour(z=z.node, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
 		fit <- .get.optimal.model.flavour(z = zz, sp = sp, model = model, criterion = criterion);
 	}
 	return(fit);
 }
-
-# fucks up when only 2 tips (i.e. not internal edges)
-#virgin.node <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, sp = sp, model = model, shiftCut = "node", criterion = criterion);
-#.fit.partition.medusa(z = z, sp = sp, model = "yule");
-
-
-# for (i in 1:length(int.nodes)) {
-	# cat("Working with int node #", int.nodes[i], "\n", sep="");
-	# .prefit.medusa(node=int.nodes[i], z, desc, sp, model, shiftCut="node", criterion)
-# }
 
 .get.optimal.simple <- function (z, sp, model, criterion) {
 	fit.bd <- NULL;
@@ -839,79 +719,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	par <- c(r, NA);
 	return(list(par=c(r, NA), lnLik=lik));
 }
-
-
-
-## Pre-fit values for pendant edges; DON'T recalculate later; should account for ~25% of all calculations
-## Also cache values for virgin nodes; useful until subsetted.
-## shiftCut can only be "stem" or "node" (not "both"), as both are evaluated separately
-#medusa.ml.prefit
-# .prefit.medusa <- function (node, z, desc, sp, model, shiftCut, criterion) {
-	# fitted.bd <- NULL;
-	# fitted.yule <- NULL;
-	# #   fit <- NULL;
-	
-	# ## if model is mixed, grab the optimally fitted one, drop the other; it is cutAtStem that matters, as it is the sum of 2 break likelihoods
-	# ## optimal alone may be different than optimal in tandem
-	
-	
-	# ## update to use medusaFitOptimal
-	# if (shiftCut == "stem") {
-		# if (model == "bd" || model == "mixed") {
-			# obj <- .split.z.at.node.medusa(node = node, z = z, desc = desc, shiftCut = "stem");
-			# z.bd.stem <- obj$z;
-			# fitted.bd <- .fit.partition.medusa(partition = 2, z = z.bd.stem, sp = sp, model = "bd");
-			# fitted.bd$model <- "bd";
-			# fitted.bd$cut.at <- "stem";
-		# }
-		# if (model == "yule" || model == "mixed") {
-			# obj <- .split.z.at.node.medusa(node = node, z = z, desc = desc, shiftCut = "stem");
-			# z.yule.stem <- obj$z;
-			# fitted.yule <- .fit.partition.medusa(partition = 2, z = z.yule.stem, sp = sp, model = "yule");
-			# fitted.yule$model <- "yule";
-			# fitted.yule$cut.at <- "stem";
-		# }
-	# } else if (shiftCut == "node") {
-		# if (model == "bd" || model == "mixed") {
-			# obj <- .split.z.at.node.medusa(node = node, z = z, desc = desc, shiftCut = "node");
-			# z.bd.node <- obj$z;
-			# fitted.bd <- .fit.partition.medusa(partition = 2, z = z.bd.node, sp = sp, model = "bd");
-			# fitted.bd$model <- "bd";
-			# fitted.bd$cut.at <- "node";
-		# }
-		# if (model == "yule" || model == "mixed") {
-			# obj <- .split.z.at.node.medusa(node = node, z = z, desc = desc, shiftCut = "node");
-			# z.yule.node <- obj$z;
-			# fitted.yule <- .fit.partition.medusa(partition = 2, z = z.yule.node, sp = sp, model = "yule");
-			# fitted.yule$model <- "yule";
-			# fitted.yule$cut.at <- "node";
-		# }
-	# }
-	# ## Check which flavour of model fits best
-	# if (is.null(fitted.bd) & !is.null(fitted.yule)) {
-		# return(fitted.yule);
-	# } else if (is.null(fitted.yule) & !is.null(fitted.bd)) {
-		# return(fitted.bd);
-	# } else {
-		# ## Dealing with a 'mixed' model here; need to consider number of parameters.
-		# bd.model.fit <- .calculate.modelfit.medusa(fit = fitted.bd, z = z)
-		# yule.model.fit <- .calculate.modelfit.medusa(fit = fitted.yule, z = z)
-		# element <- NULL
-		# if (criterion == "aic") {
-			# element <- 1;
-		# } else {
-			# element <- 2;
-		# }
-		# if (is.nan(yule.model.fit[[element]])) {
-			# return(fitted.bd);
-		# } else if (bd.model.fit[[element]] < yule.model.fit[[element]]) {
-			# return(fitted.bd);
-		# } else {
-			# return(fitted.yule);
-		# }
-	# }
-# }
-
 
 ## Split the edge matrix 'z' by adding a partition rooted at node 'node'.
 ##   Note: in original MEDUSA parlance, this is cutAtStem=T.
@@ -1000,16 +807,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		
 		if (is.null(fit1.stem)) { # not cached
 			fit1.stem <- .get.optimal.model.flavour(z = dimClade, sp = sp, model = model, criterion = criterion);
-			#if (model == "mixed") { ## In mixed models, want to conserve flavour of previously fit model (right?). No!
-			#	if (sum(!is.na(sp)) < 2) { # yule
-			#		fit1.stem <- .fit.partition.medusa(partition = aff[1], z = z.stem, sp = sp, model = "yule");
-			#	} else {
-			#		fit1.stem <- .fit.partition.medusa(partition = aff[1], z = z.stem, sp = sp, model = "bd");
-			#	}
-			#} else {
-			#	fit1.stem <- .fit.partition.medusa(partition = aff[1], z = z.stem, sp = sp, model = model);
-			#	fit1.stem$model <- model;
-			#}
 		}
 		
 	## Second, new clade
@@ -1020,45 +817,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		} else { # novel shift
 			newClade <- z.stem[z.stem[,"partition"] == aff[2],,drop = FALSE]; # only subset if necessary
 			fit2.stem <- .get.optimal.model.flavour(z=newClade, sp=sp, model=model, criterion=criterion);
-			
-			# fit2.stem.bd <- NULL;
-			# fit2.stem.yule <- NULL;
-
-			# if (model == "yule" || model == "mixed") {
-				# #fit2.stem.yule <- .fit.partition.medusa(aff[2], z.stem, sp = sp, model = "yule");
-				# fit2.stem.yule <- .fit.partition.medusa(newClade, sp = sp, model = "yule");
-				# fit2.stem.yule$model <- "yule";
-			# }
-			# if (model == "bd" || model == "mixed") {
-				# if (is.na(sp[2])) {
-					# sp[2] <- 0.5;
-				# }
-				# #fit2.stem.bd <- .fit.partition.medusa(aff[2], z.stem, sp = sp, model = "bd");
-				# fit2.stem.bd <- .fit.partition.medusa(newClade, sp = sp, model = "bd");
-				# fit2.stem.bd$model <- "bd";
-			# }
-			# ## Figure out which model fits best
-			# if (is.null(fit2.stem.bd)) {
-				# fit2.stem <- fit2.stem.yule;
-			# } else if (is.null(fit2.stem.yule)) {
-				# fit2.stem <- fit2.stem.bd;
-			# } else {
-				# ## Considering both places for a shift
-				# fit2.stem.bd.val <- .calculate.modelfit.medusa(fit = fit2.stem.bd, z = z);
-				# fit2.stem.yule.val <- .calculate.modelfit.medusa(fit = fit2.stem.yule, z = z);
-
-				# if (criterion == "aic") {
-					# element <- 1;
-				# } else {
-					# element <- 2;
-				# }
-
-				# if (fit2.stem.bd.val[[element]] < fit2.stem.yule.val[[element]]) {
-					# fit2.stem <- fit2.stem.bd;
-				# } else {
-					# fit2.stem <- fit2.stem.yule;
-				# }
-			# }
 		}
 	}
 	
@@ -1072,64 +830,12 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		dimClade <- z.node[z.node[,"partition"] == aff[1],,drop = FALSE];
 		
 		fit1.node <- .get.optimal.model.flavour(z = dimClade, sp = sp, model = model, criterion = criterion);
-		#if (model == "mixed") { ## In mixed models, want to conserve flavour of previously fit model (right?) No!
-		#	if (sum(!is.na(sp)) < 2) { # yule
-		#		fit1.node <- .fit.partition.medusa(partition = aff[1], z = z.node, sp = sp, model = "yule");
-		#		fit1.node$model <- "yule";
-		#	} else {
-		#		fit1.node <- .fit.partition.medusa(partition = aff[1], z = z.node, sp = sp, model = "bd");
-		#		fit1.node$model <- "bd";
-		#	}
-		#} else {
-		#	fit1.node <- .fit.partition.medusa(partition = aff[1], z = z.node, sp = sp, model = model);
-		#	fit1.node$model <- model;
-		#}
 		
-		## Second, new clade
-		#if (node < root.node) { # not possible
-		#	fit2.node <- prefit$tips[[node]];
-		#}
 		if (length(unique(z.node[(z.node[, "partition"] == aff[2] & z.node[, "dec"] < root.node), "dec"])) == num.tips[[node]]) { # virgin node
 			fit2.node <- prefit$virgin.nodes$node[[node - root.node]];
 		} else { # novel shift
 			newClade <- z.node[z.node[,"partition"] == aff[2],,drop = FALSE];
 			fit2.node <- .get.optimal.model.flavour(z=newClade, sp=sp, model=model, criterion=criterion);
-			# fit2.node.bd <- NULL;
-			# fit2.node.yule <- NULL;
-
-			# if (model == "yule" || model == "mixed") {
-				# fit2.node.yule <- .fit.partition.medusa(aff[2], z.node, sp, model = "yule");
-				# fit2.node.yule$model <- "yule";
-			# }
-			# if (model == "bd" || model == "mixed") {
-				# if (is.na(sp[2])) {
-					# sp[2] <- 0.5;
-				# }
-				# fit2.node.bd <- .fit.partition.medusa(aff[2], z.node, sp, model = "bd");
-				# fit2.node.bd$model <- "bd";
-			# }
-			# ## Figure out which model fits best
-			# if (is.null(fit2.node.bd)) {
-				# fit2.node <- fit2.node.yule;
-			# } else if (is.null(fit2.node.yule)) {
-				# fit2.node <- fit2.node.bd;
-			# } else {
-				# ## Considering both places for a shift
-				# fit2.node.bd.val <- .calculate.modelfit.medusa(fit = fit2.node.bd, z = z);
-				# fit2.node.yule.val <- .calculate.modelfit.medusa(fit = fit2.node.yule, z = z);
-
-				# if (criterion == "aic") {
-					# element <- 1;
-				# } else {
-					# element <- 2;
-				# }
-
-				# if (fit2.node.bd.val[[element]] < fit2.node.yule.val[[element]]) {
-					# fit2.node <- fit2.node.bd;
-				# } else {
-					# fit2.node <- fit2.node.yule;
-				# }
-			# }
 		}
 	}
 
@@ -1154,9 +860,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		node.val <- list(lnLik = node.lik, par = node.par);
 		node.fit <- .calculate.modelfit.medusa(fit = node.val, z = z);
 
-		# element <- NULL;
-		# if (criterion == "aic") {element <- 1;} else {element <- 2;}
-
 		if (stem.fit[[criterion]] < node.fit[[criterion]]) {
 			fit1 <- fit1.stem;
 			fit2 <- fit2.stem;
@@ -1180,8 +883,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	fit$aic <- model.fit$aic;
 	fit$aicc <- model.fit$aicc;
 	fit$num.par <- model.fit$k;
-	#fit$cut.at <- cut.at;
-	#fit$model <- fit2$model;
 	
 	fit$cut.at <- c(fit$cut.at, cut.at);
 	fit$model <- c(fit$model, fit2$model);
@@ -1198,7 +899,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 #.fit.partition.medusa <- function (partition, z, sp = c(0.1, 0.05), model) {
 .fit.partition.medusa <- function (z, sp = c(0.1, 0.05), model) {
 	# Construct likelihood function:
-	#lik <- .lik.partition.medusa(partition = (z[z[, "partition"] == partition, , drop = FALSE]), model = model);
 	lik <- .lik.partition.medusa(partition = z, model = model);
 	foo <- function (x) {-lik(pars = exp(x));} # work with parameters in log-space to preserve precision
 
@@ -1359,48 +1059,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	return(summ);
 }
 
-
-
-
-# WTF? This is ancient code...
-## Prints out a table of likelihoods, parameters, and aic scores
-# calculate.model.fit.summary
-# .summary.modelfit.medusa <- function (models, phy, threshold = 0) {
-	# tmp <- matrix(nrow = (length(models)), ncol = 6);
-	# colnames(tmp) <- c("partitions", "split", "lnL", "k", "aic", "aicc");
-	# # c("N.Models", "Break.Node", "Ln.Lik", "N.Param", "aic", "aicc")
-	
-	# w.aic <- numeric(length(models));
-	# w.aicc <- numeric(length(models));
-	# cut.at <- character(length(models));
-
-	# for (i in 1:length(tmp[, 1])) {
-		# tmp[i, ] <- c(i, as.integer(models[[i]]$split.at[i]), models[[i]]$lnLik, models[[i]]$num.par, models[[i]]$aic, models[[i]]$aicc);
-		# cut.at[i] <- models[[i]]$cut.at;
-	# }
-
-	# all.res <- data.frame(tmp);
-	# all.res[1, 2] <- NA; # root node for base model
-	# all.res$cut <- as.character(cut.at);
-	# all.res <- all.res[, c("partitions", "split", "cut", "lnL", "k", "aic", "aicc")];
-	
-	# # these are meaningless
-	# if (threshold == 0) {
-		# w.aic <- round(aicw(all.res$aic), digits = 5);
-		# w.aicc <- round(aicw(all.res$aicc), digits = 5);
-		# all.res$w.aic <- w.aic$w;
-		# all.res$w.aicc <- w.aicc$w;
-	# }
-	# #   if (plot)
-	# #   {
-	# # 		dev.new();
-	# # 		.plot.modelfit.medusa(all.res, ...);
-	# # 		if (!is.null(fig.title)) {title(main=fig.title, cex.main=0.75);}
-	# #   }
-	# return(all.res);
-# }
-
-
 ## Self explanatory. Don't use these.
 ## These are meaningless when using a threshold criterion
 #calculate.model.weights
@@ -1427,70 +1085,16 @@ aicw <- function (x) {
 #  3. tree printed with colour-coded edges, node labels to indicate split position(s)
 #  4. plot likelihood surface <- where did this go?!?!?!?!?!?
 
-	# Extract constituent components from results
-	#    ct=list(model=NULL, criterion=c(NA, "aic", "aicc"), threshold=0)
-#    ct[names(control)]=control
-
-	#criterion <- match.arg(criterion, c("aicc", "aic"));
-
 	results <- object;
-	#fit <- results$models;
 	fit <- results$model;
 	phy <- results$cache$phy;
 	desc <- results$cache$desc;
 	modelSummary <- results$summary;
-	#cutAt <- as.character(modelSummary$cut);
 	cutAt <- as.character(modelSummary$Cut.At);
 
-	# fit; phy; z; desc; modelSummary; threshold;
-	
-	# First, determine which model is desired <- this is deprecated, since only a single (optimal) model is held.
-	# model.chooser <- function (criterion = c("aic", "aicc"), threshold = "auto") {
-		# if (threshold == "auto") {
-			# threshold <- .threshold.medusa(Ntip(phy));
-		# } else if (!is.numeric(threshold)) {
-			# stop("'threshold' must be numeric");
-		# }
-		# threshold <- abs(threshold);
-
-		# model.id <- 1;
-		# while (1) {
-			# if ((model.id + 1) > length(fit)) {
-				# break;
-			# }
-			# if ((fit[[model.id]][[criterion]] - fit[[model.id + 1]][[criterion]]) < threshold) {
-				# break;
-			# }
-			# model.id <- model.id + 1;
-		# }
-		# structure(threshold, names = model.id);
-	# }
-
-	# model.id <- 0
-	# if (!is.null(model)) {
-		# xx <- list(...);
-		# if ("threshold" %in% names(xx)) {
-			# warning("'threshold' has been ignored");
-		# }
-		# model.id <- model;
-		# threshold <- 0;
-	# } else { # Find best model using some criterion (threshold or user-defined)
-		# # if (cutoff != "threshold") {threshold <- cutoff}
-		# # else {cat("\nSelecting model based on corrected threshold (improvement in information theoretic score of ", ct$threshold, " units).\n", sep="");}
-		# tmp <- model.chooser(criterion = criterion, ...);
-		# model.id <- as.integer(names(tmp));
-		# threshold <- as.numeric(tmp);
-	# }
-
-	#names(threshold) <- criterion;
-	#chosen <- ifelse(1:length(fit) %in% model.id, "*", "");
-	#modelSummary$chosen <- chosen;
-	#z <- object$FUN(model.id);
-	#z <- object$FUN();
 	z <- object$zSummary;
 	attr(z, "phylo") <- phy;
 	attr(z, "summary") <- modelSummary;
-	#attr(z, "threshold") <- threshold;
 	class(z) <- c("medusa", class(z));
 	return(z);
 }
@@ -1504,20 +1108,9 @@ print.medusa <- function (x, ...) {
 
 #plot.medusa <- function (x, partitions = list(cex = 2, bg = "gray", alpha = 0.75, col = "black", lwd = 1), ...) {
 plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, col = "black", lwd = 1, ...) {
-	#z <- x;
 	z <- x$zSummary;
-	#st <- list(cex = 2, bg = "gray", alpha = 0.75, col = "black", lwd = 1);
-	#st[names(partitions)] <- partitions;
-	#shift <- st;
 	shift <- list(cex = cex, bg = bg, alpha = alpha, col = col, lwd = lwd);
-	#phy <- attr(z, "phylo");
 	phy <- x$cache$phy;
-	# par=match.arg(par, c("r", "epsilon"));
-	# bb=matrix(z[,par], nrow=1);
-	# bb=rbind(bb, bb);
-	# colnames(bb)=rownames(z);
-	# shifts=max(z[,"partition"]);
-	# yy=.branchcol.plot(phy, bb, plot=FALSE, colors=list(branches=min(c(256, 4*shifts+1)), legend=7, missing=1))$col;
 	plot(phy, cex=0.5, ...);
 	if (time) axisPhylo();
 	shifts <- z[(idx <- !is.na(z[, "shift"])), "dec"];
@@ -1532,22 +1125,6 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, c
 		edgelabels.auteur(ww, frame = "none", cex = ifelse(xx == 1, shift$cex/3, 1e-10), pch = NA, col = shift$col);
 	}
 }
-
-# long deprecated...
-# plot.medusaRAW = function (x, col = c(aic = "black", aicc = "blue"), ...) {
-	# all.res <- x$summary;
-	# ylim <- c(min(all.res[, "aic"], all.res[, "aicc"]), max(all.res[, "aic"], all.res[, "aicc"]));
-	# plot(all.res[, "partitions"], all.res[, "aicc"], xlab = "piecewise models", ylab = "model fit", ylim = ylim, type = "l", col = col[["aicc"]], xaxt = "n", ...);
-	# axis(1, at = all.res[, "partitions"], labels = all.res[, "partitions"], tcl = NA);
-	# points(all.res[, "partitions"], all.res[, "aicc"], col = col[["aicc"]], pch = 21, bg = "white");
-	# points(all.res[, "partitions"], all.res[, "aic"], col = col[["aic"]], type = "l");
-	# points(all.res[, "partitions"], all.res[, "aic"], col = col[["aic"]], pch = 21, bg = "white");
-
-	# legend("topleft", c("aicc", "aic"), pch = 21, pt.bg = "white", lty = 1, col = c(col[["aicc"]], col[["aic"]]), inset = 0.05, cex = 0.75, bty = "n");
-# }
-
-
-
 
 # ## Consider removing previously-fit rate shifts
 # #.back.step.medusa <- function (currentModel, z, step, model, fixPar, criterion) {
@@ -1580,14 +1157,10 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, c
 		## set par to weighted mean of 2 affected partitions
 			## updated to reflect total path length rather than number of tips
 			## really only influences weighted parameter starting values
-			
 				weights <- c(sum(z[which(z[,"partition"] == aff),"t.len"]), sum(z[which(z[,"partition"] == i),"t.len"]));
 				sp <- c(weighted.mean(pars[c(aff,i),1], weights), weighted.mean(pars[c(aff,i),2], weights, na.rm=T));
 				#fit <- getOptimalModelFlavour(z=z.temp, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
 				fit <- .get.optimal.model.flavour(z=z.temp, sp=sp, model=model, criterion=criterion);
-				#.fit.partition.medusa
-				
-				#.fit.partition.medusa(partition = 2, z = z.bd.stem, sp = c(initialR, initialE), model = "bd");
 				
 		## Update fit values
 				fitModel$par[aff,] <- fit$par;
@@ -1768,75 +1341,3 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, c
 	prof.par <- as.data.frame(round(prof.par, digits=7));
 	return(prof.par);
 }
-
-
-## Create a plot of model-fit vs. model-size
-#plotModelFit
-#.plot.modelfit.medusa <- function (all.res, ...)
-#{
-#       ylim <- c(min(all.res[,"aic"],all.res[,"aicc"]), max(all.res[,"aic"],all.res[,"aicc"]));
-#       plot(all.res[,"partitions"],all.res[,"aicc"], xlab="number of piecewise models", ylab="model fit", ylim=ylim, type="l", col="blue", xaxt="n", ...);
-#   axis(1, at=all.res[,"partitions"], labels=all.res[,"partitions"], tcl=NA)
-#       points(all.res[,"partitions"],all.res[,"aicc"], col="blue", pch=21, bg="white");
-#       points(all.res[,"partitions"],all.res[,"aic"], col="black", type="l");
-#       points(all.res[,"partitions"],all.res[,"aic"], col="black", pch=21, bg="white");
-
-#       legend("topleft", c("aicc","aic"), pch=21, pt.bg="white", lty=1, col=c("blue", "black"), inset = .05, cex=0.75, bty="n"); # 'bottomright' also works
-#}
-
-## Takes in a summary from summarizeTurboMEDUSA
-## treeParameters <- list(mm=mm, break.pts=break.pts, phy=phy, z=z)
-#plotPrettyTree <- function (treeParameters, time=TRUE, node.labels=FALSE, margin=FALSE, cex=0.5, label.offset=0, font=3, color.tip.label=FALSE, ...)
-#{
-#       mm <- treeParameters$mm;
-#       break.pts <- treeParameters$break.pts;
-#       phy <- treeParameters$phy;
-#       z <- treeParameters$z;
-#       colour <- NULL;
-
-#       dev.new();
-#
-#       if (color.tip.label)
-#       {
-#               for (i in 1:length(phy$tip.label))
-#               {
-#                       colour[i] <- as.integer(z[which(z[,"dec"] == i),"partition"]);
-#               }
-#       }
-#       if (time) {margin=TRUE;}
-#       plot.phylo(phy, edge.color=z[mm,"partition"], no.margin=!margin, cex=cex, label.offset=label.offset, tip.color=colour, ...);
-#       if (time)
-#       {
-#               axisPhylo(cex.axis=0.75);
-#               mtext("Divergence Time (MYA)", at=(max(get("last_plot.phylo", envir = .PlotPhyloEnv)$xx)*0.5), side = 1, line = 2, cex=0.75);
-#       }
-#       if (node.labels)
-#       {
-#               for (i in  1:length(break.pts))
-#               {
-#                       nodelabels(i, node= break.pts[i], frame = "c", font = 1, cex=0.5);
-#               }
-#       }
-#}
-
-
-## Get b and d values from r (b-d) and epsilson (d/b)
-## Used in previous version of program; now in terms of r and epsilon
-## Possibly of use to users wishing to translate results
-#get.b.d <- function (r, epsilon)
-#{
-#       b <- r/(1-epsilon);
-#       d <- b-r;   # Alternatively: d <- eps*r/(1-eps)
-#       return(list(b=b, d=d));
-#}
-
-## Print out tree with ape-style node-numbering
-## Possibly of interest for users to identify numbers of node(s) off interest
-## If this is the case, make sure to pass in pruned tree
-#plotNN <- function (phy, time=TRUE, margin=TRUE, label.offset=0.5, cex=0.5, ...)
-#{
-#       phy$node.label <- (length(phy$tip.label) + 1):max(phy$edge);
-#       plot.phylo(phy, show.node.label=TRUE, no.margin=!margin, label.offset=label.offset, cex=cex, ...);
-#       if (time && !margin) {cat("Cannot plot time axis without a margin.\n");}
-#       else if (time && margin) {axisPhylo(cex.axis=0.75)};
-#}
