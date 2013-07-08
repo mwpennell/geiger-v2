@@ -1676,35 +1676,41 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, c
 		
 		if (model == "yule") {
 			par <- sp[1];
-			if (par != 0) {
-				maxLik <- lik(par); if (maxLik == -Inf) maxLik <- 0; # correct for -Inf at boundary lambda == 0
-				threshold <- function (x) lik(x) - maxLik + crit; # find roots on either side of maxLik
-				
-		## need intelligent bounds
-				if (par != 0) {
-					low.bound <- par - par/2;
-					up.bound <- par + par/2;
-				} else {
-					low.bound <- par;
-					up.bound <- par + inc/2;
-				}
-				if (low.bound != 0) {
-					while (threshold(low.bound) > 0) {
-						low.bound <- low.bound - inc;
-					}
-				}
-				while (threshold(up.bound) > 0) {
-					up.bound <- up.bound + inc;
-				}
-				
-				if (low.bound <= 0) {
-					prof.par[i,1] <- 0;
-				} else {
-					prof.par[i,1] <- uniroot(threshold, lower=low.bound, upper=par)$root;
-				}
-				if (par == 0) par <- 1e-10; # avoid -Inf at boundary
-				prof.par[i,2] <- uniroot(threshold, lower=par, upper=up.bound)$root;
+			maxLik <- NULL;
+			
+			if (par == 0) {
+				maxLik <- 0;
+			} else {
+				maxLik <- lik(par);
+				if (maxLik == -Inf) maxLik <- 0; # correct for -Inf at boundary lambda == 0
 			}
+			threshold <- function (x) lik(x) - maxLik + crit; # find roots on either side of maxLik
+			
+	## need intelligent bounds
+			if (par != 0) {
+				low.bound <- par - par/2;
+				up.bound <- par + par/2;
+			} else {
+				low.bound <- par;
+				up.bound <- par + inc/2;
+			}
+			if (low.bound != 0) {
+				while (threshold(low.bound) > 0) {
+					low.bound <- low.bound - inc;
+				}
+			}
+			while (threshold(up.bound) > 0) {
+				up.bound <- up.bound + inc;
+			}
+			
+			if (low.bound <= 0) {
+				prof.par[i,1] <- 0;
+			} else {
+				prof.par[i,1] <- uniroot(threshold, lower=low.bound, upper=par)$root;
+			}
+			if (par == 0) par <- 1e-10; # avoid -Inf at boundary
+			prof.par[i,2] <- uniroot(threshold, lower=par, upper=up.bound)$root;
+
 		} else if (model == "bd") {
 			par1 <- sp[1]; par2 <- sp[2];
 			maxLik <- lik(sp);
