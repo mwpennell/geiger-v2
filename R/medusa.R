@@ -782,12 +782,62 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 # prefitting ensure that clades are intact. this can enable shortcuts for certain configurations/models.
 .prefit.medusa <- function (node, z, desc, sp, model, shiftCut, criterion) {
 	zz <- .split.z.at.node.medusa(node = node, z = z, desc = desc, shiftCut = shiftCut, extract = TRUE)$z;
-	#if (all(zz[,"n.t"] == 1)) {
-	#	
-	#}
-	#fit <- .get.optimal.model.flavour(z=z.node, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
-	fit <- .get.optimal.model.flavour(z = zz, sp = sp, model = model, criterion = criterion);
+	if (all(zz[,"n.t"] == 1, na.rm=T)) {
+		fit <- .get.optimal.simple(z = zz, sp = sp, model = model, criterion = criterion);
+	} else {
+		#fit <- .get.optimal.model.flavour(z=z.node, sp=sp, model=model, fixPar=fixPar, criterion=criterion);
+		fit <- .get.optimal.model.flavour(z = zz, sp = sp, model = model, criterion = criterion);
+	}
 	return(fit);
+}
+
+# fucks up when only 2 tips (i.e. not internal edges)
+#virgin.node <- fx(int.nodes, .prefit.medusa, z = z, desc = desc, sp = sp, model = model, shiftCut = "node", criterion = criterion);
+#.fit.partition.medusa(z = z, sp = sp, model = "yule");
+
+
+# for (i in 1:length(int.nodes)) {
+	# cat("Working with int node #", int.nodes[i], "\n", sep="");
+	# .prefit.medusa(node=int.nodes[i], z, desc, sp, model, shiftCut="node", criterion)
+# }
+
+.get.optimal.simple <- function (z, sp, model, criterion) {
+	fit.bd <- NULL;
+	fit.yule <- NULL;
+	fit <- NULL;
+	
+	if (model == "yule" | model == "mixed") {
+		fit.yule <- .simple.yule.medusa(z = z);
+		fit.yule$model <- "yule";
+	}
+	if (model == "bd" | model == "mixed") {
+		if (is.na(sp[2])) {sp[2] <- 0.5;}
+		fit.bd <- .fit.partition.medusa(z = z, sp = sp, model = "bd");
+		fit.bd$model <- "bd";
+	}
+## Figure out which model fits best
+	if (is.null(fit.bd)) {
+		fit <- fit.yule;
+	} else if (is.null(fit.yule)) {
+		fit <- fit.bd;
+	} else {
+## Considering both models
+		fit <- .get.best.partial.model(fit1 = fit.yule, fit2 = fit.bd, z = z, criterion = criterion);
+	}
+	return(fit);
+}
+
+# solution known when subtree is completely sampled
+.simple.yule.medusa <- function (z) {
+	n.int <- sum(is.na(z[,"n.t"])); # the number of speciation events
+	if (n.int == 0) {
+		return(list(par=c(0, NA), lnLik=0));
+	}
+	sum.t <- sum(z[,"t.len"]);
+	r <- (n.int) / sum.t;
+	lik <- n.int * log(r) - r * sum.t;
+	par <- c(r, NA);
+	return(list(par=c(r, NA), lnLik=lik));
 }
 
 
@@ -1626,66 +1676,66 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, c
 		
 		if (model == "yule") {
 			par <- sp[1];
-			maxLik <- lik(par); if (maxLik == -Inf) maxLik <- 0; # correct for -Inf at boundary lambda == 0
-			
-			thprof.parhold <- function (x) lik(x) - maxLik + crit; # find roots on either side of maxLik
-			
-	## need intelligent bounds
 			if (par != 0) {
-				low.bound <- par - par/2;
-				up.bound <- par + par/2;
-			} else {
-				low.bound <- par;
-				up.bound <- par + inc/2;
-			}
-			if (low.bound != 0) {
-				while (thprof.parhold(low.bound) > 0) {
-					low.bound <- low.bound - inc;
+				maxLik <- lik(par); if (maxLik == -Inf) maxLik <- 0; # correct for -Inf at boundary lambda == 0
+				threshold <- function (x) lik(x) - maxLik + crit; # find roots on either side of maxLik
+				
+		## need intelligent bounds
+				if (par != 0) {
+					low.bound <- par - par/2;
+					up.bound <- par + par/2;
+				} else {
+					low.bound <- par;
+					up.bound <- par + inc/2;
 				}
+				if (low.bound != 0) {
+					while (threshold(low.bound) > 0) {
+						low.bound <- low.bound - inc;
+					}
+				}
+				while (threshold(up.bound) > 0) {
+					up.bound <- up.bound + inc;
+				}
+				
+				if (low.bound <= 0) {
+					prof.par[i,1] <- 0;
+				} else {
+					prof.par[i,1] <- uniroot(threshold, lower=low.bound, upper=par)$root;
+				}
+				if (par == 0) par <- 1e-10; # avoid -Inf at boundary
+				prof.par[i,2] <- uniroot(threshold, lower=par, upper=up.bound)$root;
 			}
-			while (thprof.parhold(up.bound) > 0) {
-				up.bound <- up.bound + inc;
-			}
-			
-			if (low.bound <= 0) {
-				prof.par[i,1] <- 0;
-			} else {
-				prof.par[i,1] <- uniroot(thprof.parhold, lower=low.bound, upper=par)$root;
-			}
-			if (par == 0) par <- 1e-10; # avoid -Inf at boundary
-			prof.par[i,2] <- uniroot(thprof.parhold, lower=par, upper=up.bound)$root;
-			
 		} else if (model == "bd") {
 			par1 <- sp[1]; par2 <- sp[2];
 			maxLik <- lik(sp);
 			
 	## first, r
-			thprof.parholdR <- function (x) lik(c(x, par2)) - maxLik + crit;
+			thresholdR <- function (x) lik(c(x, par2)) - maxLik + crit;
 			
 			low.bound <- par1 - par1/2;
 			up.bound <- par1 + par1/2;
 			
-			while (thprof.parholdR(low.bound) > 0) {
+			while (thresholdR(low.bound) > 0) {
 				low.bound <- low.bound - inc;
 			}
-			while (thprof.parholdR(up.bound) > 0) {
+			while (thresholdR(up.bound) > 0) {
 				up.bound <- up.bound + inc;
 			}
 			if (low.bound <= 0) low.bound <- 0;
 			
-			prof.par[i,1] <- uniroot(thprof.parholdR, lower=low.bound, upper=par1)$root;
-			prof.par[i,2] <- uniroot(thprof.parholdR, lower=par1, upper=up.bound)$root;
+			prof.par[i,1] <- uniroot(thresholdR, lower=low.bound, upper=par1)$root;
+			prof.par[i,2] <- uniroot(thresholdR, lower=par1, upper=up.bound)$root;
 			
 	## now, epsilon
-			thprof.parholdE <- function (x) lik(c(par1, x)) - maxLik + crit;
+			thresholdE <- function (x) lik(c(par1, x)) - maxLik + crit;
 			
 			low.bound <- par2 - par2/2;
 			up.bound <- par2 + par2/2;
 			
-			while (thprof.parholdE(low.bound) > 0) {
+			while (thresholdE(low.bound) > 0) {
 				low.bound <- low.bound - inc;
 			}
-			while (thprof.parholdE(up.bound) > 0) {
+			while (thresholdE(up.bound) > 0) {
 				up.bound <- up.bound + inc;
 			}
 			if (low.bound < 0) low.bound <- 0;
@@ -1694,12 +1744,12 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, c
 			if (low.bound == 0) {
 				prof.par[i,3] <- 0;
 			} else {
-				prof.par[i,3] <- uniroot(thprof.parholdE, lower=0, upper=par2)$root;
+				prof.par[i,3] <- uniroot(thresholdE, lower=0, upper=par2)$root;
 			}
 			if (up.bound == 1) {
 				prof.par[i,4] <- 1;
 			} else {
-				prof.par[i,4] <- uniroot(thprof.parholdE, lower=par2, upper=up.bound)$root;
+				prof.par[i,4] <- uniroot(thresholdE, lower=par2, upper=up.bound)$root;
 			}
 			if (prof.par[i,3] == par2) prof.par[i,3] <- 0; # precision problem?!? check optimization ***
 		}
