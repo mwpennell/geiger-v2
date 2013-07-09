@@ -897,7 +897,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 ## Default values should never be used (except for first model), as the values from the previous model are passed in
 #medusa.ml.fit.partition
 #.fit.partition.medusa <- function (partition, z, sp = c(0.1, 0.05), model) {
-.fit.partition.medusa <- function (z, sp = c(0.1, 0.05), model) {
+.fit.partition.medusa <- function (z, sp = c(0.05, 0.5), model) {
 	# Construct likelihood function:
 	lik <- .lik.partition.medusa(partition = z, model = model);
 	foo <- function (x) {-lik(pars = exp(x));} # work with parameters in log-space to preserve precision

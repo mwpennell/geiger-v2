@@ -1,10 +1,11 @@
 \name{medusa}
 \alias{medusa}
+\alias{print.medusa}
 \title{
 MEDUSA: modeling evolutionary diversification using stepwise AIC
 }
 \description{
-fitting piecewise diversification models according to phylogenetic and taxonomic likelihoods 
+Fits piecewise birth-death models to ultrametric phylogenetic tree(s) according to phylogenetic (edge-length) and taxonomic (richness) likelihoods. Optimal model size is determined via a stepwise AIC approach.
 }
 
 \usage{
