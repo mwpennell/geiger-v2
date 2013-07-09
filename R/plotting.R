@@ -508,69 +508,84 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 	return(jumps.res)
 }
 
-#general phylogenetic plotting utility, given a named vector or data.frame of values that can be associated with phy$edge[,2]
-#author: JM EASTMAN 2010
-#note: small values are given bluish hues, large values reddish hues; median values are given gray hues
-
-.branchcol.plot <-
-function(phy, cur.rates, colors=list(branches=256, legend=17, missing=1), digits=3, plot=TRUE, legend=TRUE, legend.title="", log=FALSE, ...) {
-	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object")
-	if(!is.null(colnames(cur.rates))) {
-		cur.rates=cur.rates[,match(phy$hash[phy$edge[,2]],colnames(cur.rates))] 
+# general phylogenetic plotting utility, given a named vector or data.frame of values that can be associated with phy$edge[,2]
+# author: JM EASTMAN 2010
+# note: small values are given bluish hues, large values reddish hues; median values are given gray hues
+# added some stuff; numeric vector input didn't seem to be supported.
+.branchcol.plot <- function (phy, cur.rates, colors = list(branches = 256, legend = 17, missing = 1),
+	digits = 3, plot = TRUE, legend = TRUE, legend.title = "", log = FALSE, ...) {
+	if (!"hphylo" %in% class(phy)) stop("Supply 'phy' as an 'hphylo' object");
+	
+	if ("data.frame" %in% class(cur.rates)) {
+		if (!is.null(colnames(cur.rates))) {
+			cur.rates <- cur.rates[,match(phy$hash[phy$edge[,2]], colnames(cur.rates))];
+		} else {
+			names(cur.rates) <- phy$hash[phy$edge[,2]];
+			warning("Rates assumed to be ordered as in 'phy$edge'");
+		}
+	} else if ("numeric" %in% class(cur.rates)) {
+		if (!is.null(names(cur.rates))) {
+			cur.rates <- cur.rates[match(phy$hash[phy$edge[,2]], names(cur.rates))];
+		} else {
+			names(cur.rates) <- phy$hash[phy$edge[,2]];
+			warning("Rates assumed to be ordered as in 'phy$edge'");
+		}
+		cur.rates <- as.data.frame(t(cur.rates));
 	} else {
-		names(cur.rates)=phy$hash[phy$edge[,2]]
-		warning("Rates assumed to be ordered as in 'phy$edge'")
+		stop("Expecting either a data.frame or named numeric vector");
 	}
-	cur.rates=apply(cur.rates, 2, function(x) {
-					if(any(!is.na(x))){
-						return(median(x, na.rm=TRUE))
-					} else {
-						return(NA)
-					}
+	
+	cur.rates <- apply(cur.rates, 2, function(x) {
+		if (any(!is.na(x))) {
+			return(median(x, na.rm=TRUE));
+		} else {
+			return(NA);
+		}
 	})
-	if(log) {
-		ests=log(cur.rates) 
+	if (log) {
+		ests <- log(cur.rates);
 	} else {
-		ests=cur.rates
+		ests <- cur.rates;
 	}
 	
-	ms=median(ests, na.rm=TRUE)
-	mm=sapply(ests, function(x) x-ms)
-	cce=diverge_hcl(2*colors$branches+1, power = 0.5)
-	lcce=cce[round(seq(1, length(cce), length=colors$legend))]
-	e.seq=seq(-max(abs(mm+0.05*ms), na.rm=TRUE),max(abs(mm+0.05*ms), na.rm=TRUE),length=2*colors$branches+1)
-	lseq=e.seq+ms
-	lseq=seq(min(lseq), max(lseq), length=colors$legend)
-	lcce=cce[round(seq(1, length(cce), length=colors$legend))]
-	if(log) lseq=exp(rev(lseq)) else lseq=rev(lseq)
+	ms <- median(ests, na.rm=TRUE);
+	mm <- sapply(ests, function(x) x - ms);
+	cce <- diverge_hcl(2 * colors$branches + 1, power = 0.5);
+	lcce <- cce[round(seq(1, length(cce), length=colors$legend))];
+	e.seq <- seq(-max(abs(mm + 0.05 * ms), na.rm=TRUE), max(abs(mm + 0.05 * ms), na.rm=TRUE), length = 2 * colors$branches + 1);
+	lseq <- e.seq+ms;
+	lseq <- seq(min(lseq), max(lseq), length=colors$legend);
+	lcce <- cce[round(seq(1, length(cce), length=colors$legend))];
+	if (log) lseq <- exp(rev(lseq)) else lseq <- rev(lseq)
 	
-	ucr=unique(cur.rates)
-	ucr=ucr[!is.na(ucr)]
-	if(length(ucr)==1){
-		mp=cce[round(length(cce)/2)]
-		colors.branches=rep(mp, length(mm))
-		colors.branches[is.na(mm)]=colors$missing
+	ucr <- unique(cur.rates);
+	ucr <- ucr[!is.na(ucr)];
+	if (length(ucr) == 1) {
+		mp <- cce[round(length(cce)/2)];
+		colors.branches <- rep(mp, length(mm));
+		colors.branches[is.na(mm)] <- colors$missing;
 	} else {
-		colors.branches=sapply(mm, function(x) {
-							   if(is.na(x)) {
-							   return(colors$missing)
-							   } else {
-							   cce[which(min(abs(e.seq-x))==abs(e.seq-x))]
-							   }
+		colors.branches <- sapply(mm, function(x) {
+			if (is.na(x)) {
+				return(colors$missing);
+			} else {
+				cce[which(min(abs(e.seq - x)) == abs(e.seq - x))];
+			}
 		})
 	}
 	
-	if(plot) {
+	if (plot) {
 		plot.phylo(phy, cex=0.1, edge.color=colors.branches, ...)
-		if(legend) {
+		if (legend) {
 			legend("topright", title=legend.title, cex=0.5, pt.cex=1, text.col="darkgray", 
-				   legend = sprintf(paste("%", 2*digits, paste(digits, "f", sep=""), sep="."), lseq), pch=21, ncol=1, col = "darkgray", 
-				   pt.bg = rev(lcce), box.lty="blank", border="white")
+				   legend = sprintf(paste("%", 2*digits, paste(digits, "f", sep=""), sep="."), lseq),
+				   pch=21, ncol=1, col = "darkgray", pt.bg = rev(lcce), box.lty="blank", border="white");
 		}
 	} else {
-		return(list(col=colors.branches,legend.seq=lseq,legend.col=lcce))
+		return(list(col=colors.branches,legend.seq=lseq,legend.col=lcce));
 	}
 }
+
 
 
 
