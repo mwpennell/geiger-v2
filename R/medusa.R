@@ -245,7 +245,8 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 		control <- list(stop = stop, threshold = structure(threshold_N, names = criterion), partitions = npartitions);
 		results <- list(control = control, cache = list(desc = desc, phy = phy), model = optModel,
-			summary = modelSummary, zSummary = zSummary(optModel$z));
+			summary = modelSummary, zSummary = zSummary(optModel$z), medusaVersion = medusaVersion);
+		class(results) <- c("medusa", class(results));
 		return(results);
 	}
 	
@@ -256,7 +257,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		res <- lapply(phyData$phy, function (x) medusa_runner(phy = x, richness = phyData$richness));
 		names(res) <- names(phy);
 		res$richness <- phyData$richness;
-		res$medusaVersion <- medusaVersion;
 		class(res) <- c("multimedusa", class(res));
 		
 	} else {
@@ -266,9 +266,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		res$model$prof.par <- .get.profile.likelihoods(res);
 		res$summary <- cbind(res$summary, res$model$prof.par);
 		res$richness <- phyData$richness;
-		res$medusaVersion <- medusaVersion;
 		
-		class(res) <- c("medusa", class(res));
 		print(res$summary);
 	}
 
@@ -1187,6 +1185,73 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	return(z);
 }
 
+
+
+
+
+
+
+
+
+
+##########################################################################################
+# Printing / plotting / summary
+##########################################################################################
+
+## Prints out a table of likelihoods, and parameters.
+## because a threshold is used, aic weights are meaningless.
+.summary.modelfit.medusa <- function (optModel) {
+	modelSize <- length(optModel$split.at);
+	
+	summ <- data.frame(cbind(seq(1:modelSize), optModel$split.at, optModel$cut.at, optModel$model,
+		signif(optModel$lnLik.part, digits=7)), signif(optModel$par, digits=6), stringsAsFactors = FALSE);
+	colnames(summ) <- c("Model.ID", "Shift.Node", "Cut.At", "Model", "Ln.Lik.part", "r", "epsilon");
+	
+	return(summ);
+}
+
+print.medusa <- function (x, ...) {
+	n.taxa <- sum(x$zSummary[,"n.t"], na.rm=TRUE);
+	n.tips <- length(x$cache$phy$tip.label);
+	if (n.taxa == n.tips) {
+		cat("\nOptimal medusa model for tree with ", n.tips, " taxa.\n\n", sep="");
+	} else {
+		cat("\nOptimal medusa model for tree with ", n.tips, " tips representing ", n.taxa, " taxa.\n\n", sep="");
+	}
+	print(x$summary);
+	cat("\n");
+	cat("95% confidence intervals on parameter values calculated from profile likelihoods\n");
+}
+
+# should add in the ability to plot terminal richnesses (if any != 1)
+#plot.medusa <- function (x, partitions = list(cex = 2, bg = "gray", alpha = 0.75, col = "black", lwd = 1), ...) {
+#plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, col = "black", lwd = 1, ...) {
+# TODO: (1) come up with custom colour-scheme, (2) plot richnesses.
+plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
+	z <- x$zSummary;
+	shift <- list(cex = 1, bg = "gray", alpha = 0.75, col = "black", lwd = 1);
+	phy <- x$cache$phy;
+	
+	mm <- match(phy$edge[,2], z[,"dec"]);
+	edge.color <- z[mm, "partition"];
+	
+	plot(phy, edge.color=edge.color, cex=0.5, ...);
+	if (time) axisPhylo();
+	shifts <- z[(idx <- !is.na(z[, "shift"])), "dec"];
+	if (length(shifts)) {
+		ss <- z[idx, "shift"];
+		ww <- character(nrow(phy$edge));
+		ww[match(shifts, phy$edge[, 2])] <- ss;
+		xx <- numeric(nrow(phy$edge));
+		xx[phy$edge[, 2] %in% shifts] <- 1;
+		edgelabels.auteur(NULL, frame = "circle", cex = ifelse(xx == 1, shift$cex, 1e-10), pch = ifelse(xx == 1, 21, NA),
+		bg = .transparency(shift$bg, shift$alpha), col = shift$col, lwd = shift$lwd);
+		edgelabels.auteur(ww, frame = "none", cex = ifelse(xx == 1, shift$cex/3, 1e-10), pch = NA, col = shift$col);
+	}
+}
+
+## Get confidence intervals on parameter values using profile likelihoods
+## This is only used for single-tree analyses.
 ## passed-in parameters parm are MLEs stored in a matrix
 .get.profile.likelihoods <- function (res, crit=1.92) {
 	parm <- res$model$par;
@@ -1299,68 +1364,3 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	prof.par <- as.data.frame(round(prof.par, digits=7));
 	return(prof.par);
 }
-
-
-
-
-
-
-
-
-
-##########################################################################################
-# Printing / plotting / summary
-##########################################################################################
-
-## Prints out a table of likelihoods, and parameters.
-## because a threshold is used, aic weights are meaningless.
-.summary.modelfit.medusa <- function (optModel) {
-	modelSize <- length(optModel$split.at);
-	
-	summ <- data.frame(cbind(seq(1:modelSize), optModel$split.at, optModel$cut.at, optModel$model,
-		signif(optModel$lnLik.part, digits=7)), signif(optModel$par, digits=6), stringsAsFactors = FALSE);
-	colnames(summ) <- c("Model.ID", "Shift.Node", "Cut.At", "Model", "Ln.Lik.part", "r", "epsilon");
-	
-	return(summ);
-}
-
-print.medusa <- function (x, ...) {
-	n.taxa <- sum(x$richness$n.taxa);
-	n.tips <- length(x$cache$phy$tip.label);
-	if (n.taxa == n.tips) {
-		cat("\nOptimal medusa model for tree with ", n.tips, " taxa.\n\n", sep="");
-	} else {
-		cat("\nOptimal medusa model for tree with ", n.tips, " tips representing ", n.taxa, " taxa.\n\n", sep="");
-	}
-	print(x$summary);
-	cat("\n");
-	cat("95% confidence intervals on parameter values calculated from profile likelihoods\n");
-}
-
-# should add in the ability to plot terminal richnesses (if any != 1)
-#plot.medusa <- function (x, partitions = list(cex = 2, bg = "gray", alpha = 0.75, col = "black", lwd = 1), ...) {
-#plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, col = "black", lwd = 1, ...) {
-# TODO: come up with custom colour-scheme
-plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
-	z <- x$zSummary;
-	shift <- list(cex = 1, bg = "gray", alpha = 0.75, col = "black", lwd = 1);
-	phy <- x$cache$phy;
-	
-	mm <- match(phy$edge[,2], z[,"dec"]);
-	edge.color <- z[mm, "partition"];
-	
-	plot(phy, edge.color=edge.color, cex=0.5, ...);
-	if (time) axisPhylo();
-	shifts <- z[(idx <- !is.na(z[, "shift"])), "dec"];
-	if (length(shifts)) {
-		ss <- z[idx, "shift"];
-		ww <- character(nrow(phy$edge));
-		ww[match(shifts, phy$edge[, 2])] <- ss;
-		xx <- numeric(nrow(phy$edge));
-		xx[phy$edge[, 2] %in% shifts] <- 1;
-		edgelabels.auteur(NULL, frame = "circle", cex = ifelse(xx == 1, shift$cex, 1e-10), pch = ifelse(xx == 1, 21, NA),
-		bg = .transparency(shift$bg, shift$alpha), col = shift$col, lwd = shift$lwd);
-		edgelabels.auteur(ww, frame = "none", cex = ifelse(xx == 1, shift$cex/3, 1e-10), pch = NA, col = shift$col);
-	}
-}
-
