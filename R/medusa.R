@@ -139,9 +139,9 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 				cat("Step ", i, ": lnLik=", round(fit$lnLik, digits=7), "; ", criterion, "=",
 					round(as.numeric(optModel[criterion]), digits=7), "; shift at node ", tail(fit$split.at,1), "; model=",
 					tail(fit$model,1), "; cut=", tail(fit$cut.at,1), "; # shifts=", length(fit$split.at) - 1, "\n", sep="");
+				if (i == model.limit) cat("\n");
 			}
-			optModel$z <- z;
-			return(optModel);
+			return(list(optModel=optModel, z=z));
 		}
 		
 		stopOnThreshold <- function (fit) {
@@ -187,27 +187,18 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 						tail(fit$model,1), "; cut=", tail(fit$cut.at,1), "; # shifts=", length(fit$split.at) - 1, "\n", sep="");
 				}
 			}
-			optModel$z <- z;
-			return(optModel);
+			return(list(optModel=optModel, z=z));
 		}
 		
-		if (stop == "threshold") optModel <- stopOnThreshold(fit = fit) else optModel <- stopOnLimit(fit = fit);
+		if (stop == "threshold") res <- stopOnThreshold(fit = fit) else res <- stopOnLimit(fit = fit);
 		
+		optModel <- res$optModel;
+		z <- res$z;
 		modelSummary <- .summary.modelfit.medusa(optModel);
 
-		## SUMMARY - this uses a long lost format
-		# just output the summary, instead of the function
-		# zSummary <- function (id) {
-		zSummary <- function (z) {
-			# model.id <- id;
-			# #z <- zz[[model.id]];
-			# how is opt.model different from modelSummary?
-			# opt.model <- data.frame(cut = modelSummary$cut[1:model.id], split = modelSummary$split[1:model.id], models[[model.id]]$par,
-				# lnLp = models[[model.id]]$lnLik.part, stringsAsFactors = FALSE);
+		summarizeZ <- function (z) {
 			opt.model <- data.frame(cut = optModel$cut.at, split = optModel$split.at, optModel$par, lnLp = optModel$lnLik.part, stringsAsFactors = FALSE);
-			# break.pts <- opt.model$split;
 			break.pts <- as.numeric(optModel$split.at);
-			# cut.at <- opt.model$cut;
 			cut.at <- optModel$cut.at;
 			rownames(z) <- phy$hash[z[, "dec"]]; # identify identical edges among trees
 			
@@ -235,17 +226,17 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 				}
 			}
 			anc <- match(z[, "anc"], z[, "dec"]);
-			#z <- cbind(z, shift = match(z[, "dec"], opt.model$split), t.shift = res);
-			#z <- cbind(z, r = opt.model[z[, "partition"], "r"], epsilon = opt.model[z[, "partition"], "epsilon"]);
 			z <- cbind(z, shift = match(z[, "dec"], optModel$split), t.shift = res);
 			z <- cbind(z, r = optModel$par[z[, "partition"],"r"], epsilon = optModel$par[z[, "partition"],"epsilon"]);
 			z <- cbind(z, ancestral.r = z[anc, "r"], ancestral.epsilon = z[anc, "epsilon"]);
 			return(z);
 		}
-
+		
+		zSummary <- summarizeZ(z);
+		
 		control <- list(stop = stop, threshold = structure(threshold_N, names = criterion), partitions = npartitions);
 		results <- list(control = control, cache = list(desc = desc, phy = phy), model = optModel,
-			summary = modelSummary, zSummary = zSummary(optModel$z), medusaVersion = medusaVersion);
+			summary = modelSummary, zSummary = zSummary, medusaVersion = medusaVersion);
 		class(results) <- c("medusa", class(results));
 		return(results);
 	}
@@ -261,9 +252,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		
 	} else {
 		res <- medusa_runner(phyData$phy, phyData$richness);
-		
-		# add profile likelihoods on parameter values
-		res$model$prof.par <- .get.profile.likelihoods(res);
+		res$model$prof.par <- .get.profile.likelihoods(res); # add profile likelihoods on parameter values
 		res$summary <- cbind(res$summary, res$model$prof.par);
 		res$richness <- phyData$richness;
 		
@@ -933,8 +922,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		maxVal <- (log(node.richness) / depth) * 5;
 		if (node.richness <= 1) {maxVal <- 1e-5;}
 		
-		#suppressWarnings(fit <- optimize(f=foo, interval=c(-25, log(maxVal))));
-		fit <- optimize(f=foo, interval=c(-25, log(maxVal)))
+		suppressWarnings(fit <- optimize(f=foo, interval=c(-25, log(maxVal)))); # don't really need to suppress here
 		par <- c(exp(fit$minimum), NA);
 		
 		#test <- FALSE;
@@ -943,14 +931,12 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		#	cat("node.richness = ", node.richness, "; depth = ", depth, "\n", sep="");
 		#	test <- TRUE;
 		#}
-		
 		while (par[1]/maxVal > 0.95) { # crash against boundary; rarely used
 			maxVal <- par[1] * 3;
 		#	cat("Hit boundary. Increasing maxVal from ", par[1], " to ", maxVal, "\n", sep="");
 			suppressWarnings(fit <- optimize(f=foo, interval=c(log(par[1]/2), log(maxVal)))); # don't really need to suppress here
 			par <- c(exp(fit$minimum), NA);
 		}
-		
 		#if (test) cat("Final par = ", par[1], "\n", sep="");
 		
 		return(list(par = par, lnLik = -fit$objective));
@@ -1239,7 +1225,7 @@ print.multimedusa <- function (x) {
 # should add in the ability to plot terminal richnesses (if any != 1)
 #plot.medusa <- function (x, partitions = list(cex = 2, bg = "gray", alpha = 0.75, col = "black", lwd = 1), ...) {
 #plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, col = "black", lwd = 1, ...) {
-# TODO: (1) come up with custom colour-scheme, (2) plot richnesses.
+# TODO: (1) come up with custom colour-scheme, (2) plot richnesses if any > 1.
 plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 	z <- x$zSummary;
 	shift <- list(cex = 1, bg = "gray", alpha = 0.75, col = "black", lwd = 1);
@@ -1264,7 +1250,7 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 }
 
 ## Get confidence intervals on parameter values using profile likelihoods
-## This is only used for single-tree analyses.
+## This is only used for single-tree analyses. Could be added for multimedusa, but I don't really see the point.
 ## passed-in parameters parm are MLEs stored in a matrix
 .get.profile.likelihoods <- function (res, crit=1.92) {
 	parm <- res$model$par;
