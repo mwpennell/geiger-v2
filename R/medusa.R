@@ -1199,7 +1199,6 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 ##########################################################################################
 
 ## Prints out a table of likelihoods, and parameters.
-## because a threshold is used, aic weights are meaningless.
 .summary.modelfit.medusa <- function (optModel) {
 	modelSize <- length(optModel$split.at);
 	
@@ -1210,18 +1209,30 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	return(summ);
 }
 
+## Print out summary matrix with liks, parameter vals, and confidence intervals (if present)
 print.medusa <- function (x, ...) {
 	n.taxa <- sum(x$zSummary[,"n.t"], na.rm=TRUE);
 	n.tips <- length(x$cache$phy$tip.label);
 	if (n.taxa == n.tips) {
-		cat("\nOptimal medusa model for tree with ", n.tips, " taxa.\n\n", sep="");
+		cat("\nOptimal MEDUSA model for tree with ", n.tips, " taxa.\n\n", sep="");
 	} else {
-		cat("\nOptimal medusa model for tree with ", n.tips, " tips representing ", n.taxa, " taxa.\n\n", sep="");
+		cat("\nOptimal MEDUSA model for tree with ", n.tips, " tips representing ", n.taxa, " taxa.\n\n", sep="");
 	}
 	print(x$summary);
 	cat("\n");
 	if (!is.null(x$summary$r.low)) {
 		cat("95% confidence intervals on parameter values calculated from profile likelihoods\n");
+	}
+}
+
+print.multimedusa <- function (x) {
+	n.trees <- length(x) - 1;
+	n.taxa <- sum(x[[1]]$zSummary[,"n.t"], na.rm=TRUE);
+	n.tips <- length(x[[1]]$cache$phy$tip.label);
+	if (n.taxa == n.tips) {
+		cat("\nMEDUSA results for ", n.trees, " trees, each with ", n.taxa, " taxa.\n\n", sep="");
+	} else {
+		cat("\nMEDUSA results for ", n.trees, " trees, each with ", n.tips, " tips representing ", n.taxa, " taxa.\n\n", sep="");
 	}
 }
 
