@@ -1057,14 +1057,9 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	}
 }
 
-
 ## 'fit' contains '$par' and '$lnlik'
-#calculate.model.fit
 .calculate.modelfit.medusa <- function (fit, z) {
 	## Sample size taken (for now) as the total num.nodes in the tree (internal + pendant)
-	# num.nodes = (2*length(phy$tip.label) - 1) == (2*length(richness[,1]) - 1) == length(z[,1]) + 1
-	#   n <- (length(z[,1]) + 1) + sum(!is.na(z[,"n.f"]));
-
 	# Since each edge defines a node (i.e. an 'observation'), need only add root node as final obervation
 	n <- (length(z[, 1]) + 1);
 
@@ -1080,35 +1075,15 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	}
 
 	# Updated for more general models: check how many parameter values != NA
-	#   k <- 2 + (3 * (num.models - 1))
 	k <- sum(!is.na(fit$par)) + (num.models - 1); # number of estimated parameters + number of breaks
 
 	ll <- list(k = k, lnL = fit$lnLik);
 	return(.aic(ll, n));
 	#return(.aic(ll$lnL, n, k));
-	#   lnLik <- fit$lnLik;
-	#   aic <- (-2 * lnLik) + (2*k);
-	#   aicc <- aic + 2*k*(k+1)/(n-k-1);
-	#   model.fit <- c(aic, aicc, k);
-	#   return(model.fit);
 }
 
-## Self explanatory. Don't use these.
-## These are meaningless when using a threshold criterion
-#calculate.model.weights
-aicw <- function (x) {
-	aic <- x;
-	best <- min(aic);
-	delta <- aic - best;
-	sumDelta <- sum(exp(-0.5 * delta));
-	w <- (exp(-0.5 * delta)/sumDelta);
 
-	results <- data.frame(fit = aic, delta = delta, w = w);
-	rownames(results) <- names(aic);
-
-	return(results);
-}
-
+## Functions for model removal ##
 
 # ## Consider removing previously-fit rate shifts
 # #.back.step.medusa <- function (currentModel, z, step, model, fixPar, criterion) {
@@ -1334,7 +1309,7 @@ aicw <- function (x) {
 
 
 ##########################################################################################
-# Printing / plotting
+# Printing / plotting / summary
 ##########################################################################################
 
 ## Prints out a table of likelihoods, and parameters.

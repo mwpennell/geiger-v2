@@ -18,6 +18,20 @@ logLik.gfits <- function(object, ...) {
     lapply(object, function(x) x$opt$lnL);
 }
 
+# get aic-weights
+# x is a named vector of AIC scores
+aicw <- function (x) {
+	aic <- x;
+	best <- min(aic);
+	delta <- aic - best;
+	sumDelta <- sum(exp(-0.5 * delta));
+	w <- (exp(-0.5 * delta)/sumDelta);
+
+	results <- data.frame(fit = aic, delta = delta, w = w);
+	rownames(results) <- names(aic);
+
+	return(results);
+}
 
 #general printing utility for ensuring equal numbers of characters within columns and defining spacing between columns
 #author: JM EASTMAN 2010
