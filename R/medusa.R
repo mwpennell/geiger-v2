@@ -1111,8 +1111,10 @@ print.medusa <- function (x, ...) {
 	cat("95% confidence intervals on parameter values calculated from profile likelihoods\n");
 }
 
+# should add in the ability to plot terminal richnesses (if any != 1)
 #plot.medusa <- function (x, partitions = list(cex = 2, bg = "gray", alpha = 0.75, col = "black", lwd = 1), ...) {
 #plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, col = "black", lwd = 1, ...) {
+# TODO: come up with custom colour-scheme
 plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 	z <- x$zSummary;
 	shift <- list(cex = 1, bg = "gray", alpha = 0.75, col = "black", lwd = 1);
