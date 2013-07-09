@@ -893,6 +893,10 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 
 
+
+
+### NEED TO PUT IN ALL OTHER MODELS HERE!!! ###
+
 ## sp = initializing values for r & epsilon
 ## Default values should never be used (except for first model), as the values from the previous model are passed in
 #medusa.ml.fit.partition
@@ -901,19 +905,20 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	# Construct likelihood function:
 	lik <- .lik.partition.medusa(partition = z, model = model);
 	foo <- function (x) {-lik(pars = exp(x));} # work with parameters in log-space to preserve precision
-
+	
+	# starting parameters for bd come from previously-fit models (or default for base model)
 	if (model == "bd") {
 		fit <- optim(fn = foo, par = log(sp), method = "N"); # last argument connotes maximization
 		return(list(par = exp(fit$par), lnLik = -fit$value));
-	} else {
+	}
+	if (model == "yule") {
 		fit <- optimize(f = foo, interval = c(-25, 1));
 		par <- c(exp(fit$minimum), NA);
 		return(list(par = par, lnLik = -fit$objective));
 	}
+	# and all of the constrained models ...
+	
 }
-
-
-### NEED TO PUT IN ALL OTHER MODELS HERE!!! ###
 
 ## make.lik.medusa.part: generate a likelihood function for a single partition.
 #make.lik.medusa.part
