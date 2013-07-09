@@ -1220,7 +1220,9 @@ print.medusa <- function (x, ...) {
 	}
 	print(x$summary);
 	cat("\n");
-	cat("95% confidence intervals on parameter values calculated from profile likelihoods\n");
+	if (!is.null(x$summary$r.low)) {
+		cat("95% confidence intervals on parameter values calculated from profile likelihoods\n");
+	}
 }
 
 # should add in the ability to plot terminal richnesses (if any != 1)
@@ -1256,7 +1258,8 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 .get.profile.likelihoods <- function (res, crit=1.92) {
 	parm <- res$model$par;
 	models <- res$model$model;
-	z <- res$model$z;
+	#z <- res$model$z;
+	z <- res$zSummary;
 	
 	prof.par <- matrix(nrow=length(parm[,1]), ncol=4);
 	colnames(prof.par) <- c("r.low", "r.high", "eps.low", "eps.high")
