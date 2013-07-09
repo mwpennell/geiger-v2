@@ -1,4 +1,4 @@
-medusaVersion = 1.2;
+medusaVersion = 1.3;
 
 medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitions = NA, model = c("mixed", "bd", "yule"),
 	cut = c("both", "stem", "node"), stepBack = TRUE, init = c(r = 0.05, epsilon = 0.5), ncores = NULL, verbose = FALSE, ...) {
@@ -140,6 +140,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 					round(as.numeric(optModel[criterion]), digits=7), "; shift at node ", tail(fit$split.at,1), "; model=",
 					tail(fit$model,1), "; cut=", tail(fit$cut.at,1), "; # shifts=", length(fit$split.at) - 1, "\n", sep="");
 			}
+			optModel$z <- z;
 			return(optModel);
 		}
 		
@@ -249,7 +250,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	}
 	
 	## I don't like this format. Why store N (possibly 10,000) copies of richness? Same goes for stop and npartitions
-	# seems like hash is ONLY useful with mulitple trees. wtf?!?
+	# seems like hash is ONLY useful with mulitple trees.
 	if ("multiPhylo" %in% class(phy)) { ## deal with multiple trees
 		#res <- lapply(phyData, function (x) medusa_runner(x$phy, x$richness));
 		res <- lapply(phyData$phy, function (x) medusa_runner(phy = x, richness = phyData$richness));
@@ -264,6 +265,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		
 		res$richness <- phyData$richness;
 		class(res) <- c("medusa", class(res));
+		print(res$summary);
 	}
 
 	invisible(res);
@@ -911,9 +913,44 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		fit <- optim(fn = foo, par = log(sp), method = "N"); # last argument connotes maximization
 		return(list(par = exp(fit$par), lnLik = -fit$value));
 	}
+	
+## grab values to get an intelligent upper bound on b or r
+	node.richness  <- sum(z[,"n.t"], na.rm=TRUE);
+	depth <- max(z[,"t.0"]);
+		
 	if (model == "yule") {
-		fit <- optimize(f = foo, interval = c(-25, 1));
+		#fit <- optimize(f = foo, interval = c(-25, 1));
+		#par <- c(exp(fit$minimum), NA);
+		
+		n.int <- sum(is.na(z[,"n.t"]));
+		
+		if ((n.int == 0) && all(z[,"n.t"] == 1, na.rm = TRUE)) {
+			return(list(par=c(0, NA), lnLik=-Inf));
+		}
+		
+		maxVal <- (log(node.richness) / depth) * 5;
+		if (node.richness <= 1) {maxVal <- 1e-5;}
+		
+		#suppressWarnings(fit <- optimize(f=foo, interval=c(-25, log(maxVal))));
+		fit <- optimize(f=foo, interval=c(-25, log(maxVal)))
 		par <- c(exp(fit$minimum), NA);
+		
+		#test <- FALSE;
+		#if (par[1]/maxVal > 0.95) {
+		#	print(z);
+		#	cat("node.richness = ", node.richness, "; depth = ", depth, "\n", sep="");
+		#	test <- TRUE;
+		#}
+		
+		while (par[1]/maxVal > 0.95) { # crash against boundary; rarely used
+			maxVal <- par[1] * 3;
+		#	cat("Hit boundary. Increasing maxVal from ", par[1], " to ", maxVal, "\n", sep="");
+			suppressWarnings(fit <- optimize(f=foo, interval=c(log(par[1]/2), log(maxVal)))); # don't really need to suppress here
+			par <- c(exp(fit$minimum), NA);
+		}
+		
+		#if (test) cat("Final par = ", par[1], "\n", sep="");
+		
 		return(list(par = par, lnLik = -fit$objective));
 	}
 	# and all of the constrained models ...
@@ -1105,7 +1142,13 @@ aicw <- function (x) {
 }
 
 print.medusa <- function (x, ...) {
-	cat("\nOptimal medusa model for tree with ", length(x$cache$phy$tip.label), " taxa.\n\n", sep="");
+	n.taxa <- sum(x$richness$n.taxa);
+	n.tips <- length(x$cache$phy$tip.label);
+	if (n.taxa == n.tips) {
+		cat("\nOptimal medusa model for tree with ", n.tips, " taxa.\n\n", sep="");
+	} else {
+		cat("\nOptimal medusa model for tree with ", n.tips, " tips representing ", n.taxa, " taxa.\n\n", sep="");
+	}
 	print(x$summary);
 	cat("\n");
 	cat("95% confidence intervals on parameter values calculated from profile likelihoods\n");
