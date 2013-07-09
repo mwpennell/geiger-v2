@@ -1,4 +1,4 @@
-medusaVersion = 1.1;
+medusaVersion = 1.2;
 
 medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitions = NA, model = c("mixed", "bd", "yule"),
 	cut = c("both", "stem", "node"), stepBack = TRUE, init = c(r = 0.05, epsilon = 0.5), ncores = NULL, verbose = FALSE, ...) {
@@ -197,7 +197,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		## SUMMARY - this uses a long lost format
 		# just output the summary, instead of the function
 		# zSummary <- function (id) {
-		zSummary <- function () {
+		zSummary <- function (z) {
 			# model.id <- id;
 			# #z <- zz[[model.id]];
 			# how is opt.model different from modelSummary?
@@ -244,7 +244,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 		control <- list(stop = stop, threshold = structure(threshold_N, names = criterion), partitions = npartitions);
 		results <- list(control = control, cache = list(desc = desc, phy = phy), model = optModel,
-			summary = modelSummary, zSummary = zSummary(), medusaVersion = medusaVersion);
+			summary = modelSummary, zSummary = zSummary(optModel$z), medusaVersion = medusaVersion);
 		return(results);
 	}
 	
@@ -1112,11 +1112,16 @@ print.medusa <- function (x, ...) {
 }
 
 #plot.medusa <- function (x, partitions = list(cex = 2, bg = "gray", alpha = 0.75, col = "black", lwd = 1), ...) {
-plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, col = "black", lwd = 1, ...) {
+#plot.medusa <- function (x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75, col = "black", lwd = 1, ...) {
+plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 	z <- x$zSummary;
-	shift <- list(cex = cex, bg = bg, alpha = alpha, col = col, lwd = lwd);
+	shift <- list(cex = 1, bg = "gray", alpha = 0.75, col = "black", lwd = 1);
 	phy <- x$cache$phy;
-	plot(phy, cex=0.5, ...);
+	
+	mm <- match(phy$edge[,2], z[,"dec"]);
+	edge.color <- z[mm, "partition"];
+	
+	plot(phy, edge.color=edge.color, cex=0.5, ...);
 	if (time) axisPhylo();
 	shifts <- z[(idx <- !is.na(z[, "shift"])), "dec"];
 	if (length(shifts)) {

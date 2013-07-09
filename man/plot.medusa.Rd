@@ -8,18 +8,13 @@ summarizing piecewise diversification models estimated by MEDUSA
 }
 
 \usage{
-	\method{plot}{medusa}(x, cex = 0.5, time = TRUE, bg = "gray", alpha = 0.75,
-		col = "black", lwd = 1, ...)
+	\method{plot}{medusa}(x, cex = 0.5, time = TRUE, ...)
 }
 
 \arguments{
   \item{x}{an object of class \code{medusa} for plotting}
   \item{cex}{text size}
   \item{time}{logical. should a time axis be plotted. default = TRUE.}
-  \item{bg}{color}
-  \item{alpha}{not sure what this is...}
-  \item{col}{plotting colors}
-  \item{lwd}{line width}
   \item{...}{additional arguments to be passed to internal functions}
 }
 
