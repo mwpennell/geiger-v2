@@ -52,8 +52,8 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 	argn=argn(lik)
 	
     ## CONSTRUCT BOUNDS ##
-	mn=c(-500, -500, -1, -100, -100, -500, -500, -500, -500)
-	mx=c(100, 1, 1, 100, 100, 0, 0, log(2.999999), 100)
+	mn=c(-500, -500, (log(10^(-5))/max(branching.times(phy))), -100, -100, -500, -500, -500, -500)
+	mx=c(100, 1, -0.000001, 100, 100, 0, 0, log(2.999999), 100)
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("exp", "exp", "nat", "nat", "nat", "exp", "exp", "exp", "exp")
 	rownames(bnds)=c("sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE")
@@ -252,8 +252,7 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 		warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
 	}
 	
-	mm <- .aic(mm, n=length(dat));
-	#mm <- .aic(lnL = mm$lnL, n = length(dat), k = mm$k);
+	mm=.aic(mm, n=length(dat))
 	
     # RETURN OBJECT
 	mm$CI=CI
@@ -721,8 +720,8 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 	mm=as.list(mmcomplete)
 	mm$method=mod
 	mm$k=k
-	mm <- .aic(mm, n=length(dat));
-	#mm <- .aic(lnL = mm$lnL, n = length(dat), k = mm$k);
+	mm=.aic(mm, n=length(dat))
+	
 	
 # check estimates against bounds #
 	range=as.data.frame(cbind(min, max))
