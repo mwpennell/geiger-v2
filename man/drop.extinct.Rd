@@ -6,7 +6,7 @@
   pruning a set of taxa from a tree
 }
 \usage{
-drop.extinct(phy, tol = .Machine$double.eps^0.5) 
+drop.extinct(phy, tol = NULL) 
 drop.random(phy, n)
 
 }
@@ -18,8 +18,7 @@ drop.random(phy, n)
 }
 
 \details{
-The functions prune taxa from a tree either at random or based either on a temporal criterion (whether the leaves reach the present within a given \code{tol}). 
-The result is a tree that has been pruned based on the given criterion.}
+The functions prune taxa from a tree either at random or based either on a temporal criterion (whether the leaves reach the present within a given \code{tol}). By default, \code{tol = min(phy$edge.length)/100}. The result is a tree that has been pruned based on the given criterion.}
 
 	
 \author{ LJ Harmon }
