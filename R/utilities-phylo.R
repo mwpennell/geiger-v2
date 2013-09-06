@@ -1822,11 +1822,12 @@ white.mkn <- function(dat) {
 	return(opt);
 }
 
-drop.extinct<-function (phy, tol = .Machine$double.eps^0.5) 
+drop.extinct<-function (phy, tol = NULL) 
 {
     if (class(phy) != "phylo") 
 	stop("object \"phy\" is not of class \"phylo\"")
-    phy2 <- phy
+	if (is.null(tol)) tol=min(phy$edge.length)/100
+    phy2 <- phy	
     phy <- new2old.phylo(phy)
     tmp <- as.numeric(phy$edge)
     nb.tip <- max(tmp)
@@ -1841,7 +1842,7 @@ drop.extinct<-function (phy, tol = .Machine$double.eps^0.5)
         xx[i] <- xx[base] + phy$edge.length[ind]
     }
     depth <- max(xx)
-    offset <- depth - xx[names(xx) > 0]
+    offset <- depth - xx[as.numeric(names(xx)) > 0]
     drops <- phy$tip.label[offset > tol]
     if (length(drops) >= (nb.tip - 1)) 
 	return(NULL)
