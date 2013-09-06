@@ -8,10 +8,11 @@ calibrating MECCA
 Runs a user defined number of calibration simulations (Wegmann et al. 2009) to generate tuning parameters MECCA's ABC-MCMC. The function takes a large number of arguments but in most cases these can remain at default settings. 
 }
 \usage{
-calibrate.mecca(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(priorSigma = c(-4.961845, 4.247066),
-	priorMean = c(-10, 10)), Ncalibrations = 10000, sigmaPriorType = "uniform", rootPriorType = "uniform", 
-	divSampleFreq = 0, initPars = "ML", propWidth = 0.1, SigmaBounds = c(-4.961845, 4.247066), hotclade = NULL, 
-	BOXCOX = TRUE, optimRange = c(-1000, 10))
+calibrate.mecca(phy, richness, model = c("BM", "Trend", "twoRate"), 
+	prior.list = list(priorSigma = c(-4.961845, 4.247066), priorMean = c(-10, 10)), 
+	Ncalibrations = 10000, sigmaPriorType = "uniform", rootPriorType = "uniform", 
+	divSampleFreq = 0, initPars = "ML", propWidth = 0.1, SigmaBounds = c(-4.961845, 4.247066), 
+	hotclade = NULL, BOXCOX = TRUE, optimRange = c(-1000, 10))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
