@@ -1112,7 +1112,6 @@ function(phy, richness, b, d) {
 .mecca.maxboxcox <-
 #maxboxcox <-
 function(lambda, linmod) {
-	require("MASS")
 	myboxcox<-boxcox(linmod, lambda=lambda, interp=T, eps=1/50, plotit = FALSE); 
 	return(myboxcox$y[1]); 
 	}
