@@ -1697,7 +1697,14 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	ht$t2=ht$start-ht$end+ht$t1
 	z=function(alpha){
 		if(alpha<0) stop("'alpha' must be positive valued")
-		bl=(1/(2*alpha))*exp(-2*alpha * (Tmax-ht$t2)) * (1 - exp(-2 * alpha * ht$t2)) - (1/(2*alpha))*exp(-2*alpha * (Tmax-ht$t1)) * (1 - exp(-2 * alpha * ht$t1))
+		if (alpha == 0){
+      			bl = ht$t2-ht$t1
+    		} else {
+      			bl = (1/(2 * alpha)) * exp(-2 * alpha * (Tmax - ht$t2)) * 
+        		-(expm1(-2 * alpha * ht$t2)) - (1/(2 * alpha)) * 
+        		exp(-2 * alpha * (Tmax - ht$t1)) * -(expm1(-2 * 
+                                                     		alpha * ht$t1))
+    			}
 		cache$len=bl
 		cache
 	}
