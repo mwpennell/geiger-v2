@@ -21,6 +21,9 @@ logLik.gfits <- function(object, ...) {
 # get aic-weights
 # x is a named vector of AIC scores
 aicw <- function (x) {
+    if (!inherits(x, "numeric"))
+        stop("aic scores must be of class 'numeric'")
+    
 	aic <- x;
 	best <- min(aic);
 	delta <- aic - best;
@@ -30,7 +33,7 @@ aicw <- function (x) {
 	results <- data.frame(fit = aic, delta = delta, w = w);
 	rownames(results) <- names(aic);
 
-	return(results);
+	results
 }
 
 #general printing utility for ensuring equal numbers of characters within columns and defining spacing between columns
