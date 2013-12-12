@@ -45,10 +45,17 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
 	
     # CONTROL OBJECT for likelihood
-	con=list(method="pruning",backend="C")
-	con[names(control)]=control
-	lik=bm.lik(phy,dat,SE,model,...)
-    attr(lik, "model")=model
+        if(model=="OU" & !is.ultrametric(phy)){
+            warning("Non-ultrametric tree with OU model, using VCV method.")
+            #con=list(method="vcv",backend="R")
+            #con[names(control)]=control
+            lik=ou.lik(phy, dat, SE, model, ...)
+        } else {
+            con=list(method="pruning",backend="C")
+            con[names(control)]=control
+            lik=bm.lik(phy,dat,SE,model,...)
+        }
+        attr(lik, "model")=model
 	argn=argn(lik)
 	
     ## CONSTRUCT BOUNDS ##
@@ -180,7 +187,8 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 		} else {
 			op=list(par=structure(rep(NA, length(argn)), names=argn), lnL=-Inf, convergence=1, method="FAIL")
 		}
-        return(op)
+                
+        op                                #return(op)
 	})
     
     for(i in 1:length(out)){
@@ -261,7 +269,6 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
     class(res)=c("gfit", class(res))
     return(res)
 }
-
 
 .slot.attribute=function(x, attb, pos=1L){
 	if(x%in%attb) {
@@ -449,6 +456,98 @@ bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", 
     return(likfx)
 }
 
+ou.lik <- function (phy, dat, SE = NA, ...) 
+{
+    model="OU"
+    if(is.na(SE)){SE=0}
+    cache = .prepare.bm.univariate(phy, dat, SE = SE)
+    cache$ordering = attributes(cache$phy)$order
+    cache$N = cache$n.tip
+    cache$n = cache$n.node
+    cache$nn = (cache$root + 1):(cache$N + cache$n)
+    cache$intorder = as.integer(cache$order[-length(cache$order)])
+    cache$tiporder = as.integer(1:cache$N)
+    cache$z = length(cache$len)
+    ll.ou.vcv <- function(cache, alpha, sigsq, z0, se){
+        N <- cache$N
+        phyvcv <- vcv.phylo(cache$phy)
+        ouV <- .ou.vcv(phyvcv)
+        V <- sigsq*ouV(alpha)
+        if(!is.null(se)){
+            diag(V) <- diag(V)+se^2
+        } else {
+          if(any(attr(cache$y, "given")==1)){
+            var <- cache$y['s',][attributes(cache$y)$given==1]^2
+            var[is.na(var)] <- 0
+            diag(V) <- diag(V)+var
+          }
+        }
+        ci <- solve(V)
+        invV <- ci
+        if(is.null(z0)){
+            o <- rep(1, length(cache$dat))
+            m1 <- 1/(t(o) %*% ci %*% o)
+            m2 <- t(o) %*% ci %*% cache$dat
+            mu <- m1 %*% m2
+        } else {mu <- z0}
+        logd <- determinant(V, logarithm=TRUE)
+        logl <- -0.5 * (t(cache$dat-mu) %*% invV %*% 
+                        (cache$dat-mu)) - 0.5 * logd$modulus - 
+                            0.5 * (N * log(2 * pi))
+        attributes(logl) <- NULL
+        if (is.na(logl)) logl = -Inf
+        attr(logl, "ROOT.MAX") = mu
+        class(logl) = c("glnL", class(logl))
+        return(logl)
+    }
+    class(ll.ou.vcv) <- c("bm","dtlik","function")
+    fx_exporter = function() {
+        attb=c("alpha","sigsq")
+            cache$attb <- attb
+            if (any(attr(cache$y, "adjse") == 1)) {
+                attb = c(attb, "SE")
+            }
+        lik <- function(pars, root=ROOT.MAX, ...){
+            attb=c("alpha","sigsq")
+            cache$attb <- attb
+            if (any(attr(cache$y, "adjse") == 1)) {
+                attb = c(attb, "SE")
+            }
+            if (root == ROOT.MAX){
+                rtmx = TRUE
+            } else {
+                if (root %in% c(ROOT.OBS, ROOT.GIVEN)) {
+                    attb = c(attb,"z0")
+                } else {
+                    stop("unusable 'root' type specified")
+                }
+            }
+            if (missing(pars)) 
+                stop(paste("The following 'pars' are expected:\n\t", 
+                           paste(attb, collapse = "\n\t", sep = ""), sep = ""))
+            pars = .repars(pars, attb)
+            names(pars) = attb
+            if ("alpha" %in% attb) 
+                alpha = pars[["alpha"]]
+            sigsq = pars[["sigsq"]]
+            if ("SE" %in% attb){ 
+                se = pars[["SE"]]
+            } else se = NULL
+            if ("z0" %in% attb) {
+                z0 = pars[["z0"]]
+            } else {z0 = NULL}
+            ll = ll.ou.vcv(cache = cache, alpha=alpha, sigsq = sigsq, 
+                z0=z0, se = se)
+            return(ll)
+        }
+        attr(lik, "argn") = attb
+        attr(lik, "cache") <- cache
+        class(lik) = c("bm", "function")
+        lik
+    }
+    likfx <- fx_exporter()
+    return(likfx)
+}
 
 .reshape.constraint.m=function(m){
 	k=unique(dim(m))
