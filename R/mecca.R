@@ -557,7 +557,10 @@ calibrate.mecca <-
 #calibrateMECCA <-
 function(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(priorSigma = c(-4.961845, 4.247066), priorMean = c(-10, 10)), Ncalibrations = 10000, sigmaPriorType = "uniform", rootPriorType = "uniform", divSampleFreq = 0, initPars = "ML", propWidth = 0.1, SigmaBounds = c(-4.961845, 4.247066), hotclade = NULL, BOXCOX = TRUE, optimRange =c(-1000, 10)) {
 
+## add requirement for pls
+    require(pls)
 
+    
 ##Arguments
 	# phy <- phylogenetic tree
 	# richness <- a vector of species richness values corresponding to tips in the tree
@@ -1234,7 +1237,10 @@ function(min , max, sigmaPriorType, SigmaBounds) {
 mecca <-
 #runMECCA <-
 function(phy, richness, cladeMean, cladeVariance, model = c("BM", "Trend", "twoRate"), prior.list = list(priorSigma = c(-4.961845, 4.247066), priorMean = c(-10, 10)), start = start, Ngens = 10000, printFreq = 100, sigmaPriorType = "uniform", rootPriorType = "uniform", SigmaBounds = c(-4.961845, 4.247066),hotclade = NULL, divPropWidth = 0.1, scale = 1, divSampleFreq = 0, BoxCox = TRUE, outputName ="mecca") {  ##
-	
+
+    ## require pls package
+    require(pls)
+    
 	## To run MECCA, the following arguments are required
 	# phy - an incompletely resolved phylogenetic tree
 	# richness - a named vector of species richness values for the tips in the phylogenetic tree

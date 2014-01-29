@@ -11,16 +11,15 @@ Depends:
 	MASS, 
 	mvtnorm, 
 	msm, 
-	pls, 
 	subplex, 
 	deSolve (>= 1.7),
-	colorspace, 
 	digest, 
 	Rcpp (>= 0.9.0), 
 	coda, 
 	R (>= 2.15.0) 
 Suggests: parallel,
-	  ncbit
+	  ncbit,
+	  pls
 LinkingTo: Rcpp
 Description: macroevolutionary simulation and parameter estimation
         related to diversification from comparative
