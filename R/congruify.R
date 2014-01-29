@@ -48,6 +48,9 @@
 }
 
 congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8")){
+    ## adding requirement for ncbit
+    require(ncbit)
+    
     stock=reference
     scion=target
 #	stock: a time-calibrated phylogeny with tip-labels that can be treated as an exemplar for clades in 'scion'

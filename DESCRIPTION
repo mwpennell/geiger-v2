@@ -6,8 +6,21 @@ Date: 2013-05-15
 Author: Luke Harmon <lukeh@uidaho.edu>, Jason Weir, Chad Brock, Rich
         Glor, Wendell Challenger, Gene Hunt, Rich FitzJohn, Matt Pennell, Graham Slater, Joseph Brown, Josef Uyeda, and Jon Eastman <jonathan.eastman@gmail.com>
 Maintainer: Matt Pennell <mwpennell@gmail.com>
-Depends: ape (>= 3.0-6), MASS, mvtnorm, msm, pls, subplex, deSolve (>= 1.7), colorspace, digest, Rcpp (>= 0.9.0), coda, R (>= 2.15.0), ncbit
-Suggests: parallel
+Depends:
+	ape (>= 3.0-6), 
+	MASS, 
+	mvtnorm, 
+	msm, 
+	pls, 
+	subplex, 
+	deSolve (>= 1.7),
+	colorspace, 
+	digest, 
+	Rcpp (>= 0.9.0), 
+	coda, 
+	R (>= 2.15.0) 
+Suggests: parallel,
+	  ncbit
 LinkingTo: Rcpp
 Description: macroevolutionary simulation and parameter estimation
         related to diversification from comparative

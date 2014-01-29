@@ -30,7 +30,10 @@ Linnaean=c(
 )
 
 gbcontain=function(x, rank="species", within="", ...){
-	type="scientific name"
+    ## adding requirement for ncbit
+    require(ncbit)
+    
+    type="scientific name"
 	rank=match.arg(rank, Linnaean)
 	lidx=which(Linnaean==rank)
     if(is.na(lidx)) stop("uninterpretable 'rank'")
@@ -134,7 +137,8 @@ gbcontain=function(x, rank="species", within="", ...){
 
 
 gbresolve=function(x, rank="phylum", within="", ...){
-	UseMethod("gbresolve")
+    require(ncbit)
+    UseMethod("gbresolve")
 }
 
 gbresolve.default=function(x, rank="phylum", within="", ...){
