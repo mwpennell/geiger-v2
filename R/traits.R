@@ -1028,7 +1028,8 @@ aov.phylo=function(formula, phy, nsim=1000, test=c("Wilks", "Pillai", "Hotelling
     p.phylo=(sum(f.null>f.data)+1)/(nsim+1)
 
     out$'Pr(phy)'=c(p.phylo, NA)
-    print.anova(out, ...)
+    class(out) <- c("anova", "data.frame")
+    print(out, ...)
     attr(mod, "summary")=out
     return(mod)
 }
