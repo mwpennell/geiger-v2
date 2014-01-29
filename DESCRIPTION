@@ -10,7 +10,6 @@ Depends:
 	ape (>= 3.0-6), 
 	MASS, 
 	mvtnorm, 
-	msm, 
 	subplex, 
 	deSolve (>= 1.7),
 	digest, 
@@ -19,7 +18,8 @@ Depends:
 	R (>= 2.15.0) 
 Suggests: parallel,
 	  ncbit,
-	  pls
+	  pls,
+	  msm
 LinkingTo: Rcpp
 Description: macroevolutionary simulation and parameter estimation
         related to diversification from comparative
