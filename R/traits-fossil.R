@@ -12,7 +12,7 @@
 }
 
 
-# from phytools:::vcvPhylo
+# from phytools::vcvPhylo
 .vcv.anc<-
 function (tree, anc.nodes = TRUE)
 {
@@ -29,7 +29,7 @@ function (tree, anc.nodes = TRUE)
 }
 
 
-# from phytools:::nodeHeights
+# from phytools::nodeHeights
 .nodeheights<-
 #nodeHeights <- similar to heights.phylo in geiger
 function (tree)
@@ -641,7 +641,8 @@ function(phy, tip1, tip2) {
 	if(is.null(tip2)) {
 		
 		bb<-which(phy$tip.label==tip1);
-		mrca<-geiger:::parent.node(phy, bb);
+		#This function doesn't exist:
+    #mrca<-geiger:::parent.node(phy, bb);
 	} else {
 		if(is.na(match(tip2,phy$tip.label))) stop(paste(tip2, " is not a valid taxon in this tree"))
 		nn <- phy$Nnode;

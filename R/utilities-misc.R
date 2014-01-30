@@ -61,7 +61,7 @@ aicw <- function (x) {
 	} else {
 		if (.check.parallel()) {
 			if (is.null(ncores)) {
-				ncores <- parallel:::detectCores();
+				ncores <- detectCores();
 			}
 			fx <- function(X, FUN, ...) mclapply(X, FUN, ..., mc.silent = TRUE, mc.cores = ncores);
 		} else {
@@ -198,9 +198,9 @@ load=function(x, ...){
 	} else {
 		dots=list(...)
 		if("envir"%in%names(dots)){
-			return(base:::load(x, envir=dots$envir))
+			return(load(x, envir=dots$envir))
 		} else {
-			return(base:::load(x, envir=parent.frame()))
+			return(load(x, envir=parent.frame()))
 		}
 	}
 }

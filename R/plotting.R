@@ -6,7 +6,7 @@ plot.rjmcmc <- function (x, trace = TRUE, density = TRUE, smooth = FALSE, bwf,
     oldpar <- NULL
     on.exit(par(oldpar))
     if (auto.layout) {
-        mfrow <- coda:::set.mfrow(Nchains = nchain(x), Nparms = nvar(x), 
+        mfrow <- .set.mfrow(Nchains = nchain(x), Nparms = nvar(x), 
 						   nplots = trace + density)
         oldpar <- par(mfrow = mfrow)
     }
@@ -33,7 +33,7 @@ auto.layout = TRUE, ask = dev.interactive(), ...)
     oldpar <- NULL
     on.exit(par(oldpar))
     if (auto.layout) {
-        mfrow <- coda:::set.mfrow(Nchains = nchain(x), Nparms = nvar(x), 
+        mfrow <- .set.mfrow(Nchains = nchain(x), Nparms = nvar(x), 
 						   nplots = trace + density)
         oldpar <- par(mfrow = mfrow)
     }
@@ -602,7 +602,7 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 
 
 
-#general phylogenetic plotting utility, which is a modification of ape:::edgelabels, plotting edge symbols at the temporal beginning of the branch
+#general phylogenetic plotting utility, which is a modification of ape::edgelabels, plotting edge symbols at the temporal beginning of the branch
 #author: E PARADIS 2009 and JM EASTMAN 2010
 #note: may not be trustworthy where lastPP$type is not "phylogram"
 
@@ -637,7 +637,7 @@ bg = "lightgreen", horiz = FALSE, width = NULL, height = NULL,
     }
 	if(missing(text)) text=lastPP$edge[,2]
 	
-    ape:::BOTHlabels(text, sel, XX, YY, adj, frame, pch, thermo, pie, 
+    BOTHlabels(text, sel, XX, YY, adj, frame, pch, thermo, pie, 
 					 piecol, col, bg, horiz, width, height, ...)
 }
 
@@ -681,5 +681,46 @@ bg = "lightgreen", horiz = FALSE, width = NULL, height = NULL,
 		points(hist$ptime,hist$phenotype,bg=.transparency("white",0.75),pch=21,cex=ifelse(hist$descendant<=Ntip(phy), cex.tip, cex.node))
 	}
 	points(0,alpha,bg=.transparency("white",0.75),pch=21,cex=cex.node)		
+}
+
+
+# Plotting utility from coda
+# Author: Martyn Plummer
+.set.mfrow <- function (Nchains = 1, Nparms = 1, nplots = 1, sepplot = FALSE) 
+{
+  mfrow <- if (sepplot && Nchains > 1 && nplots == 1) {
+    if (Nchains == 2) {
+      switch(min(Nparms, 5), c(1, 2), c(2, 2), c(3, 2), 
+             c(4, 2), c(3, 2))
+    }
+    else if (Nchains == 3) {
+      switch(min(Nparms, 5), c(2, 2), c(2, 3), c(3, 3), 
+             c(2, 3), c(3, 3))
+    }
+    else if (Nchains == 4) {
+      if (Nparms == 1) 
+        c(2, 2)
+      else c(4, 2)
+    }
+    else if (any(Nchains == c(5, 6, 10, 11, 12))) 
+      c(3, 2)
+    else if (any(Nchains == c(7, 8, 9)) || Nchains >= 13) 
+      c(3, 3)
+  }
+  else {
+    if (nplots == 1) {
+      mfrow <- switch(min(Nparms, 13), c(1, 1), c(1, 2), 
+                      c(2, 2), c(2, 2), c(3, 2), c(3, 2), c(3, 3), 
+                      c(3, 3), c(3, 3), c(3, 2), c(3, 2), c(3, 2), 
+                      c(3, 3))
+    }
+    else {
+      mfrow <- switch(min(Nparms, 13), c(1, 2), c(2, 2), 
+                      c(3, 2), c(4, 2), c(3, 2), c(3, 2), c(4, 2), 
+                      c(4, 2), c(4, 2), c(3, 2), c(3, 2), c(3, 2), 
+                      c(4, 2))
+    }
+  }
+  return(mfrow)
 }
 
