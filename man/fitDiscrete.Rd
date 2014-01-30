@@ -116,7 +116,7 @@ mm=rbind(c(NA, 0, 0), c(1, NA, 2), c(0, 2, NA))
 fitDiscrete(geo$phy, gb, model=mm) #-7.037944
 
 # symmetric-rates model 
-fitDiscrete(geo$phy, gb, model="SYM")} #-6.822943
+fitDiscrete(geo$phy, gb, model="SYM")#-6.822943} 
 }
 \keyword{ arith }
 \keyword{models}
