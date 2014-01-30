@@ -274,7 +274,8 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 	
 	# collect edge colors (for rates)
 	if(paint.branches) {
-		colors.branches.tmp=.branchcol.plot(phy, ests, plot=FALSE, colors=list(branches=colors, legend=color.length, missing=1), log=logspace)
+    
+		colors.branches.tmp=.branchcol.plot(phy, as.data.frame(ests), plot=FALSE, colors=list(branches=colors, legend=color.length, missing=1), log=logspace)
 		colors.branches=colors.branches.tmp$col
 	} else {
 		colors.branches=1
@@ -481,7 +482,7 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 	if(paint.branches){
 		# scalars=j.var+bm.var
 		scalars=bm.var
-		colors.branches=.branchcol.plot(phy, scalars, plot=FALSE, colors=list(branches=colors, legend=17, missing=1))
+		colors.branches=.branchcol.plot(phy, as.data.frame(scalars), plot=FALSE, colors=list(branches=colors, legend=17, missing=1))
 		plot(phy, edge.color=colors.branches$col, no.margin=TRUE, ...)
 	} else {
 		plot(phy, no.margin=TRUE, ...)		
