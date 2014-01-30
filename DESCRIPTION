@@ -19,7 +19,8 @@ Depends:
 Suggests: parallel,
 	  ncbit,
 	  pls,
-	  msm
+	  msm,
+	  colorspace
 LinkingTo: Rcpp
 Description: macroevolutionary simulation and parameter estimation
         related to diversification from comparative

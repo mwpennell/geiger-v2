@@ -96,7 +96,7 @@ The numbers printed to the screen during the run give the current generation, ac
 
 
 \examples{
-\donttest{
+\dontrun{
 data(carnivores)
 phy <- carnivores$phy
 data <- carnivores$dat
@@ -130,7 +130,8 @@ names(cladeVariance)<-rownames(data)
 
 ## STARTING POINT
 ## And now we can compute starting values for the ABC-MCMC
-start <- startingpt.mecca(Cal, phy, cladeMean, cladeVariance, tolerance = 0.05, plsdat, BoxCox = TRUE)
+start <- startingpt.mecca(Cal, phy, cladeMean, cladeVariance,
+tolerance = 0.05, plsdat, BoxCox = TRUE)
 
 
 ## MECCA (far too short for a real analysis)

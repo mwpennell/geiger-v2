@@ -8,7 +8,9 @@ using posterior predictive MCMC for modeling quantitative trait evolution
 performs posterior predictive checks for models of quantitative trait evolution. At present, only BM, EB, and clade.shift models are implemented
 }
 \usage{
-pp.mcmc(phy, d, Ngens = 1000000, sampleFreq = 1000, printFreq = 1000, prop.width = 1, model = "BM", eb.type = "exponential", clade = NULL, rlm.maxit = 20)
+pp.mcmc(phy, d, Ngens = 1000000, sampleFreq = 1000, printFreq = 1000,
+        prop.width = 1, model = "BM", eb.type = "exponential",
+        clade = NULL, rlm.maxit = 20)
 }
 \arguments{
 
@@ -92,9 +94,11 @@ dat <- tmp$data[,1]
 
 ## compute observed statistics
 
-nht.ols <- nh.test(phy, dat, regression.type = "lm", log = TRUE, show.plot = FALSE)$coefficients[2,1]
+nht.ols <- nh.test(phy, dat, regression.type = "lm",
+log = TRUE, show.plot = FALSE)$coefficients[2,1]
 
-nht.rlm <- nh.test(phy, dat, regression.type = "rlm", log = TRUE, show.plot = FALSE)$coefficients[2,1]
+nht.rlm <- nh.test(phy, dat, regression.type = "rlm",
+ log = TRUE, show.plot = FALSE)$coefficients[2,1]
 
 mdi.exp <- 0
 

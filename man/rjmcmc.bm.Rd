@@ -70,7 +70,8 @@ hist=tmp$hist
 ex.traitgram(phy, hist, alpha=0) # plot history of trait change
 
 ## RUN ANALYSIS
-rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, samp=500, filebase=r, simple.start=TRUE, type="jump-bm")
+rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, samp=500, filebase=r,
+          simple.start=TRUE, type="jump-bm")
 outdir=paste("jump-BM", r, sep=".")
 ps=load(outdir)
 

@@ -77,7 +77,8 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     ## USING PARTITIONS as STOPPING CRITERION
 
     res2=medusa(phy, richness, partitions=12, warnings=FALSE)
-    s2=summary(res2, criterion="aicc") # select best model based on AICc (again showing the third model as best)
+    s2=summary(res2, criterion="aicc")
+    # select best model based on AICc (again showing the third model as best)
     
     ## PLOTTING RESULTS
     # plot breakpoints for the best model chosen by AICc

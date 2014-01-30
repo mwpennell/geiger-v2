@@ -237,7 +237,11 @@ function(obj, col, alpha, lwd=1, hpd=0.95, bars=TRUE, legend.control=list(plot=T
 
 .shifts.plot <-
 function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=TRUE, ...) {
-	
+
+        ## require colorspace
+        require(colorspace)
+	phy=samples$phy
+    
 	color.length=17
 
 	posterior.samples=list(rates=samples$rates, shifts=samples$shifts)
@@ -415,7 +419,11 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 
 .jumps.plot <-
 function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=TRUE, ...) {
+
+        ## require colorspace
+        require(colorspace)
 	phy=samples$phy
+    
 	if(!"hphylo"%in%class(phy)) stop("Supply 'phy' as an 'hphylo' object")
 	if("mcmc"%in%class(samples$jumps)){
 		posterior.samples=samples$jumps
@@ -514,6 +522,11 @@ function(samples, burnin=0, level=0.01, paint.branches=TRUE, colors=256, legend=
 # added some stuff; numeric vector input didn't seem to be supported.
 .branchcol.plot <- function (phy, cur.rates, colors = list(branches = 256, legend = 17, missing = 1),
 	digits = 3, plot = TRUE, legend = TRUE, legend.title = "", log = FALSE, ...) {
+
+
+    ## require colorspace
+    require(colorspace)
+    
 	if (!"hphylo" %in% class(phy)) stop("Supply 'phy' as an 'hphylo' object");
 	
 	if ("data.frame" %in% class(cur.rates)) {

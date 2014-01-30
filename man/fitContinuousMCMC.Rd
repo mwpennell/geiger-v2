@@ -8,7 +8,10 @@ Fit models of continuous trait evolution to comparative data using MCMC
 This function is essentially an MCMC version of the fitContinuous function that fits models using Maximum Likelihood. The main advantage of using MCMC is that informative prior distributions may be placed on node values when such information is available, for example from the fossil record. In such cases, model selection may be improved upon and differ from results using extant taxa only.
 }
 \usage{
-fitContinuousMCMC(phy, d, model = c("BM", "Trend", "SSP", "ACDC.exp", "ACDC.lin"), Ngens = 1e+06, sampleFreq = 1000, printFreq = 1000, propwidth = rep(0.1, 5), node.priors = NULL, root.prior = NULL, acdc.prior = NULL, sample.node.states = T, outputName = "mcmc.output")
+fitContinuousMCMC(phy, d, model = c("BM", "Trend", "SSP", "ACDC.exp","ACDC.lin"),
+Ngens = 1e+06, sampleFreq = 1000, printFreq = 1000,
+propwidth = rep(0.1, 5), node.priors = NULL, root.prior = NULL,
+acdc.prior = NULL, sample.node.states = T, outputName = "mcmc.output")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -67,26 +70,37 @@ Graham Slater
 
 
 \examples{
+\dontrun{
+data(caniformia)
+phy <- caniformia$phy
+d <- caniformia$dat
+node.priors <- caniformia$node.priors
+root.prior <- caniformia$root.prior
 
-# data(caniformia)
-# phy <- caniformia$phy
-# d <- caniformia$dat
-# node.priors <- caniformia$node.priors
-# root.prior <- caniformia$root.prior
+## as an example, we will run a very short (too short!) analysis,
+##fitting BM and Trend to the caniform data
 
-## as an example, we will run a very short (too short!) analysis, fitting BM and Trend to the caniform data 
-# fitContinuousMCMC(phy, d, model = "BM", Ngens = 1000, sampleFreq =100, printFreq = 100, node.priors = node.priors, root.prior = root.prior, outputName ="BM_caniforms")
-# fitContinuousMCMC(phy, d, model = "Trend", Ngens = 1000, sampleFreq =100, printFreq = 100, node.priors = node.priors, root.prior = root.prior, outputName ="Trend_caniforms")
-# bm.res <- read.table("BM_caniforms_model_params.txt", header= TRUE)
-# head(bm.res)
-# trend.res <- read.table("Trend_caniforms_model_params.txt", header= TRUE)
-# head(trend.res)
+fitContinuousMCMC(phy, d, model = "BM", Ngens = 1000, sampleFreq =100,
+printFreq = 100, node.priors = node.priors, root.prior = root.prior,
+outputName ="BM_caniforms")
+
+fitContinuousMCMC(phy, d, model = "Trend", Ngens = 1000, sampleFreq=100,
+printFreq = 100, node.priors = node.priors, root.prior = root.prior,
+outputName ="Trend_caniforms")
+
+bm.res <- read.table("BM_caniforms_model_params.txt", header= TRUE)
+head(bm.res)
+
+trend.res <- read.table("Trend_caniforms_model_params.txt", header= TRUE)
+head(trend.res)
 
 ### produce trace plots of logLk scores 
 
-# plot(bm.res$generation, bm.res$logLk, type = "l", ylim = c(min(bm.res$logLk), max = max(trend.res$logLk)))
-# lines(trend.res$generation, trend.res$logLk, col = "red")
-# legend("bottomleft", c("bm", "trend"), lwd = 3, col = c("black", "red"))
+plot(bm.res$generation, bm.res$logLk, type = "l",
+ylim = c(min(bm.res$logLk), max = max(trend.res$logLk)))
 
+lines(trend.res$generation, trend.res$logLk, col = "red")
+legend("bottomleft", c("bm", "trend"), lwd = 3, col = c("black", "red"))
+}
 }
 

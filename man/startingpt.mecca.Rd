@@ -8,7 +8,8 @@ starting values for MECCA
 This function takes the output of calibrateMecca along with observed data and partial least squares loadings and outputs starting values and tuning parameters for the ABC-MCMC (Wegmann et al. 2009).
 }
 \usage{
-startingpt.mecca(calibrationOutput, phy, cladeMean, cladeVariance, tolerance = 0.01, plsComponents, BoxCox = TRUE)
+startingpt.mecca(calibrationOutput, phy, cladeMean, cladeVariance,
+                 tolerance = 0.01, plsComponents, BoxCox = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
