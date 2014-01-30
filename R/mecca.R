@@ -704,23 +704,24 @@ function(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(p
 			
         mecca.lm <- mecca.env <- NULL
         
-        lmreturn=function(stati, param, ...){
-            ## FIXME: unable to figure out how to make .mecca.maxboxcox work without mecca.lm and mecca.env exported to global environment (prompting a NOTE from R CMD check -- JME)
-            ## fixed by GJS following RF, but check...
-            
-            mecca.dat=as.data.frame(cbind(y=stati, param))
-            mecca.lm<<-as.formula(mecca.dat)
-            mecca.env<<-environment(mecca.lm)
-            optimize(.mecca.maxboxcox, ..., linmod = lm(mecca.lm, data=mecca.env$object))$maximum
-        }
-			for(i in 1:length(stat)) {
-               #JME d <<- cbind(stat[,i], param);  
-               #JME d <<- as.data.frame(d)
-                
-                lambda[i] = lmreturn(stat[,i], param, interval = optimRange, maximum = TRUE)
-               #JME mylm <<- lm(as.formula(d), data=d);
-                print(paste(colnames(stat)[i], lambda[i]))
-			}	
+		lmreturn=function(stati, param, ...){
+		  ## FIXME: unable to figure out how to make .mecca.maxboxcox work without mecca.lm and mecca.env exported to global environment (prompting a NOTE from R CMD check -- JME)
+		  ## fixed by GJS following RF, but check...
+		  
+		  mecca.dat=as.data.frame(cbind(y=stati, param))
+		  mecca.lm<-as.formula(mecca.dat)
+		  mecca.env<-environment(mecca.lm)
+		  #optimize(.mecca.maxboxcox, ..., linmod = lm(mecca.lm, mecca.env$object))$maximum
+		  optimize(.mecca.maxboxcox, ..., env=mecca.env)$maximum
+		}
+		for(i in 1:length(stat)) {
+		  #JME d <<- cbind(stat[,i], param);  
+		  #JME d <<- as.data.frame(d)
+		  
+		  lambda[i] = lmreturn(stat[,i], param, interval = optimRange, maximum = TRUE)
+		  #JME mylm <<- lm(as.formula(d), data=d);
+		  print(paste(colnames(stat)[i], lambda[i]))
+		}  
 			
 			for(i in 1:length(stat)) {
 			myGM[i]<-exp(mean(log(stat[,i])));
@@ -749,6 +750,13 @@ function(phy, richness, model = c("BM", "Trend", "twoRate"), prior.list = list(p
 
 } # end 
 
+
+.mecca.maxboxcox <-
+  #maxboxcox <-
+  function(lambda, env) {
+    myboxcox<-boxcox(env$rval, lambda=lambda, data=env$object, interp=T, eps=1/50, plotit = FALSE); 
+    return(myboxcox$y[1]); 
+  }
 
 .mecca.cladeage <-
 #cladeAge <-
@@ -1110,13 +1118,6 @@ function(phy, richness, b, d) {
 	logLT <- sum(log(1-beta)) + sum((n-1)*log(beta));
 	return(logLT);
 	
-	}
-
-.mecca.maxboxcox <-
-#maxboxcox <-
-function(lambda, linmod) {
-	myboxcox<-boxcox(linmod, lambda=lambda, interp=T, eps=1/50, plotit = FALSE); 
-	return(myboxcox$y[1]); 
 	}
 
 .mecca.nodesim <-
