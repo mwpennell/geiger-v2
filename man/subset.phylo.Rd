@@ -20,15 +20,14 @@ working with systematic reference tables and phylogenies}
 \author{JM Eastman}
 
 \examples{
-sal=get(data(caudata))
+sal <- get(data(caudata))
 print(head(sal$tax))
 
-nphy=subset(sal$phy, sal$tax, "genus")
+nphy <- subset(sal$phy, sal$tax, "genus")
 plot(nphy, type="fan", cex=0.15)
 
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
+
 \keyword{ graphs }
 \keyword{manip}
 

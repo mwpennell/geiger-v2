@@ -33,9 +33,9 @@ sim.bd(b=1, d=0, n0=1, times=0:4, seed=0)
 
 \examples{
 
-pop1=sim.bd(b=0.1, d=0, n0=10, times=1:10)
-pop2=sim.bd(b=0, d=0.1, n0=10, times=1:10)
-pop3=sim.bd(b=0.1, d=0.1, n0=10, times=1:10)
+pop1 <- sim.bd(b=0.1, d=0, n0=10, times=1:10)
+pop2 <- sim.bd(b=0, d=0.1, n0=10, times=1:10)
+pop3 <- sim.bd(b=0.1, d=0.1, n0=10, times=1:10)
 
 plot(pop1, type="l", ylim=c(0,max(c(pop1[,"n"], pop2[,"n"], pop3[,"n"]))))
 lines(pop2, col="red")

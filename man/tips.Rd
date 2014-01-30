@@ -21,7 +21,7 @@ The function returns the set of tips subtended by the given \code{node}.
 \author{ LJ Harmon }
 
 \examples{
-geo=get(data(geospiza))
+geo <- get(data(geospiza))
 
 tips(geo$phy, 18)
 }

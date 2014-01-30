@@ -26,7 +26,7 @@ array.
 \author{ LJ Harmon }
 \examples{
 
-geo=get(data(geospiza))
+geo <- get(data(geospiza))
 
 treedata(geo$phy, geo$dat, sort=TRUE, warnings=TRUE)
 

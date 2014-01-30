@@ -26,9 +26,21 @@ name.check(phy, data, data.names=NULL)
 \examples{
 
 data(geospiza)
-attach(geospiza)
 
-name.check(geospiza.tree, geospiza.data)
+tmp <- name.check(geospiza$phy, geospiza$dat)
+tmp
+
+## then match data to tree
+newphy <- drop.tip(geospiza$phy, tip=tmp$tree_not_data)
+
+## name check should now say "OK"
+name.check(newphy, geospiza$dat)
+
+## this can all be done in one step using treedata
+td <- treedata(geospiza$phy, geospiza$dat)
+td
+
+all(td$phy$tip.label == newphy$tip.label)
 
 }
 

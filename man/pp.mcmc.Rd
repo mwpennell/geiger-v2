@@ -65,7 +65,7 @@ A dataframe containing the following columns:
  \item{$MDI }{posterior predictive distribution of MDI values}
 }
 \references{
-Slater GJ and MW Pennell (in press) Robust regression and posterior predictive simulation increase power to detect early bursts of trait evolution. \emph{Systematic Biology}.
+Slater GJ and MW Pennell (2014) Robust regression and posterior predictive simulation increase power to detect early bursts of trait evolution. \emph{Systematic Biology}.
 
 Freckleton RP and PH Harvey (2006) Detecting non-brownian evolution in adaptive radiations. \emph{PLoS Biology} 4:e373.
 

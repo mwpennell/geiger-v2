@@ -41,17 +41,17 @@ sim.bdtree(b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, extinct=TRUE)
 \examples{
 
 # Pure-birth tree
-p1<-sim.bdtree(b=0.1, d=0, stop="time", t=20)
+p1 <- sim.bdtree(b=0.1, d=0, stop="time", t=20)
 plot(p1)
 
 # Birth-death tree with extinct taxa
 # The extinct flag prevents trees with no survivors
 
-p2<-sim.bdtree(b=0.2, d=0.05, stop="time", t=20, extinct=FALSE)
+p2 <- sim.bdtree(b=0.2, d=0.05, stop="time", t=20, extinct=FALSE)
 plot(p2)
 
 # Previous tree with extinct taxa removed
-p3<-drop.extinct(p2)
+p3 <- drop.extinct(p2)
 
 }
 \keyword{arith}

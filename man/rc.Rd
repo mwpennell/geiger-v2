@@ -45,7 +45,7 @@ Supertrees: Combining Information to Reveal the Tree of Life}, pp. 487-533. Kluw
 \author{ LJ Harmon }
 \examples{
 
-geo=get(data(geospiza))
+geo <- get(data(geospiza))
 
 ## WITHOUT BONFERRONI CORRECTION
 rc(geo$phy)
