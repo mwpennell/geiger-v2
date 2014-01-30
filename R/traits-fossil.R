@@ -641,8 +641,7 @@ function(phy, tip1, tip2) {
 	if(is.null(tip2)) {
 		
 		bb<-which(phy$tip.label==tip1);
-		#This function doesn't exist:
-    #mrca<-geiger:::parent.node(phy, bb);
+		mrca <- phy$edge[which(phy$edge[ ,2] == tip), 1] 
 	} else {
 		if(is.na(match(tip2,phy$tip.label))) stop(paste(tip2, " is not a valid taxon in this tree"))
 		nn <- phy$Nnode;
