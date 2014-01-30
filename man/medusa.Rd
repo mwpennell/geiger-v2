@@ -74,15 +74,10 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     print(res1$summary) # show 'summary' object
     summary(res1, criterion="aicc") # select best model based on AICc
     
-    ## USING PARTITIONS as STOPPING CRITERION
-
-    res2=medusa(phy, richness, partitions=12, warnings=FALSE)
-    s2=summary(res2, criterion="aicc")
-    # select best model based on AICc (again showing the third model as best)
-    
     ## PLOTTING RESULTS
     # plot breakpoints for the best model chosen by AICc
-    plot(s2, cex=0.5, partitions=list(cex=5), label.offset=1, edge.width=2) # invoking plot.medusa()
+    # invoking plot.medusa()
+    plot(res1, cex=0.5,label.offset=1, edge.width=2) 
     }
 }
 \keyword{models}

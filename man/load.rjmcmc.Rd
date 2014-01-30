@@ -48,7 +48,7 @@ trees=list(a=a,b=b, c=ladderize(a, right=TRUE), d=ladderize(a, right=FALSE))
 class(trees)="multiPhylo"
 rjmcmc.bm(trees, dat, ngen=1e3, type="rbm")
 
-res=load.rjmcm(paste("relaxedBM", names(trees), sep="."), phy=trees$d, burnin=0.25)
+res=load.rjmcmc(paste("relaxedBM", names(trees), sep="."), phy=trees$d, burnin=0.25)
 plot(res, par="shifts", show.tip=FALSE, edge.width=2.5)
 }
 }

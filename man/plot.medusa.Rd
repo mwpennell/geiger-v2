@@ -42,11 +42,10 @@ JW Brown <phylo.jwb@gmail.com>, RG FitzJohn, ME Alfaro, LJ Harmon, and JM Eastma
     phy=dat$phy
     richness=dat$richness
         
-    ## USING PARTITIONS as STOPPING CRITERION
-    res=medusa(phy, richness, partitions=12) 
+    res <- medusa(phy, richness)
     
     # select best model based on AICc (showing the third model as best)
-    plot(s1, cex=0.5, label.offset=1) # using plot.medusa()
+    plot(res, cex=0.5, label.offset=1) # using plot.medusa()
     title("AICc-chosen model")
     }
 }
