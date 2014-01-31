@@ -187,7 +187,6 @@ RcppExport SEXP open_subtree (SEXP dat, SEXP desc)
 		std::vector<int> exclude = Rcpp::as<std::vector<int> >(cache["exclude"]);
 		std::vector<int> subtended;
 		std::vector<int> drop;
-		std::vector<int> dd;
 
 		int i, j, k, se, sn, sd, nd, cur;
 
@@ -202,7 +201,7 @@ RcppExport SEXP open_subtree (SEXP dat, SEXP desc)
 				drop.push_back(cur);
 				if( (cur>node) & (cur<=nn) )
 				{
-					dd=adesc[cur-1];
+					std::vector<int> dd=adesc[cur-1];
 					sd=dd.size();
 					for(j=0; j<sd; j++){
 						drop.push_back(dd[j]);
