@@ -14,7 +14,7 @@ aov.phylo(formula, phy, nsim = 1000,
   \item{phy}{a phylogenetic tree of class 'phylo'}
   \item{nsim}{number of simulations to run}
   \item{test}{test statistic to apply if MANOVA}
-  \item{\dots}{additional arguments to be passed to \code{\link[stats]{print.anova}}}
+  \item{\dots}{additional arguments to be passed to \code{print.anova}}
 }
 \details{
 This function performs an ANOVA or MANOVA in a phylogenetic context.  First, the test statistic for ANOVA 

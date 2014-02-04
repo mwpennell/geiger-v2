@@ -144,3 +144,5 @@ export(white.mkn)
 export(write.pathd8)
 export(write.r8s)
 export(write.treePL)
+import(MASS, digest, deSolve, coda, mvtnorm, subplex, Rcpp, ape)
+

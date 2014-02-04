@@ -7,15 +7,16 @@ Author: Luke Harmon <lukeh@uidaho.edu>, Jason Weir, Chad Brock, Rich
         Glor, Wendell Challenger, Gene Hunt, Rich FitzJohn, Matt Pennell, Graham Slater, Joseph Brown, Josef Uyeda, and Jon Eastman <jonathan.eastman@gmail.com>
 Maintainer: Matt Pennell <mwpennell@gmail.com>
 Depends:
-	ape (>= 3.0-6), 
+	ape (>= 3.0-6),
+	R (>= 2.15.0) 
+Imports:
 	MASS, 
 	mvtnorm, 
 	subplex, 
 	deSolve (>= 1.7),
 	digest, 
-	Rcpp (>= 0.9.0), 
-	coda, 
-	R (>= 2.15.0) 
+	Rcpp (>= 0.9.0),
+	coda  
 Suggests: parallel,
 	  ncbit,
 	  pls,
