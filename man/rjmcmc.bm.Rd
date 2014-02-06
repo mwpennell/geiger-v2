@@ -70,6 +70,13 @@ hist <- tmp$hist
 ex.traitgram(phy, hist, alpha=0) # plot history of trait change
 
 ## RUN ANALYSIS
+
+
+## coda package is not a dependency of geiger
+## but is very useful for evaluating mcmc runs
+## library(coda)
+
+
 rjmcmc.bm(phy,dat, prop.width=1.5, ngen=20000, samp=500, filebase=r,
           simple.start=TRUE, type="jump-bm")
 outdir <- paste("jump-BM", r, sep=".")
@@ -84,7 +91,8 @@ title("red (estimated); black (true jump size)", line=-5)
 par(defpar)
 
 dev.new()
-autocorr.plot(ps$log, ask=dev.interactive())
+## from the coda package
+coda::autocorr.plot(ps$log, ask=dev.interactive())
 plot(ps$log, ask=dev.interactive())
 
 ## GENERATE DATA: multi-rate diffusion
