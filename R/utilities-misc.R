@@ -59,7 +59,7 @@ aicw <- function (x) {
 	if ((Sys.getenv("R_PARALLEL") == "FALSE")) {
 		fx <- function(X, FUN, ...) lapply(X, FUN, ...);
 	} else {
-		if (.check.parallel()) {
+		if (.check.parallel() & Sys.info()["sysname"]!="Windows") {
 			if (is.null(ncores)) {
 				ncores <- detectCores();
 			}
