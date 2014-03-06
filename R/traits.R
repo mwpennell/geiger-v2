@@ -1025,8 +1025,11 @@ aov.phylo=function(formula, phy, nsim=1000, test=c("Wilks", "Pillai", "Hotelling
     colnames(out)=gsub(" ", "-", colnames(out))
     sims<-sim.char(phy, s, nsim=nsim)
     f.null<-apply(sims, 3, FUN)
-    p.phylo=(sum(f.null>f.data)+1)/(nsim+1)
-
+    if(test=="Wilks") {
+    	p.phylo = (sum(f.null < f.data) + 1)/(nsim + 1)
+    } else {
+    	p.phylo = (sum(f.null > f.data) + 1)/(nsim + 1)
+    }
     out$'Pr(phy)'=c(p.phylo, NA)
     class(out) <- c("anova", "data.frame")
     print(out, ...)
