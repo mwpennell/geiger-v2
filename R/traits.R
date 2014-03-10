@@ -1025,8 +1025,12 @@ aov.phylo=function(formula, phy, nsim=1000, test=c("Wilks", "Pillai", "Hotelling
     colnames(out)=gsub(" ", "-", colnames(out))
     sims<-sim.char(phy, s, nsim=nsim)
     f.null<-apply(sims, 3, FUN)
-    if(test=="Wilks") {
-    	p.phylo = (sum(f.null < f.data) + 1)/(nsim + 1)
+    if(multivar) {
+    	if(test=="Wilks") {
+    		p.phylo = (sum(f.null < f.data) + 1)/(nsim + 1)
+    	} else {
+    		p.phylo = (sum(f.null > f.data) + 1)/(nsim + 1)
+    	}
     } else {
     	p.phylo = (sum(f.null > f.data) + 1)/(nsim + 1)
     }
