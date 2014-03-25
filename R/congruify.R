@@ -47,7 +47,7 @@
 	return(df[,-which(names(df)=="valid")])
 }
 
-congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8")){
+congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8"), ncores=NULL){
     ## adding requirement for ncbit
     require(ncbit)
     
@@ -144,7 +144,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 	names(spp)=tips
 	taxa=unique(unlist(spp))
 	
-	scion=hashes.phylo(scion, taxa)
+	scion=hashes.phylo(scion, taxa, ncores)
 	scion_desc=.cache.descendants(scion)$tips
     if(is.null(scion$edge.length)) scion$edge.length=numeric(nrow(scion$edge)) ## JME 01302013
 	

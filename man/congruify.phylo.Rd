@@ -7,7 +7,8 @@ ultrametricization of trees from a supplied timetree}
 \description{
 automagically generating secondary calibrations}
 \usage{
-congruify.phylo(reference, target, taxonomy = NULL, tol = 0, scale=c(NA, "PATHd8"))
+congruify.phylo(reference, target, taxonomy = NULL, tol = 0, scale=c(NA, "PATHd8"),
+    ncores=NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -16,6 +17,7 @@ congruify.phylo(reference, target, taxonomy = NULL, tol = 0, scale=c(NA, "PATHd8
   \item{taxonomy}{a linkage table between tips of the phylogeny and clades represented in the tree; rownames of 'taxonomy' should be tips found in the phylogeny}
   \item{tol}{branching time in \code{reference} above which secondary constraints will be applied to \code{target}}
   \item{scale}{either \code{NA} or \code{"PATHd8"} (if \code{PATHd8} is available in the R \code{PATH})}
+  \item{ncores}{number of cores to be used}
 }
 \details{
 	This function uses the \code{reference} to inform secondary calibrations in the \code{target}. The primary output is a table of 'congruent' nodes between the \code{reference} 
@@ -35,7 +37,7 @@ Eastman JM, LJ Harmon, and DC Tank. 2013. Congruification: support for time scal
 
 \examples{
 sal=get(data(caudata))
-res=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, scale=NA)
+res=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, scale=NA, ncores=2)
 print(res$calibrations)
 plot(ladderize(sal$phy,right=FALSE), cex=0.35, type="fan", label.offset=2.5)
 plot(ladderize(sal$fam,right=FALSE), cex=0.5, type="fan", label.offset=2.5, no.margin=FALSE)

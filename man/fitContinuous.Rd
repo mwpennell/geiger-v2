@@ -8,7 +8,7 @@
 fitContinuous(phy, dat, SE = 0, 
     model = c("BM","OU","EB","trend","lambda","kappa","delta","drift","white"),
     bounds= list(), control = list(method = c("subplex","L-BFGS-B"),
-    niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), \dots)
+    niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), ncores=NULL, \dots)
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
@@ -17,6 +17,7 @@ fitContinuous(phy, dat, SE = 0,
   \item{model}{ model to fit to comparative data (see \bold{Details}) }
   \item{bounds}{ range to constrain parameter estimates (see \bold{Details})  }
   \item{control}{ settings used for optimization of the model likelihood}
+  \item{ncores}{ Number of cores. If \code{NULL} then number of cores is detected}
   \item{...}{additional arguments to be passed to the internal likelihood function \code{bm.lik}}
 }
 \details{
@@ -113,7 +114,7 @@ phy=tmp$phy
 dat=tmp$data
  
 #---- STORE RESULTS 
-brownFit <-  fitContinuous(phy, dat[,"wingL"], SE=NA, control=list(niter=50))
+brownFit <-  fitContinuous(phy, dat[,"wingL"], SE=NA, control=list(niter=50), ncores=2)
 
 #---- PRINT RESULTS
 print(names(brownFit))
@@ -147,7 +148,8 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 	for(m in 1:length(models)){
 		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m], 
 			" with SE *** \n", sep="")
-		tmp=fitContinuous(phy,dat[,trait],SE=NA, model=models[m],bounds=list(SE=c(0,0.5)))
+		tmp=fitContinuous(phy,dat[,trait],SE=NA, model=models[m],
+                                    bounds=list(SE=c(0,0.5)), ncores=2)
 		print(tmp)
 		aic.se[m]=tmp$opt$aicc
 		lnl.se[m]=tmp$opt$lnL
@@ -161,7 +163,7 @@ fitGeospiza=function(trait=c("wingL","tarsusL","culmenL","beakD","gonysW")){
 	for(m in 1:length(models)){
 		cat("\n\n\n\n\t*** ", paste(toupper(summaries[m]),": fitting ", sep=""), models[m],
 			 " *** \n", sep="")
-		tmp=fitContinuous(phy,dat[,trait],SE=0,model=models[m])
+		tmp=fitContinuous(phy,dat[,trait],SE=0,model=models[m], ncores=2)
 		print(tmp)
 		aic[m]=tmp$opt$aicc
 		lnl[m]=tmp$opt$lnL

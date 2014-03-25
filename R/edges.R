@@ -34,7 +34,7 @@
 
 
 hashes.phylo<-
-function(phy, tips=NULL){
+function(phy, tips=NULL, ncores=NULL){
 	## FIXME: distinguish between an empty edge (one that subtends node of the tips in 'tips' and a redundant edge (one that subtends same set of tips in 'tips' as another edge)? 
 	# 
 	# tips: an ordering (and set) from which to determine unique hashes

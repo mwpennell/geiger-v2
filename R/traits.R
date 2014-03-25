@@ -4,7 +4,8 @@ dat,
 SE = 0,
 model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"),
 bounds=list(),
-control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, CI=0.95), ...
+control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, CI=0.95), 
+ncores=NULL, ...
 )
 {
     
@@ -130,7 +131,7 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
     max=bnds[argn,"mx"]
     
     # mclapply or lapply
-    fxopt=.get.parallel()
+    fxopt=.get.parallel(ncores)
     
     # 'method' optimization
 	out=fxopt(1:ct$niter, function(i){
@@ -572,6 +573,7 @@ model=c("ER","SYM","ARD","meristic"),
 transform=c("none", "EB","lambda", "kappa", "delta", "white"), 
 bounds=list(), 
 control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, CI=0.95),
+ncores=NULL,
 ...)
 {
 	
@@ -693,7 +695,7 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
     max=bnds[parnm,"mx"]
 	
     # mclapply or lapply
-    fxopt=.get.parallel()
+    fxopt=.get.parallel(ncores)
     
     # 'method' optimization
 	out=fxopt(1:ct$niter, function(i){

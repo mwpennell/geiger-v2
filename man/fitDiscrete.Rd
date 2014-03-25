@@ -9,7 +9,8 @@ fitDiscrete(phy, dat,
     model = c("ER","SYM","ARD","meristic"),
     transform = c("none", "EB", "lambda", "kappa", "delta", "white"),
     bounds = list(), control = list(method = c("subplex", "L-BFGS-B"),
-    niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), ...)
+    niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), ncores=NULL,
+    ...)
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
@@ -18,6 +19,7 @@ fitDiscrete(phy, dat,
   \item{transform}{ an evolutionary model used to transform the tree (see \bold{Details}) }
   \item{bounds}{ range to constrain parameter estimates (see \bold{Details})  }
   \item{control}{ settings used for optimization of the model likelihood}
+  \item{ncores}{ Number of cores. If \code{NULL} then number of cores is detected}
   \item{...}{if \code{model="meristic"}, \code{...} can dictate whether the matrix is asymmetric (\code{symmetric=FALSE})}
 }
 \details{
@@ -98,7 +100,7 @@ geo=list(phy=td$phy, dat=td$data)
 gb=round(geo$dat[,5]) ## create discrete data
 names(gb)=rownames(geo$dat)
 
-tmp=fitDiscrete(geo$phy, gb, model="ER", control=list(niter=5)) #-7.119792
+tmp=fitDiscrete(geo$phy, gb, model="ER", control=list(niter=5), ncores=2) #-7.119792
 ## using the returned likelihood function
 lik=tmp$lik
 lik(0.3336772, root=ROOT.OBS) #-7.119792
