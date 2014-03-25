@@ -659,7 +659,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
 }
 
 
-lookup.phylo=function(phy, taxonomy=NULL, clades=NULL){
+lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
     ## taxonomy expected to have first column at same level as tip labels in phy
     ## first row in taxonomy is most exclusive
     ## clade_defs are phylogenetic trees of a clade representation

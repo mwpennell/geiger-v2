@@ -11,7 +11,7 @@ Blending information from taxonomies and trees}
 working with systematic reference tables and phylogenies}
 \usage{
 nodelabel.phylo(phy, taxonomy, strict=TRUE, ncores=NULL)
-phylo.lookup(taxonomy, ncores=NULL)
+phylo.lookup(taxonomy, ncores=NULL, clades = NULL)
 lookup.phylo(phy, taxonomy = NULL, clades = NULL)
 phylo.clades(clades, phy=NULL, unplaced=TRUE, ncores=NULL)
 glomogram.phylo(phy, subtrees)
