@@ -757,7 +757,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL){
 	
 	if(!is.null(clades)){
 		tips=phy$tip.label
-		clade_defs=phylo.clades(clades)
+		clade_defs=phylo.clades(clades, ncores=ncores)
         #		cat("resolving clades...\n\t")
 		res=lapply(1:length(clade_defs), function(idx) {
             def=clade_defs[[idx]]
