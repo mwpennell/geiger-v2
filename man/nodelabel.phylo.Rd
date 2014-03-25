@@ -11,7 +11,7 @@ Blending information from taxonomies and trees}
 working with systematic reference tables and phylogenies}
 \usage{
 nodelabel.phylo(phy, taxonomy, strict=TRUE)
-phylo.lookup(taxonomy)
+phylo.lookup(taxonomy, ncores=NULL)
 lookup.phylo(phy, taxonomy = NULL, clades = NULL)
 phylo.clades(clades, phy=NULL, unplaced=TRUE)
 glomogram.phylo(phy, subtrees)
@@ -47,7 +47,7 @@ print(head(sal$tax))
 
 ## TREE from TABLE: phylo.lookup()
 tax=cbind(sal$tax[,c("subfamily", "family", "suborder")], order="Caudata")
-tphy=phylo.lookup(tax)
+tphy=phylo.lookup(tax, ncores=2)
 print(tphy)
 head(tphy$node.label)
 

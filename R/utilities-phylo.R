@@ -830,7 +830,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL){
 	return(taxonomy)
 }
 
-phylo.lookup=function(taxonomy) {
+phylo.lookup=function(taxonomy, ncores=NULL) {
     # GENERAL FUNCTION: convert taxonomic 'lookup' table to phylogeny
     # lookup is data.frame with ranks as columns
     # rowlabels of 'taxonomy' are assumed to be tips of the phylogeny
@@ -850,7 +850,7 @@ phylo.lookup=function(taxonomy) {
         occurrences=c(occurrences, root=mm)
     }
 	
-    f=.get.parallel()
+    f=.get.parallel(ncores)
 	
     #clds=f(names(occurrences), function(x) {
     #		tmp=which(tax==x, arr.ind=TRUE)
