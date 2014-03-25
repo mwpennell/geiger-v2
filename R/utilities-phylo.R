@@ -947,7 +947,7 @@ phylo.lookup=function(taxonomy, ncores=NULL) {
     op$expressions=max(op$expressions, 500000)
     options(op)
 	
-	tmp=phylo.clades(defs)
+	tmp=phylo.clades(defs, ncores=ncores)
 	phy=tmp[[length(defs)]]
 	tt=table(phy$tip.label)
 	if(any(tt>1)){

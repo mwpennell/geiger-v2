@@ -24,7 +24,9 @@ glomogram.phylo(phy, subtrees)
   \item{clades}{a named list of clade definitions (i.e., spanning taxa; see \bold{Examples}); spanning taxa may invoke other definitions found within the \code{clades} list}
   \item{unplaced}{whether to use 'unplaced' taxa if given as an element in \code{clades}} 
   \item{subtrees}{a list of trees to be grafted into \code{phy}; each \code{subtrees} element must either be a 'phylo' or 'multiPhylo' object with branch lengths in the same units as \code{phy} (see \bold{Examples})}
-  \item{strict}{whether to enforce strict labeling of nodes or allow liberal estimates of the best location of a given nodelabel}
+  \item{strict}{whether to enforce strict labeling of nodes or allow
+    liberal estimates of the best location of a given nodelabel}
+  \item{ncores}{the maximum number of cores to be used}
 }
 
 \details{
