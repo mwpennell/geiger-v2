@@ -194,7 +194,7 @@ is.root <- function (node,phy) {
 }
 
 
-nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
+nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
     # all phy$tip.label must be in taxonomy
     # taxonomy: exclusivity highest on left, lowest on right (species, genus, family, etc., as columns)
     # columns in 'taxonomy' should ONLY be taxonomic ranks
@@ -319,7 +319,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE){
         #		rownames(edges)=1:nrow(edges)
 		N=Ntip(phy)
         
-        ff=.get.parallel()
+        ff=.get.parallel(ncores)
         
 		dist=unlist(ff(desc, function(x) {
             y=tidx%in%x

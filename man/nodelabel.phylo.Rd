@@ -10,7 +10,7 @@ Blending information from taxonomies and trees}
 \description{
 working with systematic reference tables and phylogenies}
 \usage{
-nodelabel.phylo(phy, taxonomy, strict=TRUE)
+nodelabel.phylo(phy, taxonomy, strict=TRUE, ncores=NULL)
 phylo.lookup(taxonomy, ncores=NULL)
 lookup.phylo(phy, taxonomy = NULL, clades = NULL)
 phylo.clades(clades, phy=NULL, unplaced=TRUE)
@@ -61,7 +61,7 @@ cld=list(
 )
 lkp=lookup.phylo(sal$phy, taxonomy=tax, clades=cld)
 print(lkp)
-nphy=nodelabel.phylo(sal$phy, lkp)
+nphy=nodelabel.phylo(sal$phy, lkp, ncores=2)
 dev.new()
 plot.phylo(ladderize(nphy,right=FALSE), cex=0.35, 
 type="fan", label.offset=2.5, no.margin=TRUE, edge.color="gray", edge.width=0.5)
@@ -84,7 +84,7 @@ phy=list(Cryptobranchoidea=cryptobranchoidea, Salamandroidea=salamandroidea, Sir
 class(phy)="multiPhylo"
 
 res=phylo.clades(clades, phy)
-amph=nodelabel.phylo(res$AMPHIBIA, lkp)
+amph=nodelabel.phylo(res$AMPHIBIA, lkp, ncores=2)
 print(amph$FUN("Salamandroidea"))
 dev.new()
 plot(ladderize(amph, right=FALSE), cex=0.2, label.offset=0.05)
@@ -104,7 +104,7 @@ class(trees)="multiPhylo"
 fam=sal$fam
 ftax=unique(sal$tax[,c("family", "suborder")])
 rownames(ftax)=unname(ftax[,"family"])
-fam=nodelabel.phylo(fam, ftax)
+fam=nodelabel.phylo(fam, ftax, ncores=2)
 fam$FUN("Salamandroidea")
 
 res=glomogram.phylo(fam, trees)
