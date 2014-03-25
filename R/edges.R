@@ -79,7 +79,7 @@ function(phy, tips=NULL, ncores=NULL){
 	
 	
 	NULL_TIPS=.md5(integer(length(tips)))
-	f=.get.parallel()
+	f=.get.parallel(ncores)
 	
 	# store hash keys for trees in order 1:(Node(phy)+Ntip(phy))
 	tmp=f(trees, function(phy){
