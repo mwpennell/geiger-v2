@@ -13,7 +13,7 @@ working with systematic reference tables and phylogenies}
 nodelabel.phylo(phy, taxonomy, strict=TRUE, ncores=NULL)
 phylo.lookup(taxonomy, ncores=NULL)
 lookup.phylo(phy, taxonomy = NULL, clades = NULL)
-phylo.clades(clades, phy=NULL, unplaced=TRUE)
+phylo.clades(clades, phy=NULL, unplaced=TRUE, ncores=NULL)
 glomogram.phylo(phy, subtrees)
 }
 
@@ -83,7 +83,7 @@ clades=list(
 phy=list(Cryptobranchoidea=cryptobranchoidea, Salamandroidea=salamandroidea, Siren=siren)
 class(phy)="multiPhylo"
 
-res=phylo.clades(clades, phy)
+res=phylo.clades(clades, phy, ncores=2)
 amph=nodelabel.phylo(res$AMPHIBIA, lkp, ncores=2)
 print(amph$FUN("Salamandroidea"))
 dev.new()

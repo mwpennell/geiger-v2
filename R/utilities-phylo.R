@@ -265,7 +265,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
 	}
 	
     #	cat("resolving descendants for splits in tree...\n")
-	tmp=hashes.phylo(phy, tips)
+	tmp=hashes.phylo(phy, tips, ncores=ncores)
 	hashes_tree=tmp$hash
 	phy$node.label=rep("",max(phy$edge))
 	mm=match(hashes_tree, hashes_labels)
@@ -475,7 +475,7 @@ is.phylo=function(x) "phylo"%in%class(x)
 # allows for recursion in clade definitions (clade defined in part using another clade definition)
 # returns trees representing each clade definition
 # 'nested': an important variable -- this is the subset of clades that are defined (recursively) within 'clades'
-phylo.clades=function(clades, phy=NULL, unplaced=TRUE){
+phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
 	
     ## give 'phy' as a multiPhylo, named list of trees (whose labels appear in the clade defs)
     ## clades:
@@ -628,7 +628,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE){
    		tt=master$tip.label
    		null=.hash.tip(c(), tt)
 		
-   		mm=hashes.phylo(master, tt)
+   		mm=hashes.phylo(master, tt, ncores=ncores)
    		ss=sapply(phy, function(x) .hash.tip(x$tip.label, tt))
    		if(any(ss==null)){
 			warning(paste("The following not encountered:\n\t", paste(names(ss)[which(ss==null)], collapse="\n\t")))
