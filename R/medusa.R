@@ -7,29 +7,12 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	initialE <- init[["epsilon"]];
 	initialR <- init[["r"]];
 	sp = c(initialR, initialE);
-
+	
+	## Determine whether multiple cores can be used (i.e. non-Windows, non-GUI).
+	## This is apparently breaking the build. Fix!
 	fx <- .get.parallel(ncores);
-
-	if (!is.na(partitions)) {
-		flag <- "'partitions' should either be NA or a positive integer specifying the maximum number of piecewise models to consider";
-		if (!is.numeric(partitions)) {
-			stop(flag);
-		}
-		if (partitions <= 0) {
-			stop(flag);
-		}
-		anStop <- "partitions";
-	} else {
-		criterion <- match.arg(criterion, choices = c("aicc", "aic"), several.ok = FALSE);
-		anStop <- "threshold";
-	}
-	if (anStop == "threshold") {
-		numPartitions <- 0;
-	} else {
-		numPartitions <- partitions;
-		criterion <- "aicc";
-	}
-
+	
+	criterion <- match.arg(criterion, choices = c("aicc", "aic"), several.ok = FALSE);
 	model <- match.arg(model, choices = c("mixed", "bd", "yule"), several.ok = FALSE);
 	shiftCut <- match.arg(cut, choices = c("both", "stem", "node"), several.ok = FALSE);
 	
@@ -40,12 +23,12 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	richness <- .check.richness(phy = phy, richness = richness);
 	phyData <- .treedata.medusa(phy = phy, richness = richness, warnings = FALSE); ## modified prune.tree.merge.data for multiple trees (jme)
 	
-	## Determine correct AICc threshold from tree size (based on simulations)
+	## Determine correct AICc threshold from tree size (based on simulations), or use user-provided threshold
 	threshold_N <- .threshold.medusa(threshold = threshold, phy = phyData$phy, criterion = criterion);
 	
 	## Limit on number of piecewise models fitted; based on tree size, aicc correction factor,
 	## and flavour of model fitted (i.e. # parameters estimated; birth-death or pure-birth)
-	model.limit <- .get.max.model.limit(richness = richness, anStop = anStop, numPartitions = numPartitions, model = model, verbose = verbose);
+	model.limit <- .get.max.model.limit(richness = richness, partitions = partitions, model = model, verbose = verbose);
 	
 	# internal function for running a single tree and richness data.frame (jme)
 	medusa_runner <- function (phy, richness) {
@@ -101,50 +84,10 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 			prefit <- list(tips = tips, virgin.nodes = virgin.nodes);
 		}
 		
-		stopOnLimit <- function (fit) { # not likely to be used. get rid of it?
-			optModel <- fit;
-			i <- 1;
-			
-			cat("Step 1: lnLik=", round(optModel$lnLik, digits=7), "; ", criterion, "=",
-				round(as.numeric(optModel[criterion]), digits=7), "; model=", optModel$model[1], "\n", sep="");
-			
-			while (i < model.limit) {
-				i <- i + 1;
-				node.list <- all.nodes[-fit$split.at];
-				res <- fx(node.list, .update.fit.medusa, z = z, desc = desc, fit = fit, prefit = prefit, num.tips = num.tips,
-					root.node = root.node, model = model, criterion = criterion, shiftCut = shiftCut);
-
-			# Select model with best score according to the specific criterion employed (default aicc)
-				fit <- res[[which.min(unlist(lapply(res, "[[", criterion)))]];
-				z.best <- .split.z.at.node.medusa(node = tail(fit$split.at, 1), z = z, desc = desc, shiftCut = tail(fit$cut.at, 1))$z;
-				step <- rbind(optModel$step, c("add", tail(fit$split.at, 1)));
-				
-			# Consider parameter removal
-				if (stepBack) {
-					backFit <- .back.step.medusa(currentModel = fit, z = z.best, step = step, model = model, criterion = criterion);
-					fit <- backFit$fit;
-					z.best <- backFit$z;
-					step <- backFit$step;
-					if (!is.null(backFit$remove)) {
-						nn <- length(backFit$remove);
-						i <- i - nn;
-					}
-				}
-				fit$step <- step;
-				
-				if (stepBack && !is.null(backFit$remove)) {.print.removed.shifts(remove=backFit$remove);}
-				optModel <- fit;
-				z <- z.best;
-				
-				cat("Step ", i, ": lnLik=", round(fit$lnLik, digits=7), "; ", criterion, "=",
-					round(as.numeric(optModel[criterion]), digits=7), "; shift at node ", tail(fit$split.at,1), "; model=",
-					tail(fit$model,1), "; cut=", tail(fit$cut.at,1), "; # shifts=", length(fit$split.at) - 1, "\n", sep="");
-				if (i == model.limit) cat("\n");
-			}
-			return(list(optModel=optModel, z=z));
-		}
-		
-		stopOnThreshold <- function (fit) {
+		## this will stop in one of two ways:
+		## 1) model doesn't improve AIC by 'threshold' (determined by MEDUSA, or set by user)
+		## 2) hit the maximum allowed number of models (almost certainly only by user specified value of 'partitions')
+		runStepwiseAIC <- function (fit) {
 			optModel <- fit;
 			i <- 1;
 			done <- FALSE;
@@ -190,7 +133,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 			return(list(optModel=optModel, z=z));
 		}
 		
-		if (anStop == "threshold") res <- stopOnThreshold(fit = fit) else res <- stopOnLimit(fit = fit);
+		res <- runStepwiseAIC(fit = fit);
 		
 		optModel <- res$optModel;
 		z <- res$z;
@@ -234,14 +177,14 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		
 		zSummary <- summarizeZ(z);
 		
-		control <- list(anStop = anStop, threshold = structure(threshold_N, names = criterion), partitions = numPartitions);
+		control <- list(threshold = structure(threshold_N, names = criterion), partitions = partitions);
 		results <- list(control = control, cache = list(desc = desc, phy = phy), model = optModel,
 			summary = modelSummary, zSummary = zSummary, medusaVersion = medusaVersion);
 		class(results) <- c("medusa", class(results));
 		return(results);
 	}
 	
-	## I don't like this format. Why store N (possibly 10,000) copies of richness? Same goes for anStop and numPartitions
+	## I don't like this format. Why store N (possibly 10,000) copies of richness?
 	# seems like hash is ONLY useful with mulitple trees.
 	if ("multiPhylo" %in% class(phy)) { ## deal with multiple trees
 		#res <- lapply(phyData, function (x) medusa_runner(x$phy, x$richness));
@@ -349,14 +292,14 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 }
 
 ## Original default was to fit 20 models (or less if the tree was small).
-## Changing to a stop-criterion (anStop="model.limit") e.g. when k = n-1 (i.e. when denominator of aicc correction is undefined).
+## Changing to a stop-criterion ("model.limit") e.g. when k = n-1 (i.e. when denominator of aicc correction is undefined).
 ## k <- (3*i-1) # when both birth and death are estimated, where i is the number of piecewise models
 ## This occurs when i = n/3
 ## If Yule, max i = n/2
 ## n <- (2*num.taxa - 1) == (2*length(richness[,1]) - 1) # i.e. total number of nodes in tree (internal + pendant)
-## Alternatively use aicc threshold itself as a stopping criterion (anStop="threshold").
+## Alternatively use aicc threshold itself as a stopping criterion.
 # AICc = AIC + 2*k*(k+1)/(n-k-1);
-.get.max.model.limit <- function (richness, anStop, numPartitions, model, verbose) {
+.get.max.model.limit <- function (richness, partitions, model, verbose) {
 	samp.size <- (2 * nrow(richness) - 1);
 	if (model == "bd" || model == "mixed") {
 		max.model.limit <- as.integer(samp.size/3) - ((!(samp.size%%3)) * 1);
@@ -364,12 +307,16 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		max.model.limit <- as.integer(samp.size/2) - ((!(samp.size%%2)) * 1);
 	}
 
-	if (anStop == "partitions") {
-		if (numPartitions > max.model.limit) {
+	if (!is.na(partitions)) {
+		flag <- "'partitions' should either be NA or a positive integer specifying the maximum number of piecewise models to consider";
+		if (!is.numeric(partitions) | partitions <= 0) {
+			stop(flag);
+		}
+		if (partitions > max.model.limit) {
 			model.limit <- max.model.limit;
 			warning("Supplied 'partitions' is in excess of the maximal number that can be considered");
 		} else {
-			model.limit = numPartitions;
+			model.limit <- partitions;
 		}
 	} else {
 		model.limit <- max.model.limit;
@@ -384,10 +331,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		} else {
 			cat(" pure-birth (Yule) models");
 		}
-		if (anStop == "threshold") {
-			cat(" (or until threshold is not satisfied)");
-		}
-		cat(".\n\n");
+		cat(" (or until threshold is not satisfied).\n\n");
 	}
 	return(model.limit);
 }
@@ -422,7 +366,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 			return(threshold);
 		}
 	} else {
-		cat("Appropriate  ", criterion, " -threshold for a tree of ", N, " tips is: ", y, ".\n\n", sep="");
+		cat("Appropriate  ", criterion, "-threshold for a tree of ", N, " tips is: ", y, ".\n\n", sep="");
 		return(y);
 	}
 }
@@ -487,23 +431,22 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		desc.stem <- fx(seq_len(max(all.edges)), .descendants.cutAtStem.idx, all.edges = all.edges);
 	}
 	if (shiftCut == "both" || shiftCut == "node") {
-		if (!is.null(desc.stem)) {
+		if (length(desc.stem) != 0) {
 			root <- min(z[,"anc"]);
-			desc.node <- fx(desc.stem, .strip.stem);
+			desc.node <- fx(desc.stem, .strip.stem); # much faster
 			desc.node[root] <- desc.stem[root];
 		} else {
 			desc.node <- fx(seq_len(max(all.edges)), .descendants.cutAtNode.idx, all.edges = all.edges);
+			# for the case of tips (no descendants), add themselves as their descendant
+			for (i in 1:length(desc.node)) {
+				if (length(desc.node[[i]]) == 0) { # tips
+					desc.node[[i]] <- .descendants.cutAtStem.idx(node.list = i, all.edges = all.edges);
+				}
+			}
 		}
 	}
-	
-	# ?!? wtf is this? Get rid of it?
-	for (i in 1:length(desc.node)) {
-		if (length(desc.node[[i]]) == 0) { # tips
-			desc.node[[i]] <- .descendants.cutAtStem.idx(node.list = i, all.edges = all.edges);
-		}
-	}
-
-	tips <- .cache.descendants(phy)$tips;
+	tips=NULL;
+	#tips <- .cache.descendants(phy)$tips;
 	res <- list(z = z, desc.stem = desc.stem, desc.node = desc.node, tips = tips);
 	return(res);
 }
@@ -551,18 +494,13 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 # Remove stem node from previously calculated set of stem descendants; about a billion times faster than descendants.cutAtNode
 .strip.stem <- function (x) {
+	if (length(x) == 1) { # if it is a tip, leave it alone
+		return(x);
+	}
 	y <- unlist(x);
 	return(y[-1]);
 }
 
-
-## Needed for determining whether nodes are virgin nodes
-# ?!? this isn't even used anywhere...
-#get.num.tips
-# .ntips <- function (node, phy) {
-	# n <- length(tips(phy, node));
-	# return(n);
-# }
 
 ## Only used for base model
 #.fit.base.medusa <- function (z, sp, model, fixPar, criterion) {
