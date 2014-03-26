@@ -1,6 +1,6 @@
-medusaVersion = 1.4;
+medusaVersion = 1.41;
 
-medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitions = NA, model = c("mixed", "bd", "yule"),
+medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitions = NA, threshold = NA, model = c("mixed", "bd", "yule"),
 	cut = c("both", "stem", "node"), stepBack = TRUE, init = c(r = 0.05, epsilon = 0.5), ncores = NULL, verbose = FALSE, ...) {
 
 	## CHECK ARGUMENTS
@@ -24,9 +24,9 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		anStop <- "threshold";
 	}
 	if (anStop == "threshold") {
-		npartitions <- 0;
+		numPartitions <- 0;
 	} else {
-		npartitions <- partitions;
+		numPartitions <- partitions;
 		criterion <- "aicc";
 	}
 
@@ -41,11 +41,11 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	phyData <- .treedata.medusa(phy = phy, richness = richness, warnings = FALSE); ## modified prune.tree.merge.data for multiple trees (jme)
 	
 	## Determine correct AICc threshold from tree size (based on simulations)
-	threshold_N <- ifelse(anStop == "threshold", .threshold.medusa(phyData$phy), 0);
+	threshold_N <- .threshold.medusa(threshold = threshold, phy = phyData$phy, criterion = criterion);
 	
 	## Limit on number of piecewise models fitted; based on tree size, aicc correction factor,
 	## and flavour of model fitted (i.e. # parameters estimated; birth-death or pure-birth)
-	model.limit <- .get.max.model.limit(richness = richness, anStop = anStop, npartitions = npartitions, model = model, verbose = verbose);
+	model.limit <- .get.max.model.limit(richness = richness, anStop = anStop, numPartitions = numPartitions, model = model, verbose = verbose);
 	
 	# internal function for running a single tree and richness data.frame (jme)
 	medusa_runner <- function (phy, richness) {
@@ -234,14 +234,14 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		
 		zSummary <- summarizeZ(z);
 		
-		control <- list(anStop = anStop, threshold = structure(threshold_N, names = criterion), partitions = npartitions);
+		control <- list(anStop = anStop, threshold = structure(threshold_N, names = criterion), partitions = numPartitions);
 		results <- list(control = control, cache = list(desc = desc, phy = phy), model = optModel,
 			summary = modelSummary, zSummary = zSummary, medusaVersion = medusaVersion);
 		class(results) <- c("medusa", class(results));
 		return(results);
 	}
 	
-	## I don't like this format. Why store N (possibly 10,000) copies of richness? Same goes for anStop and npartitions
+	## I don't like this format. Why store N (possibly 10,000) copies of richness? Same goes for anStop and numPartitions
 	# seems like hash is ONLY useful with mulitple trees.
 	if ("multiPhylo" %in% class(phy)) { ## deal with multiple trees
 		#res <- lapply(phyData, function (x) medusa_runner(x$phy, x$richness));
@@ -356,7 +356,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 ## n <- (2*num.taxa - 1) == (2*length(richness[,1]) - 1) # i.e. total number of nodes in tree (internal + pendant)
 ## Alternatively use aicc threshold itself as a stopping criterion (anStop="threshold").
 # AICc = AIC + 2*k*(k+1)/(n-k-1);
-.get.max.model.limit <- function (richness, anStop, npartitions, model, verbose) {
+.get.max.model.limit <- function (richness, anStop, numPartitions, model, verbose) {
 	samp.size <- (2 * nrow(richness) - 1);
 	if (model == "bd" || model == "mixed") {
 		max.model.limit <- as.integer(samp.size/3) - ((!(samp.size%%3)) * 1);
@@ -365,11 +365,11 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	}
 
 	if (anStop == "partitions") {
-		if (npartitions > max.model.limit) {
+		if (numPartitions > max.model.limit) {
 			model.limit <- max.model.limit;
 			warning("Supplied 'partitions' is in excess of the maximal number that can be considered");
 		} else {
-			model.limit = npartitions;
+			model.limit = numPartitions;
 		}
 	} else {
 		model.limit <- max.model.limit;
@@ -395,7 +395,8 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 ## Fitted curve from random b-d simulations
 ## Value corresponds to 95th percentile of AICc(split) - AICc(no-split) for no-split simulations
 ## x-shifted power function
-.threshold.medusa <- function (phy) {
+## User may override this with 'threshold' argument
+.threshold.medusa <- function (threshold, phy, criterion) {
 	if ("multiPhylo" %in% class(phy)) {
 		phy <- phy[[1]];
 	}
@@ -408,8 +409,22 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	if (y < 0) {
 		y <- 0;
 	}
-	cat("Appropriate AICc threshold for tree of ", N, " tips is: ", y, ".\n\n", sep="");
-	return(y);
+	
+	# check uer-specified value
+	if (!is.na(threshold)) {
+		if (!is.numeric(threshold)) {
+			stop("'threshold' should be numeric, specifying the improvement in AIC model fit that is deemed significant");
+		} else if (threshold < 0) {
+			stop("'threshold' should be a positive, specifying the improvement in AIC model fit that is deemed significant");
+		} else {
+			cat("Using user-specified ", criterion, "-threshold of ", threshold,
+				" (rather than the default value for a tree of ", N, " tips: ", y, ").\n\n", sep="");
+			return(threshold);
+		}
+	} else {
+		cat("Appropriate  ", criterion, " -threshold for a tree of ", N, " tips is: ", y, ".\n\n", sep="");
+		return(y);
+	}
 }
 
 ## The make.cache.medusa function is like the first half of the original splitEdgeMatrix().
