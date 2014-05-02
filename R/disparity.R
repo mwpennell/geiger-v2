@@ -176,7 +176,7 @@ function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states")){
     return(c(prob, 1-prob))
 }
 
-dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE){
+dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE, calculateMDIp=TRUE){
 
 	disp=match.arg(index, c("avg.sq", "avg.manhattan", "num.states"))
 	
@@ -225,6 +225,19 @@ dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.r
 	res=list(dtt=dtt.data, times=ltt, sim=dtt.sims, MDI=MDI)
 	drp=sapply(res, function(x) is.null(x))
 	if(any(drp)) res=res[-which(drp)]
+	
+	if(calculateMDIp) {
+		pVal<-getMDIp(res)
+		res<-c(res, MDIpVal=pVal)
+	}
 	return(res)
 }
 
+getMDIp<-function(dttRes) {
+	foo <- function(x) {
+	return(.area.between.curves(x= dttRes$times, f1=x, f2 = dttRes$dtt))
+	}
+	mdis <- apply(dttRes$sim, 1, foo)
+	pVal <- length(which(mdis>=0)) / length(mdis) 
+	return(pVal)
+}
