@@ -26,10 +26,8 @@ dtt(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"),
 		
         For either function, the disparity index can be one of the following:
 		\itemize{
-			\item{\bold{avg.sq }}{is average squared Euclidean distance among all pairs of points; this is a good 
-					choice if all of the axes are in the same units, or PC axes}
-			\item{\bold{avg.manhattan }}{is average Manhattan distance among all pairs of points; this is a good 
-					choice if the axes are all in different units, like colors and lengths}
+			\item{\bold{avg.sq }}{is average squared Euclidean distance among all pairs of points; this is the most common distance metric for disparity in macroevolution}
+			\item{\bold{avg.manhattan }}{is average Manhattan distance among all pairs of points}
 			\item{\bold{num.states }}{is number of unique character states; this is currently the only option for discrete 
 					character data}
 		}
