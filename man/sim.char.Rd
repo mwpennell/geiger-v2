@@ -50,7 +50,7 @@ q <- list(rbind(c(-.5, .5), c(.5, -.5)))
 dsims <- sim.char(geo$phy, q, model="discrete", n=10)
 
 ## Use a simulated dataset in fitDiscrete()
-fitD <- fitDiscrete(geo$phy, dsims[,,1], model="ER", niter=10)
+fitD <- fitDiscrete(geo$phy, dsims[,,1], model="ER", niter=10, ncores=2)
 
 ## Discrete character -- multivariate
 qq <- list(rbind(c(-.5, .5), c(.5, -.5)), rbind(c(-.05, .05), c(.05, -.05)))
