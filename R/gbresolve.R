@@ -222,7 +222,7 @@ gbresolve.phylo=function(x, rank="phylum", within="", ...){
 	return(list(phy=phy, tax=res))
 }
 
-subset.phylo=function(x, taxonomy, rank="", ...){
+subset.phylo=function(x, taxonomy, rank="", ncores=NULL, ...){
 ## rank (e.g., 'family') and 'family' must be in columns of 'taxonomy'
 	
 	phy=x
@@ -241,7 +241,7 @@ subset.phylo=function(x, taxonomy, rank="", ...){
 	}
 	
 	tips=phy$tip.label
-	hphy=hashes.phylo(phy, tips=tips)
+	hphy=hashes.phylo(phy, tips=tips, ncores=ncores)
 	tax=as.data.frame(new, stringsAsFactors=FALSE)
 	stax=split(tax$tip,tax$rank)
 	rank_hashes=sapply(stax, function(ss) .hash.tip(ss, tips=tips))
