@@ -61,7 +61,7 @@ cld=list(
 	Cryptobranchoidea=c("Hynobius_naevius", "Cryptobranchus_alleganiensis"),
 	CAUDATA=c("Sirenoidea","Salamandroidea","Cryptobranchoidea")
 )
-lkp=lookup.phylo(sal$phy, taxonomy=tax, clades=cld)
+lkp=lookup.phylo(sal$phy, taxonomy=tax, clades=cld, ncores=2)
 print(lkp)
 nphy=nodelabel.phylo(sal$phy, lkp, ncores=2)
 dev.new()
