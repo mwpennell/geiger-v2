@@ -176,7 +176,7 @@ function(phy, data, disp=c("avg.sq", "avg.manhattan", "num.states")){
     return(c(prob, 1-prob))
 }
 
-dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE, calculateMDIp=TRUE){
+dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE, calculateMDIp=F){
 
 	disp=match.arg(index, c("avg.sq", "avg.manhattan", "num.states"))
 
