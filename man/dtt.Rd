@@ -9,7 +9,7 @@
 \usage{
 disparity(phy=NULL, data, index = c("avg.sq", "avg.manhattan", "num.states"))
 dtt(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"),
-    mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE)
+    mdi.range=c(0,1), nsim=0, CI=0.95, plot=TRUE, calculateMDIp=F)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -20,6 +20,7 @@ dtt(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"),
   \item{nsim}{number of simulations used to calculate null disparity-through-time plot (see \bold{Details})}
   \item{CI}{confidence level from which to plot simulated disparities}
   \item{plot}{whether to plot disparities through time}
+  \item(calculateMDIp}{calculate p-value for MDI compared to null; only valid if nsim is not zero}
 }
 \details{
 		The most complete implementation of \code{dtt} (where \code{nsim} is greater than 0) carries out the entire disparity-through-time (DTT) procedure described in Harmon et al. 2003, where simulated data are used to construct a null DTT distribution. The function \code{disparity} simply computes the morphological disparity for a set of species. Note that for \code{mdi.range}, time is relative to a total tree length of 1. The default \code{mdi.range} is the entire temporal span of the tree, from 0 (root) to 1 (tips). 
