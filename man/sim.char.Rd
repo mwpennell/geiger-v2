@@ -39,7 +39,7 @@ geo <- get(data(geospiza))
 usims <- sim.char(geo$phy, 0.02, 100)
 
 ## Use a simulated dataset in fitContinuous()
-fitC <- fitContinuous(geo$phy, usims[,,1], model="BM", control=list(niter=10))
+fitC <- fitContinuous(geo$phy, usims[,,1], model="BM", control=list(niter=10), ncores=2)
 
 ## Continuous character -- multivariate
 s <- vcv(geo$phy, geo$dat)
