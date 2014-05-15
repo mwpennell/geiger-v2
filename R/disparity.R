@@ -235,7 +235,7 @@ dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.r
 
 getMDIp<-function(dttRes) {
 	foo <- function(x) {
-	return(.area.between.curves(x= dttRes$times, f1=x, f2 = dttRes$dtt))
+		return(.area.between.curves(x= dttRes$times, f1=x, f2 = dttRes$dtt))
 	}
 	mdis <- apply(dttRes$sim, 1, foo)
 	pVal <- length(which(mdis>=0)) / length(mdis) 
