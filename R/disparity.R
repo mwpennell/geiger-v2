@@ -238,6 +238,6 @@ getMDIp<-function(dttRes) {
 		return(.area.between.curves(x= dttRes$times, f1=x, f2=dttRes$dtt))
 	}
 	mdis<-apply(dttRes$sim,1,foo)
-	pVal<-length(which(mdis>=0))/length(mdis) 
+	pVal<-length(which(mdis>=0))/length(mdis)
 	return(pVal)
 }
