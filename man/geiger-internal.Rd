@@ -2,13 +2,6 @@
 
 \alias{print.bm}
 \alias{print.mkn}
-\alias{ROOT.ALL}
-\alias{ROOT.BOTH}
-\alias{ROOT.EQUI}
-\alias{ROOT.FLAT}
-\alias{ROOT.GIVEN}
-\alias{ROOT.MAX}
-\alias{ROOT.OBS}
 \alias{argn}
 \alias{argn.default}
 \alias{argn.bm}

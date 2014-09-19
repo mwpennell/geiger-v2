@@ -69,7 +69,7 @@ Options for \code{transform} are as follows:
 	\code{fitDiscrete} returns a list with the following four elements: 
 	
 		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model. 
-			For instance, if estimating an untransformed \code{ER} model, there would be a single argument (the transition rate) necessary for the \code{lik} function. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing the likelihood under different parameter values. By default, the function evaluates the likelihood of the model by weighting root states in accordance with their conditional probability given the data (this is the \code{ROOT.OBS} option; see FitzJohn et al. 2009). This default behavior can be changed in the call to \code{lik} with \code{lik(pars, root=ROOT.FLAT)}, for instance, which would weight each state equally at the root. The other useful option is \code{ROOT.GIVEN}, where the user must also supply a vector (\code{root.p}) of probabilities for each possible state. To make likelihoods roughly comparable between \pkg{geiger} and \pkg{ape}, one should use the option \code{lik(pars, root=ROOT.GIVEN, root.p=rep(1,k))}, where \code{k} is the number of character states. See \bold{Examples} for a demonstration
+			For instance, if estimating an untransformed \code{ER} model, there would be a single argument (the transition rate) necessary for the \code{lik} function. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing the likelihood under different parameter values. By default, the function evaluates the likelihood of the model by weighting root states in accordance with their conditional probability given the data (this is the \code{"obs"} option; see FitzJohn et al. 2009). This default behavior can be changed in the call to \code{lik} with \code{lik(pars, root="flat")}, for instance, which would weight each state equally at the root. The other useful option is \code{"given"}, where the user must also supply a vector (\code{root.p}) of probabilities for each possible state. To make likelihoods roughly comparable between \pkg{geiger} and \pkg{ape}, one should use the option \code{lik(pars, root="given", root.p=rep(1,k))}, where \code{k} is the number of character states. See \bold{Examples} for a demonstration
 		}
 		\item{\bold{bnd} }{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
 		}
@@ -103,11 +103,11 @@ names(gb)=rownames(geo$dat)
 tmp=fitDiscrete(geo$phy, gb, model="ER", control=list(niter=5), ncores=2) #-7.119792
 ## using the returned likelihood function
 lik=tmp$lik
-lik(0.3336772, root=ROOT.OBS) #-7.119792
-lik(0.3336772, root=ROOT.FLAT) #-8.125354
-lik(0.3336772, root=ROOT.GIVEN, root.p=rep(1/3,3)) #-8.125354
-lik(0.3336772, root=ROOT.GIVEN, root.p=c(0, 1, 0)) #-7.074039
-lik(c(0.3640363), root=ROOT.GIVEN, root.p=rep(1,3)) #-7.020569 & comparable to ape:::ace solution
+lik(0.3336772, root="obs") #-7.119792
+lik(0.3336772, root="flat") #-8.125354
+lik(0.3336772, root="given", root.p=rep(1/3,3)) #-8.125354
+lik(0.3336772, root="given", root.p=c(0, 1, 0)) #-7.074039
+lik(c(0.3640363), root="given", root.p=rep(1,3)) #-7.020569 & comparable to ape:::ace solution
 
 \donttest{
 # general model (ARD)
