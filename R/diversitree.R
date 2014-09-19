@@ -634,21 +634,21 @@ ROOT.ALL   <- ROOT.BOTH
 
 
 .root.bm.direct <- function(vars, log.comp, root, root.x) {
-	if ( root == ROOT.MAX ) {
+	if ( root == "max" ) {
 ## This treats a prior on the root as a delta function centred at
 ## the ML root state.
 ## The first term can be more intuitively written as:
 ##   dnorm(vars[1], vars[1], sqrt(vars[2]), TRUE)
 ##   dnorm(0, 0, sqrt(vars[2]), TRUE)
 		- log(2 * pi * vars[[2]]) / 2 + vars[[3]] + sum(log.comp)
-	} else if ( root == ROOT.FLAT ) {
+	} else if ( root == "flat" ) {
 ## Flat prior (by this point, function integrates to vars[[3]])
 		vars[[3]] + sum(log.comp)
-	} else if ( root == ROOT.OBS ) {
+	} else if ( root == "obs" ) {
 ## Observed weighting (integrate norm norm wrt x from -inf to inf
 ## gives 1 / (2 sqrt(pi s2))).
 		-log(2 * sqrt(pi * vars[[2]])) + vars[[3]] + sum(log.comp)
-	} else if ( root == ROOT.GIVEN ) {
+	} else if ( root == "given" ) {
 		dnorm(root.x, vars[1], sqrt(vars[2]), TRUE) + vars[[3]] +
 		sum(log.comp)
 	} else {
@@ -860,7 +860,7 @@ is.constrained <- function(x) inherits(x, "constrained")
 	k <- length(d.root)
 	
 	root.p <- .root.p.calc(d.root, pars, root, root.p, NULL)
-	if ( root == ROOT.ALL )
+	if ( root == "all" )
     loglik <- log(d.root) + sum(lq)
 	else
     loglik <- log(sum(root.p * d.root)) + sum(lq)
@@ -876,24 +876,24 @@ is.constrained <- function(x) inherits(x, "constrained")
 
 
 .root.p.calc <- function(vals, pars, root, root.p=NULL, root.equi=NULL) {
-	if ( !is.null(root.p) && root != ROOT.GIVEN )
+	if ( !is.null(root.p) && root != "given" )
     warning("Ignoring specified root state")
 	
 	k <- length(vals)
 	
-	if ( root == ROOT.FLAT ) {
+	if ( root == "flat" ) {
 		p <- 1/k
-	} else if ( root == ROOT.EQUI ) {
+	} else if ( root == "equi" ) {
 		if ( is.null(root.equi) )
 		stop("Equilibrium root probability not possible with this method")
 		p <- root.equi(pars)
-	} else if ( root == ROOT.OBS ) {
+	} else if ( root == "obs") {
 		p <- vals / sum(vals)
-	} else if ( root == ROOT.GIVEN ) {
+	} else if ( root == "given" ) {
 		if ( length(root.p) != length(vals) )
 		stop("Invalid length for root.p")
 		p <- root.p
-	} else if ( root == ROOT.ALL ) {
+	} else if ( root == "all" ) {
 		p <- rep(1, k)
 	} else {
 		stop("Invalid root mode")

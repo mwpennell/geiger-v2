@@ -138,11 +138,11 @@
         lik <- function(pars, ...) {
             
             ## ADJUSTMENTS of cache
-            recache=function(nodes=NULL, root=ROOT.MAX, cache){
+            recache=function(nodes=NULL, root="max", cache){
                 r.cache=cache
-                if(root==ROOT.MAX){
+                if(root=="max"){
                     rtmx=TRUE
-                } else if(root%in%c(ROOT.OBS, ROOT.GIVEN)){
+                } else if(root%in%c("obs", "given")){
                     rtmx=FALSE
                     r.cache$attb=c(cache$attb, "z0")
                 } else {

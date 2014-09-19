@@ -100,7 +100,7 @@ ncores=NULL, ...
     ## likelihood function for optimizer (with modified space)
 	xx=function(p){
 		pars=ifelse(typs=="exp", exp(p), p)
-		tmp=-lik(pars, root=ROOT.MAX)
+		tmp=-lik(pars, root="max")
 		if(is.infinite(tmp)) tmp=ct$FAIL
         if(is.na(tmp)) tmp=ct$FAIL
 		tmp
@@ -410,11 +410,11 @@ bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", 
         lik <- function(pars, ...) {
             
             ## ADJUSTMENTS of cache
-            recache=function(nodes=NULL, root=ROOT.MAX, cache){
+            recache=function(nodes=NULL, root="max", cache){
                 r.cache=cache
-                if(root==ROOT.MAX){
+                if(root=="max"){
                     rtmx=TRUE
-                } else if(root%in%c(ROOT.OBS, ROOT.GIVEN)){
+                } else if(root%in%c("obs", "given")){
                     rtmx=FALSE
                     r.cache$attb=c(cache$attb, "z0")
                 } else {
@@ -508,16 +508,16 @@ ou.lik <- function (phy, dat, SE = NA, ...)
             if (any(attr(cache$y, "adjse") == 1)) {
                 attb = c(attb, "SE")
             }
-        lik <- function(pars, root=ROOT.MAX, ...){
+        lik <- function(pars, root="max", ...){
             attb=c("alpha","sigsq")
             cache$attb <- attb
             if (any(attr(cache$y, "adjse") == 1)) {
                 attb = c(attb, "SE")
             }
-            if (root == ROOT.MAX){
+            if (root == "max"){
                 rtmx = TRUE
             } else {
-                if (root %in% c(ROOT.OBS, ROOT.GIVEN)) {
+                if (root %in% c("obs", "given")) {
                     attb = c(attb,"z0")
                 } else {
                     stop("unusable 'root' type specified")
@@ -668,7 +668,7 @@ ncores=NULL,
 ## likelihood function for optimizer (with modified space)
 	xx=function(p){
 		pars=ifelse(typs=="exp", exp(p), p)
-		tmp=-lik(pars, root=ROOT.OBS, root.p=NULL)
+		tmp=-lik(pars, root="obs", root.p=NULL)
 		if(is.infinite(tmp)) tmp=ct$FAIL
         if(is.na(tmp)) tmp=ct$FAIL
 		tmp
@@ -932,7 +932,7 @@ transform=c("none", "EB", "lambda", "kappa", "delta", "white"),
 		
         # build likelihood function
 		attb=c(argn(FUN), cache$info$argn)
-        rt=function(root=ROOT.OBS, root.p=NULL){
+        rt=function(root="obs", root.p=NULL){
                     return(list(root=root, root.p=root.p))
         }
 		if(is.null(argn(FUN))){ # NO TRANSFORM
