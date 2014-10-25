@@ -1829,34 +1829,24 @@ white.mkn <- function(dat) {
 	return(opt);
 }
 
-drop.extinct<-function (phy, tol = NULL) 
-{
-    if (class(phy) != "phylo") 
-	stop("object \"phy\" is not of class \"phylo\"")
-	if (is.null(tol)) tol=min(phy$edge.length)/100
-    phy2 <- phy	
-    phy <- new2old.phylo(phy)
-    tmp <- as.numeric(phy$edge)
-    nb.tip <- max(tmp)
-    nb.node <- -min(tmp)
-    xx <- as.numeric(rep(NA, nb.tip + nb.node))
-    names(xx) <- as.character(c(-(1:nb.node), 1:nb.tip))
-    xx["-1"] <- 0
-    for (i in 2:length(xx)) {
-        nod <- names(xx[i])
-        ind <- which(as.numeric(phy$edge[, 2]) == nod)
-        base <- phy$edge[ind, 1]
-        xx[i] <- xx[base] + phy$edge.length[ind]
+drop.extinct <- function (phy, tol=.Machine$double.eps^0.5) {
+    if (!"phylo" %in% class(phy)) {
+        stop("\"phy\" is not of class \"phylo\".");
     }
-    depth <- max(xx)
-    offset <- depth - xx[as.numeric(names(xx)) > 0]
-    drops <- phy$tip.label[offset > tol]
-    if (length(drops) >= (nb.tip - 1)) 
-	return(NULL)
-    if(length(drops)==0)
-	return(phy2)    
-    res <- .drop.tip(phy2, drops)
-    res
+    if (is.null(phy$edge.length)) {
+        stop("\"phy\" does not have branch lengths.");
+    }
+    phy <- reorder(phy);
+    xx <- numeric(Ntip(phy) + phy$Nnode);
+    for (i in 1:length(phy$edge[,1])) {
+        xx[phy$edge[i,2]] <- xx[phy$edge[i,1]] + phy$edge.length[i];
+    }
+    aa <- max(xx[1:Ntip(phy)]) - xx[1:Ntip(phy)] > tol;
+    if (any(aa)) {
+        extinctTips <- which(aa);
+        phy <- .drop.tip(phy, extinctTips);
+    }
+    return(phy);
 }
 
 drop.random<-function (phy, n) 
