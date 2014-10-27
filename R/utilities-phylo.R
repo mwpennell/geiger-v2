@@ -1839,6 +1839,25 @@ drop.extinct <- function (phy, tol=NULL) {
     if (is.null(tol)) {
         tol <- min(phy$edge.length)/100;
     }
+    aa <- is.extinct(phy=phy, tol=tol);
+    if (length(aa) > 0) {
+        #cat("Dropping", length(aa), "taxa:", aa, "\n", sep=" ");
+        phy <- .drop.tip(phy, aa);
+    }
+    return(phy);
+}
+
+# return tip.labels, so that tree ordering is not an issue
+is.extinct <- function (phy, tol=NULL) {
+    if (!"phylo" %in% class(phy)) {
+        stop("\"phy\" is not of class \"phylo\".");
+    }
+    if (is.null(phy$edge.length)) {
+        stop("\"phy\" does not have branch lengths.");
+    }
+    if (is.null(tol)) {
+        tol <- min(phy$edge.length)/100;
+    }
     phy <- reorder(phy);
     xx <- numeric(Ntip(phy) + phy$Nnode);
     for (i in 1:length(phy$edge[,1])) {
@@ -1846,11 +1865,12 @@ drop.extinct <- function (phy, tol=NULL) {
     }
     aa <- max(xx[1:Ntip(phy)]) - xx[1:Ntip(phy)] > tol;
     if (any(aa)) {
-        extinctTips <- which(aa);
-        phy <- .drop.tip(phy, extinctTips);
+        return(phy$tip.label[which(aa)]);
+    } else {
+        return(NULL);
     }
-    return(phy);
 }
+
 
 drop.random<-function (phy, n) 
 {

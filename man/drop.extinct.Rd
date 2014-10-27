@@ -1,7 +1,8 @@
 \name{drop.extinct}
 \alias{drop.extinct}
+\alias{is.extinct}
 \alias{drop.random}
-\title{ prune specified taxa from a phylogenetic tree }
+\title{prune specified taxa from a phylogenetic tree}
 \description{
   pruning a set of taxa from a tree
 }
@@ -18,7 +19,7 @@ drop.random(phy, n)
 }
 
 \details{
-The functions prune taxa from a tree either at random or based either on a temporal criterion (whether the leaves reach the present within a given \code{tol}). By default, \code{tol = min(phy$edge.length)/100}. The result is a tree that has been pruned based on the given criterion.}
+The functions prune taxa from a tree either at random or based either on a temporal criterion (whether the leaves reach the present within a given \code{tol}). By default, \code{tol = min(phy$edge.length)/100}. The result is a tree that has been pruned based on the given criterion. The function \code{is.extinct} will return a vector of the tip labels of inferred extinct taxa (or NULL is no extinct taxa exist).}
 
 	
 \author{
@@ -30,15 +31,23 @@ LJ Harmon, and JW Brown
 \examples{
 
 # Birth-death tree with extinct taxa
-p1<-sim.bdtree(b=0.2, d=0.1, stop="time", t=30)
+p1 <- sim.bdtree(b=0.2, d=0.1, stop="time", t=30)
 plot(p1, cex=0.25)
 
+# List extinct taxa
+p1.extinct <- is.extinct(p1)
+if (length(p1.extinct) > 0) {
+    cat(length(p1.extinct), "extinct taxa:", p1.extinct, "\n", sep=" ");
+} else {
+    cat("No extinct taxa.\n");
+}
+
 # Previous tree with extinct taxa removed
-drop.extinct(p1)->p2
+p2 <- drop.extinct(p1)
 if(!is.null(p2)) plot(p2, cex=0.5)
 
-p3<-sim.bdtree(b=0.2, d=0, stop="taxa", n=100)
-p4<-drop.random(p3, 40)
+p3 <- sim.bdtree(b=0.2, d=0, stop="taxa", n=100)
+p4 <- drop.random(p3, 40)
 
 plot(p4, cex=0.5)
 
