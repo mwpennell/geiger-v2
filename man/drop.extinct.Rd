@@ -6,22 +6,24 @@
   pruning a set of taxa from a tree
 }
 \usage{
-drop.extinct(phy, tol = .Machine$double.eps^0.5) 
+drop.extinct(phy, tol = NULL) 
 drop.random(phy, n)
 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{phy}{a phylogenetic tree of class 'phylo'}
-  \item{tol}{ rounding-error tolerance for taxa that do not reach the present day exactly}
+  \item{tol}{rounding-error tolerance for taxa that do not reach the present day exactly}
   \item{n}{number of random taxa to prune from the tree}
 }
 
 \details{
-The functions prune taxa from a tree either at random or based either on a temporal criterion (whether the leaves reach the present within a given \code{tol}). By default, \code{tol = tol=.Machine$double.eps^0.5}. The result is a tree that has been pruned based on the given criterion.}
+The functions prune taxa from a tree either at random or based either on a temporal criterion (whether the leaves reach the present within a given \code{tol}). By default, \code{tol = min(phy$edge.length)/100}. The result is a tree that has been pruned based on the given criterion.}
 
 	
-\author{ LJ Harmon }
+\author{
+LJ Harmon, and JW Brown
+}
 \seealso{
 	\code{\link[ape]{drop.tip}}
 }
@@ -43,6 +45,6 @@ plot(p4, cex=0.5)
 
 }
 
-\keyword{ graphs }
+\keyword{graphs}
 \keyword{manip}
 

@@ -1829,12 +1829,15 @@ white.mkn <- function(dat) {
 	return(opt);
 }
 
-drop.extinct <- function (phy, tol=.Machine$double.eps^0.5) {
+drop.extinct <- function (phy, tol=NULL) {
     if (!"phylo" %in% class(phy)) {
         stop("\"phy\" is not of class \"phylo\".");
     }
     if (is.null(phy$edge.length)) {
         stop("\"phy\" does not have branch lengths.");
+    }
+    if (is.null(tol)) {
+        tol <- min(phy$edge.length)/100;
     }
     phy <- reorder(phy);
     xx <- numeric(Ntip(phy) + phy$Nnode);
