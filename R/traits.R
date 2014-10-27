@@ -17,6 +17,10 @@ ncores=NULL, ...
 	
     # data matching
 	td=treedata(phy, dat)
+        ## add check to make sure only unique data used
+        if (nrow(td$data) != length(unique(rownames(td$data))))
+            stop("Multiple records per tip label")
+        
 	phy=td$phy
 	dat=td$data
 	dd=dim(dat)
@@ -585,6 +589,11 @@ ncores=NULL,
 #		control=list(hessian=TRUE) 
 	
 	td=treedata(phy, dat)
+
+        ## add check to make sure only unique data used
+        if (nrow(td$data) != length(unique(rownames(td$data))))
+            stop("Multiple records per tip label")
+        
 	phy=td$phy
 	dat=td$data
 	dd=dim(dat)
