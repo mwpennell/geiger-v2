@@ -619,9 +619,7 @@ ncores=NULL,
 		
 		ndat<-as.numeric(fdat)
     	names(ndat) <- names(fdat)
-		
-		if(!is.null(names)) names(ndat)<-names
-		
+				
 	}
 	
 	
