@@ -612,7 +612,19 @@ ncores=NULL,
 		dat=tmp
 		#if(!all(is.integer(dat))) stop("supply 'dat' as a vector (or matrix) of positive integers")
 		
+		# this changes the discrete data to 1:n and remembers the original charStates
+		fdat<-as.factor(dat)
+		charStates<-levels(fdat)
+		k<-nlevels(fdat)
+		
+		ndat<-as.numeric(fdat)
+    	names(ndat) <- names(fdat)
+		
+		if(!is.null(names)) names(ndat)<-names
+		
 	}
+	
+	
 	
 	constrain=model
 	model=match.arg(transform, c("none", "EB", "lambda", "kappa", "delta", "white"))
@@ -627,10 +639,14 @@ ncores=NULL,
 	ct$hessian_P=1-ct$CI
 	
 	
-	lik=mkn.lik(phy, dat, constrain=constrain, transform=model, ...)
+	lik=mkn.lik(phy, ndat, constrain=constrain, transform=model, ...)
     attr(lik, "transform")=model
 	if(model=="white") return(list(opt=lik))
 	argn=unlist(argn(lik))
+	
+	# translation of original character states
+	attr(lik, "levels")<-charStates
+	
 	
 ## CONSTRUCT BOUNDS ##
 #	minTrans<-log(1)-log(sum(phy$edge.length))
