@@ -16,7 +16,7 @@
     m=unique(dim(Q))
     if(length(m)>1) stop("'Q' must be a square matrix")
     didx=1 + 0L:(m - 1L) * (m + 1)
-    if(!all(rowSums(Q)==0)) stop("rows of 'Q' must sum to zero")
+    if(!all(abs(rowSums(Q))<0.000001)) stop("rows of 'Q' must sum to zero")
     if(!all(Q[didx]<=0)) stop("diagonal elements of 'Q' should be negative")
     if(!all(Q[-didx]>=0)) stop("off-diagonal elements of 'Q' should be positive")
 }

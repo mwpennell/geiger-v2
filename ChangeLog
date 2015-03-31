@@ -20,3 +20,8 @@ CHANGES IN GEIGER
 2013-04-06
   * released geiger 1.99-2 to CRAN
 
+2014-11-13
+  * updated geiger 2.0.4, now passes travis-CI checks
+
+2015-3-31
+  * 

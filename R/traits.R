@@ -1059,7 +1059,7 @@ aov.phylo=function(formula, phy, nsim=1000, test=c("Wilks", "Pillai", "Hotelling
     } else {
     	p.phylo = (sum(f.null > f.data) + 1)/(nsim + 1)
     }
-    out$'Pr(phy)'=c(p.phylo, NA)
+    out$'Pr(>F) given phy'=c(p.phylo, NA)
     class(out) <- c("anova", "data.frame")
     print(out, ...)
     attr(mod, "summary")=out
