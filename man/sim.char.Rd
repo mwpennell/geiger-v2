@@ -42,7 +42,7 @@ usims <- sim.char(geo$phy, 0.02, 100)
 fitC <- fitContinuous(geo$phy, usims[,,1], model="BM", control=list(niter=10), ncores=2)
 
 ## Continuous character -- multivariate
-s <- vcv(geo$phy, geo$dat)
+s <- ratematrix(geo$phy, geo$dat)
 csims <- sim.char(geo$phy, s, 100)
 
 ## Discrete character -- univariate
