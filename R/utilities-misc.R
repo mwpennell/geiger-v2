@@ -23,7 +23,7 @@ logLik.gfits <- function(object, ...) {
 aicw <- function (x) {
     if (!inherits(x, "numeric"))
         stop("aic scores must be of class 'numeric'")
-    
+
 	aic <- x;
 	best <- min(aic);
 	delta <- aic - best;
@@ -45,7 +45,7 @@ aicw <- function (x) {
 	ss=sapply(round(df),nchar)
 	lar=df>1
 	nn=sapply(names(df),nchar)
-	
+
     # find longest string
 	strw=sapply(1:ncol(df), function(x) max(nn, max(1,(ss[lar])+digits[x],na.rm=TRUE),na.rm=TRUE))
 	pr.df=data.frame(do.call(cbind, lapply(1:ncol(df), function(x) sprintf(paste("%",(strw[x]+buffer[x]),".",digits[x],"f",sep=""),df[,x]))))
@@ -55,20 +55,24 @@ aicw <- function (x) {
 }
 
 # ooh, this is nice.
-.get.parallel <- function(ncores = NULL, ...) {
-	if ((Sys.getenv("R_PARALLEL") == "FALSE")) {
-		fx <- function(X, FUN, ...) lapply(X, FUN, ...);
-	} else {
-		if (.check.parallel() & Sys.info()["sysname"]!="Windows") {
-			if (is.null(ncores)) {
-				ncores <- detectCores();
-			}
-			fx <- function(X, FUN, ...) mclapply(X, FUN, ..., mc.silent = TRUE, mc.cores = ncores);
-		} else {
-			fx <- function(X, FUN, ...) lapply(X, FUN, ...);
-		}
-	}
-	return(fx);
+.get.parallel <- function (ncores = NULL, ...)
+{
+    if ((Sys.getenv("R_PARALLEL") == "FALSE")) {
+        fx <- function(X, FUN, ...) lapply(X, FUN, ...)
+    }
+    else {
+        if (.check.parallel() & Sys.info()["sysname"] != "Windows") {
+            if (is.null(ncores)) {
+                ncores <- parallel::detectCores()
+            }
+            fx <- function(X, FUN, ...) parallel::mclapply(X, FUN, ...,
+                mc.silent = TRUE, mc.cores = ncores)
+        }
+        else {
+            fx <- function(X, FUN, ...) lapply(X, FUN, ...)
+        }
+    }
+    return(fx)
 }
 
 .check.parallel <- function() {
@@ -77,7 +81,6 @@ aicw <- function (x) {
 	}
 	tmp <- rownames(installed.packages());
 	if ("parallel" %in% tmp) {
-		require(parallel);
 		return(TRUE);
 	} else {
 		return(FALSE);
@@ -154,13 +157,13 @@ calibrate.rjmcmc <- function(phy, dat, nstep=10000, widths=2^(-3:3), type=c("bm"
 "rbm", "jump-bm", "jump-rbm"), ...) {
 	model=match.arg(type, c("bm",
     "rbm", "jump-bm", "jump-rbm"))
-    
+
     acceptance.rates=sapply(widths, function(x) rjmcmc.bm(phy=phy, dat=dat, ngen=nstep, samp=1, prop.width=x, summary=FALSE, type="rbm", ...)$acceptrate)
-	
+
 	aa=sapply(acceptance.rates, .withinrange, 0.20, 0.80)
 	df=data.frame(width=widths, acceptrate=acceptance.rates)
 	.print.table(df)
-	
+
 	if(any(aa)){
 		acc=acceptance.rates[aa]
 		wid=widths[aa]
@@ -169,7 +172,7 @@ calibrate.rjmcmc <- function(phy, dat, nstep=10000, widths=2^(-3:3), type=c("bm"
 	} else {
 		stop("No proposal width found with acceptance rates between 0.20 and 0.80.")
 	}
-	
+
 	return(choice)
 }
 
@@ -211,18 +214,18 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
     #	single x & no tree [currently returning original tree]
     #	single x & tree [currently returning original tree with hashes based on 'phy' and 'hashtips']
     #	many x & tree [currently returning samples based on 'phy' and 'hashtips', summarized on 'phy']
-    
+
 	dirs=x
-	
+
 	z=list(...)
 	if("hashtips"%in%names(z)) hashtips=z$hashtips else hashtips=NULL
-	
+
 	if(length(dirs)==1) {
 		return(.subset.auteurRAW(get(load(paste(x, dir(x, pattern="samples.rda"), sep="/"))), burnin=burnin, thin=thin, phy=phy, hashtips=hashtips))
 	}
 	FUN=.get.parallel()
 	raw<-FUN(dirs, function(x) get(load(paste(x, dir(x, pattern="samples.rda"), sep="/"))))
-	
+
 	# TREES: collect trees and resolve variable topologies
 	trees=lapply(raw, "[[", "phy")
 	class(trees)="multiPhylo"
@@ -242,7 +245,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 	class(phy)="phylo"
 	if(is.null(hashtips)) hashtips=phy$tip.label
 	phy=hashes.phylo(phy, hashtips)
-	
+
 	# SAMPLES: collect individual runs: construct matrices for all unique edges (only necessary if multiple trees run, differing in topology)
 	samples<-FUN(raw, function(x) {
         y=.subset.auteurRAW(x, burnin=burnin, thin=thin, phy=phy, hashtips=hashtips)
@@ -250,21 +253,21 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
             if(!is.null(attributes(y[[i]])$parm)) y[[i]]=.fix.rjmcmc.matrix(y[[i]], phy$hash[-c(Ntip(phy)+1)])
         }
         y$tree=x$phy
-        
+
         y})
-	
+
 	# TREES
 	trees=lapply(samples, "[[", "tree")
 	class(trees)="multiPhylo"
-	
+
 	for(i in 1:length(samples)){
 		samples[[i]]$tree=NULL
 	}
-	
+
 	# CODA: convert matrices to mcmc.list
 	csamp=suppressWarnings(to.coda(samples))
 	csamp$trees=trees
-	
+
 	res=to.auteur(csamp, phy=phy)
 	res
 }
@@ -272,7 +275,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 .detachDiversitree=function(){
 	tt=try(detach(package:diversitree), silent=TRUE)
 	if(!inherits(tt, "try-error")) warning("'diversitree' functions have been masked; use 'require(diversitree)' to reload the package")
-	
+
 }
 
 
@@ -285,23 +288,23 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 	class(phy)="phylo"
 	if(is.null(hashtips)) hashtips=phy$tip.label
 	orig=hashes.phylo(orig, hashtips)
-	
+
 	desc=.cache.descendants(orig)
 	rootd=desc$fdesc[[Ntip(orig)+1]]
-	
+
 	cache=list(desc=desc,phy=orig)
-	
+
 	nd=orig$edge[,2]
 	vv=numeric(length(nd))
-	
+
 	prep.string=function(string, sep="\t"){
 		st=as.numeric(unlist(strsplit(string, split=sep)))
 		nds=st[seq(1,length(st),by=2)]
 		val=st[seq(2,length(st), by=2)]
-		
+
 		return(list(nodes=nds, values=val))
 	}
-	
+
 	to.vector=function(nodes, values, heritable=FALSE){
 		d=duplicated(nodes)
 		nodes=nodes[!d]
@@ -313,12 +316,12 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 		}
 		vv
 	}
-	
+
 	vd=function(string, sep="\t", par=c("shifts", "jumps"), tree.only=FALSE){
-		
+
 		if(tree.only) return(orig)
 		mm<-ss<-matrix(0, nrow=length(string), ncol=length(nd))
-		
+
 		par=match.arg(par, c("jumps", "shifts"))
 		if(par%in%c("jumps")) {
 			heritable=FALSE
@@ -327,7 +330,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 		} else {
 			stop("'par' not recognized")
 		}
-		
+
 		for(k in 1:length(string)){
 			cur=prep.string(string[k], sep="\t")
 			mm[k,]=to.vector(cur$nodes, cur$values, heritable=heritable)
@@ -350,11 +353,11 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 }
 
 .subset.auteurRAW=function(x, burnin=NULL, thin=NULL, phy=NULL, hashtips=NULL){
-	
+
     ## returns rjmcmc output based on 'phy' and (or) 'hashtips'
-	
+
 	.detachDiversitree()
-	
+
 	trim=function(obj, burnin=NULL, thin=NULL){
 		orig="matrix"
 		if(!"matrix"%in%class(obj)){
@@ -375,14 +378,14 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 				tt=seq(1, nrow(obj), by=thin)
 				obj=as.matrix(obj[tt,])
 			}
-			
+
 		}
 		if(orig!="matrix") obj=as(obj,orig)
 		return(obj)
 	}
-	
+
 	samples=x
-	
+
     ## LOG FILE ##
 	logf=read.table(samples$log, header=TRUE)
 	st=trim(storig<-logf$state, burnin, thin)
@@ -395,8 +398,8 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 	class(trace)=c("rjmcmc", class(trace), class(unclass(trace)))
 	mcpar<-mcparx<-attr(trace,"mcpar")
 	names(mcparx)=c("start","end","thin")
-	
-	
+
+
     ## EDGER
 	if(!is.null(phy)) {
 		class(phy)="phylo"
@@ -405,11 +408,11 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 		phy=samples$phy
 	}
 	if(!is.null(hashtips)) hashtips=hashtips else hashtips=samples$phy$tip.label
-	
+
     #	phy=hashes.phylo(phy, hashtips)
-	
+
 	FUN=.edger(samples, phy, hashtips)
-	
+
     ## PARMS
 	util=c("hasher", "edger", "phy", "log")
 	pars=names(samples)[!names(samples)%in%util]
@@ -433,13 +436,13 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 	attributes(sft)=attributes(mats$rates)
 	mats$shifts=sft
 	attr(mats$shifts,"shifts")<-attr(mats$rates,"shifts")<-NULL
-	
+
 	mats$log=trace
 	mats$phy=FUN(tree.only=TRUE)
 	class(mats)=c("auteurMCMC", class(mats))
-	
+
     #	if(!is.null(phy)) mats$phy=hashes.rjmcmc(mats, phy) else mats$phy=hashes.rjmcmc(mats, samples$phy)
-	
+
 	return(mats)
 }
 
@@ -490,7 +493,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 
 ## CONVERT OUTPUT to CODA object (mcmc.list)
 to.coda=function(obj){
-	
+
 	to.mcmc.list=function(obj){
         # expect auteurMCMCMC
 		nrun=attr(obj,"nrun")
@@ -513,7 +516,7 @@ to.coda=function(obj){
 		class(res)=c("rjmcmc.list", class(res))
 		return(res)
 	}
-	
+
 	if("auteurMCMCMC"%in%class(obj)){
 		nn=names(obj)
 		nn=nn[!nn%in%c("phy","trees")]
@@ -526,26 +529,26 @@ to.coda=function(obj){
 		res$trees=trees
 		return(res)
 	}
-	
+
 	if("auteurMCMC"%in%class(obj)) {
 		return(obj)
 	}
-	
+
 	if("rjmcmcmc"%in%class(obj)){
 		return(to.mcmc.list(obj))
 	}
-	
+
 	if("rjmcmc"%in%class(obj)) {
 		return(obj)
 	}
-	
+
     # ELSE: expect list of 'auteurMCMC' objects
 	zz=sapply(obj, function(x) "auteurMCMC"%in%class(x))
 	if(!all(zz)) stop("Supply 'obj' as a list of 'auteurMCMC' objects -- see to.auteur()")
 	warning("'load.rjmcmc()' is recommended for combining multiple runs.")
 	samples=obj
 	nn=unique(unlist(lapply(samples, names)))
-	
+
     # ensure identity of trees
 	trees=sapply(samples, function(x) x$phy)
 	class(trees)="multiPhylo"
@@ -556,7 +559,7 @@ to.coda=function(obj){
 		phy=NULL
 	}
 	nn=nn[nn!="phy"]
-	
+
 	samples=list()
 	for(i in nn) {
 		tmp=lapply(1:length(obj), function(x) obj[[x]][[i]])
@@ -574,18 +577,18 @@ to.coda=function(obj){
 to.auteur=function(obj, phy=NULL, ...){
 	samples=obj
 	if("auteurRAW"%in%class(samples)) return(.subset.auteurRAW(samples, phy=phy, ...))
-	
+
 	zz=list(...)
 	if(any(c("burnin","thin")%in%names(zz))){
 		warning("'burnin' and 'thin' have no effect in this context: use load.rjmcmc() on the original output directories.")
 	}
-	
+
 	if("mcmc.list"%in%class(samples)){
 		res=.intercalate.rjmcmc(samples)
 		if(!is.null(phy)) warning("returning intercalated samples ('phy' has no effect in this context)")
 		return(res)
 	}
-	
+
 	if("codaMCMCMC"%in%class(samples)){
 		nn=names(samples)
 		excl=c("phy","trees", "hasher")
@@ -598,7 +601,7 @@ to.auteur=function(obj, phy=NULL, ...){
 		if(!is.null(phy)) res$phy=hashes.rjmcmc(res, phy)
 		return(res)
 	}
-	
+
 	if(any(c("auteurMCMC","auteurMCMCMC")%in%class(samples))){
 		if(!is.null(phy)){
 			samples$phy=hashes.rjmcmc(samples, phy)
@@ -607,7 +610,7 @@ to.auteur=function(obj, phy=NULL, ...){
 			return(samples)
 		}
 	}
-	
+
 	if(any(c("rjmcmcmc","rjmcmc")%in%class(samples))){
 		if(!is.null(phy)) warning("returning unmodified samples ('phy' has no effect in this context)")
 		return(samples)
@@ -623,16 +626,16 @@ function(obj) {
 	list.obj=obj
 	if(!"mcmc.list"%in%class(obj)) stop("Supply 'obj' as an 'mcmc.list' object.")
 	if(length(list.obj)<2) warning("Nothing to be done... too few objects in list.")
-	
+
 	vv=sapply(list.obj, is.vector)
 	if(all(vv)) list.obj=lapply(list.obj, function(x) {y=matrix(x,nrow=1); colnames(y)=names(x); return(y)})
-	
+
 	exclude.attr=c("shifts", "nodes")
 	zz=sapply(list.obj, function(x) {
         y=names(attributes(x)->aa)
         digest(aa[!y%in%exclude.attr])
     })
-	
+
     # resolve attributes for rjmcmcmc object
 	if(length(unique(zz))==1){
 		aa=attributes(list.obj[[1]])
@@ -642,19 +645,19 @@ function(obj) {
 	} else {
 		stop("Chains in 'obj' do near appear comparable.")
 	}
-	
+
     # construct intercalated matrix
 	n=length(list.obj)
 	indices=lapply(1:n, function(x) seq(x, dim[1]*n, by=n))
-	
+
 	out.array=array(dim=c(dim[1]*n, dim[2]))
 	for(nn in 1:n){
 		out.array[indices[[nn]],]=as.matrix(list.obj[[nn]])
 	}
-	
+
 	rownames(out.array)=rep(1:n, length=nrow(out.array))
 	colnames(out.array)=dimnames[[2]]
-	
+
 	attributes(out.array)[names(attrb)]=attrb
 	attr(out.array, "nrun")=n
 	class(out.array)=c("rjmcmcmc", "mcmc", class(unclass(out.array)))
@@ -669,7 +672,7 @@ hashes.rjmcmc=function(obj, phy){
 		if(any(phyh%in%hashes)) return(phy) else stop("'phy' cannot be matched to 'obj'.")
         #		if(all(phyh%in%hashes)) return(phy) else stop("'phy' cannot be matched to 'obj'.")
 	}
-	
+
 	if(any(c("rjmcmcmc","rjmcmc")%in%class(obj))){ # dealing with single parameter (or log)
 		if(!is.null(attr(obj, "parm"))) {
 			ht=attr(obj,"hashtips")
@@ -679,11 +682,11 @@ hashes.rjmcmc=function(obj, phy){
 			stop("'phy' has no effect in this context")
 		}
 	}
-	
+
 	if(!any(c("auteurMCMCMC","auteurMCMC")%in%class(obj))) stop("Supply an object of class 'auteurMCMCMC' or 'auteurMCMC'")
 	nn=names(obj)[sapply(obj, function(x) if(!is.null(attr(x,"parm"))) return(TRUE) else return(FALSE))]
 	par=obj[nn]
-	
+
 	ht=c()
 	hh=c()
 	for(i in 1:length(par)){
@@ -716,9 +719,9 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 }
 
 .prepare.gbm.univariate=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), ...){
-    
+
 	type=match.arg(type, c("rbm","bm","jump-rbm","jump-bm"))
-	
+
 	con=list(
     method="direct",												# likelihood method: direct - pruning algorithm
     rate.lim=list(min=0, max=Inf),									# limits on rates
@@ -751,25 +754,25 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
     filebase="result",												# output directory
     primary.parameter="shifts"										# INTERNAL: for logging purposes
     )
-	
+
 	if(missing(phy) & missing(dat)) {
 		# print direction to user if controller() called without data
 		cat(paste(toupper("\n*** default priors and control parameters are as follows ***"),"\n\n",sep=""))
 		cat("\n\nNOTE: settings within the control object can be adjusted through the additional arguments (...) of make.gbm()\n\n")
-		
+
 		print(con)
-		
+
 		cat("\n\nNOTE: settings within the control object can be adjusted through the additional arguments (...) of make.gbm()\n\n")
 		stop("'phy' and 'dat' must minimally be supplied to this function")
 	}
-	
+
 	## USER control-object
 	xusr=list(...)
 	usr=xusr[names(xusr)%in%names(con)]
 	con[names(usr)]=usr
 	missed=names(xusr)[!names(xusr)%in%names(usr)]
 	if(length(missed)) cat(paste(paste(sQuote(missed),collapse=" "), "not expected in control object", sep=" "))
-	
+
 	## FINALIZE control-object
 	# create cache
 	con$method=match.arg(con$method, c("direct"))
@@ -778,7 +781,7 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 	attr(lltmp,"cache")=NULL
 	cache$edge.length.cs=cumsum(cache$edge.length)
 	con$lik=lltmp
-	
+
 	# check (or create) prior distributions
 	nn=length(cache$edge.length)
 	if(is.null(con$dlnSHIFT)){
@@ -796,21 +799,21 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 			dv=.dunifn(con$constrainJUMP)
 		}
 		con$dlnJUMP=dv
-        
+
 	}
 	if(is.null(con$dlnROOT)){
 		con$dlnROOT=function(x) dunif(x, min=con$root.lim$min, max=con$root.lim$max, log=TRUE)	# root prior  (function; arg 'x'; returns ln(p[x]))
 	}
-	
+
 	if(any(is.infinite(sapply(con$root.lim, con$dlnROOT)))) stop("Infinite prior probability returned at bounds 'root.lim'")
-	
+
 	con$dlnSHIFT=.check.prior(con$dlnSHIFT, count=TRUE)
 	con$dlnJUMP=.check.prior(con$dlnJUMP, count=TRUE)
 	con$dlnRATE=.check.prior(con$dlnRATE, count=FALSE)
 	con$dlnROOT=.check.prior(con$dlnROOT, count=FALSE)
 	con$dlnPULS=.check.prior(con$dlnPULS, count=FALSE)
 	con$dlnSE=.check.prior(con$dlnSE, count=FALSE)
-	
+
 	# check exclude vectors
 	if(length(con$excludeSHIFT)){
 		if(!all(con$excludeSHIFT%in%cache$nodes)) stop("Some edges in 'excludeSHIFT' not found in 'phy'.")
@@ -818,14 +821,14 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 	if(length(con$excludeJUMP)){
 		if(!all(con$excludeJUMP%in%cache$nodes)) stop("Some edges in 'excludeJUMP' not found in 'phy'.")
 	}
-	
+
 	# resolve model flavor
 	tmp=.check.gbm(type, con$constrainJUMP, con$constrainSHIFT, cache)
 	con$model=tmp$model
 	con$constrainJUMP=tmp$constrainJUMP
 	con$constrainSHIFT=tmp$constrainSHIFT
 	con$algo=tmp$algo
-	
+
 	# check constraints on model dimensionality
 	if(is.numeric(con$constrainSHIFT)){
 		if(!.withinrange(con$constrainSHIFT, 0, length(cache$nodes)-1)) stop("'constrainSHIFT' must lie between 0 and nrow(phy$edge)-1.")
@@ -839,7 +842,7 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 	} else {
 		con$constrainJUMP=NULL
 	}
-	
+
 	# proposal distributions
 	if(sum(attributes(cache$y)$adjse)==0) {
         con$prob.SE=0
@@ -855,7 +858,7 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 	con$prop.cs=prop.cs
 	con$n.subprop=n.subprop
 	con$n.subaccept=n.subaccept
-	
+
 	# file handling
 	if(con$summary){
 		parmbase=paste(con$model, con$filebase, sep=".")
@@ -873,16 +876,16 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 		.parlog.rjmcmc(init=TRUE, end=FALSE, parameters=parms, con)
 		con$parlogger=.ests.parlog.rjmcmc(cache)
 	}
-	
+
 	# starting point
 	start=.startingpt.bm(con, cache)
-    
+
 	return(list(control=con, cache=cache, start=start))
 }
 
 
 .check.gbm=function(type=c("rbm","bm","jump-rbm","jump-bm"), constrainJUMP=FALSE, constrainSHIFT=FALSE, cache){
-	
+
 	# resolve model
 	type=match.arg(type, c("bm","rbm","jump-rbm","jump-bm"))
 	if(type%in%c("rbm", "bm")){
@@ -891,26 +894,26 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 	if(type%in%c("jump-bm", "bm")){
 		if(!is.numeric(constrainSHIFT)) constrainSHIFT=0
 	}
-	
+
     if(type%in%c("jump-bm", "jump-rbm")) .geigerwarn(immediate.=TRUE)
-    
+
 	mod=expand.grid(constrainSHIFT=c(TRUE,FALSE),constrainJUMP=c(TRUE,FALSE))
 	rownames(mod)=c("jump-rbm","jump-bm","rbm","bm")
-	
+
 	check.mod=function(parm, null=0){
 		if(is.numeric(parm)) return(parm!=null) else return(!parm)
 	}
 	tmp=c(shift=check.mod(constrainSHIFT, null=0), jump=check.mod(constrainJUMP, null=0))
 	model=rownames(mod)[modzz<-apply(mod, 1, function(x) all(x==tmp))]
-	
+
 	full=c("jump-relaxedBM", "jump-BM", "relaxedBM", "BM")
-	
+
 	if(model!=type){
 		stop("Arguments 'type', 'constrainSHIFT', and (or) 'constrainJUMP' are inconsistent: see 'cache()'")
 	} else {
 		usrmodel=full[which(rownames(mod)==model)]
 	}
-	
+
 	# resolve 'constrainJUMP' 'constrainSHIFT' and 'algo'
 	if(is.numeric(constrainSHIFT)){
 		if(!.withinrange(constrainSHIFT, 0, length(cache$nodes)-1)) stop("'constrainSHIFT' must lie between 0 and nrow(phy$edge)-1.")
@@ -924,10 +927,10 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 	} else {
 		constrainJUMP=NULL
 	}
-	
+
 	return(list(model=usrmodel, constrainJUMP=constrainJUMP, constrainSHIFT=constrainSHIFT, algo=algo))
-	
-    
+
+
 }
 
 
@@ -957,7 +960,7 @@ make.gbm=function(phy, dat, SE=NA, type=c("bm", "rbm", "jump-bm", "jump-rbm"), .
 	mod=control$model
 	log=control$runlog
 	base=control$parmbase
-	
+
 	res=list()
 	if(length(parlogs)){
 		for(i in 1:length(parlogs)){
@@ -985,7 +988,7 @@ function(phy, dat){
 
 ## SIMULATION UTILITY ##
 .startingpt.bm <- function(control, cache) {
-	
+
 	.rates.simulation=function(phy, exclude=NULL){
 		drp=phy$edge[,2]%in%exclude
 		nm=phy$edge[!drp,2]
@@ -1000,14 +1003,14 @@ function(phy, dat){
 				n=n+1
 			}
 			return(c(sort(shifts[shifts>nt]), shifts[shifts<=nt]))
-			
+
 		}
 		return(sim)
 	}
-	
+
 	phy=cache$phy
 	dat=cache$dat
-	
+
 	rate=.bm.rate.mle(phy,dat)
 	if(!.withinrange(rate, control$rate.lim$min, control$rate.lim$max)) rate=runif(1, control$rate.lim$min, control$rate.lim$max)
 	root=mean(dat)
@@ -1022,10 +1025,10 @@ function(phy, dat){
 		se=runif(1)
 		if(!.withinrange(se, control$se.lim$min, control$se.lim$max)) se=runif(1, control$se.lim$min, control$se.lim$max)
 	}
-	
+
 	nd=argn(control$lik)$rates
 	tmp=numeric(length(nd))
-	
+
 	# rates
 	if(control$simple.start & !is.numeric(control$constrainSHIFT)){
 		rts=1
@@ -1047,7 +1050,7 @@ function(phy, dat){
 			rr[mm]=curv
 		}
 	}
-	
+
     # jumps
 	if(control$simple.start & !is.numeric(control$constrainJUMP)){
 		jps=0
@@ -1059,7 +1062,7 @@ function(phy, dat){
 	if(!is.null(control$constrainJUMP)) {
 		if(length(nds)<control$constrainJUMP) stop(paste("Too few branches are available for jumps with restrictions given by 'constrainJUMP' and 'excludeJUMP':\n\tonly", length(nds), "branches are unrestricted", sep=" "))
 	}
-	
+
 	j=0
 	jj=rep(0,nrow(cache$phy$edge))
 	if(jps>0){
@@ -1072,12 +1075,12 @@ function(phy, dat){
 			stop("Encountered unexpected error attempting to initialize vector of jumps")
 		}
 	}
-	
+
 	jv=rate*10
-	
+
     rttmp=.proposal.multiplier(mean(rr), control$prop.width, control$rate.lim)$v
     rtrt=.link.root(rootd=cache$desc$fdesc[[cache$n.tip+1]], rttmp, nd, dd, rr)
-    
+
 	return(list(root=root, rates=rr, delta=dd, rootrate=rtrt, jumps=jj, jumpvar=jv, se=se))
 }
 
@@ -1093,14 +1096,14 @@ function(phy, dat){
 		parlogs=control$parlogs
 		primpar=control$primary.parameter
 		reml=method=="reml"
-		
+
 		# add eol to files if terminating run
 		if(end==TRUE) {
 			if(length(parlogs)) sapply(1:length(parlogs), function(x) {write("\n", file=parlogs[[x]], append=TRUE); close(parlogs[[x]])})
 			close(control$runlog)
 			return()
 		}
-		
+
 		if(reml) {
 			parms=parms[names(parms)!="root"]
 			pT=0
@@ -1114,7 +1117,7 @@ function(phy, dat){
 		logpars=names(parlogs)
 		princpars=parms$principal
 		accessory=match(parnames[-c(ii,target,general)],parnames)
-		
+
 		if(init) {
 			write.table(paste("state", "min", "max", "median", paste(names(princpars),collapse="\t"), paste(parnames[accessory],collapse="\t"), paste(parnames[general],collapse="\t"), sep="\t"), file=runlog, quote=FALSE, col.names=FALSE, row.names=FALSE)
 		} else {
@@ -1124,7 +1127,7 @@ function(phy, dat){
             #			pR=sum(control$dlnRATE(pp))
 			ss=sapply(princpars, function(x) sum(x[["delta"]]))
 			names(ss)=names(princpars)
-			
+
 			# to log file
 			if(ss[["jumps"]]==0) {
 				parms$jumpvar=0
@@ -1133,15 +1136,15 @@ function(phy, dat){
                 #				pV=control$dlnRATE(parms$jumpvar)
 			}
             #			pJ=control$dlnJUMP(ss[["jumps"]])
-			
+
             #			pS=control$dlnSHIFT(ss[["shifts"]])
-			
+
             # compute prior
             #			parms[["lnLp"]]=sum(c(pT, pR, pV, pJ, pS))
-			
+
 			msg<-paste(parms[[ii]], sprintf("%.3f", range.p[1]), sprintf("%.3f", range.p[2]), sprintf("%.3f", median.p), paste(ss, collapse="\t"), paste(sprintf("%.3f", parms[accessory]), collapse="\t"), paste(sprintf("%.2f", parms[general]),collapse="\t"),sep="\t")
 			write(msg, file=runlog, append=TRUE)
-			
+
             # to parameter files
 			if(length(logpars)){
 				for(i in 1:length(logpars)){
@@ -1168,10 +1171,10 @@ function(phy, dat){
 	rownames(df)=prop.names
 	if(control$summary){
 		cat("\n\n",rep(" ",10),toupper(" sampling summary"),"\n")
-		
+
 		if(any(is.na(df))) df[is.na(df)]=0
 		.print.table(df, digits=c(0,0,4), buffer=6)
-		
+
 		cat("\n\n")
 		control$runlog=NULL
 		control$errorlog=NULL
@@ -1192,7 +1195,7 @@ function(i, proposal, mod.cur, mod.new, lnR, lnPrior, lnHastings, errorLog) {
 		write(paste("gen", "proposal", "cur.lnL", "new.lnL", "lnR", "ln.p", "ln.h", sep="\t"), file=errorLog)
 	}
 	write(paste(i, sprintf("%s", proposal), sprintf("%.3f", mod.cur), sprintf("%.3f", mod.new), sprintf("%.3f", lnR), sprintf("%.3f", lnPrior), sprintf("%.3f", lnHastings), sep="\t"),  file=errorLog, append=TRUE)
-	
+
 }
 
 #utility for converting text files to .rda to compress output from rjmcmc
@@ -1202,10 +1205,10 @@ function(i, proposal, mod.cur, mod.new, lnR, lnPrior, lnHastings, errorLog) {
 		parlogs=control$parlogs
 		parlocs=sapply(parlogs, function(x) summary(x)$description)
 		logloc=summary(control$runlog)$description
-		
-		
+
+
 		.parlog.rjmcmc(init=FALSE, end=TRUE, parameters=NULL, control=control)
-		
+
 		samples=lapply(parlocs, function(x) {
             y=readLines(x)
             y=y[y!=""]
@@ -1219,17 +1222,9 @@ function(i, proposal, mod.cur, mod.new, lnR, lnPrior, lnHastings, errorLog) {
 		samples$phy=cache$phy
 		samples$log=logloc
 		class(samples)=c("auteurRAW", class(samples))
-		
+
 		save(samples, file=paste(control$parmbase,paste(control$filebase,"samples","rda",sep="."),sep="/"))
 		for(i in 1:length(parlocs)) unlink(parlocs[i])
 	}
 	.load.rjmcmc(control)
 }
-
-
-
-
-
-
-
-

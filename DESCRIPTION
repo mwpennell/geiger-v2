@@ -16,12 +16,10 @@ Imports:
 	deSolve (>= 1.7),
 	digest,
 	Rcpp (>= 0.9.0),
-	coda
-Suggests: parallel,
-	  ncbit,
-	  pls,
-	  msm,
-	  colorspace
+	coda,
+  ncbit,
+  pls,
+  colorspace
 LinkingTo: Rcpp
 Description: Fitting macroevolutionary models to phylogenetic data.
 License: GPL (>= 2)

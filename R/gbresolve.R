@@ -31,20 +31,20 @@ Linnaean=c(
 
 gbcontain=function(x, rank="species", within="", ...){
     ## adding requirement for ncbit
-    require(ncbit)
-    
+    ## require(ncbit)
+
     type="scientific name"
 	rank=match.arg(rank, Linnaean)
 	lidx=which(Linnaean==rank)
     if(is.na(lidx)) stop("uninterpretable 'rank'")
 #	if(length(x)>1) stop("Supply 'x' as a single taxon")
-	
-	gb=ncbit(...)
+
+	gb=ncbit::ncbit(...)
 	ss=gb[,"type"]%in%type
 #    gb=cbind(gb, ridx=rr)
     gb=gb[ss,]
 #    gb=gb[gb$ridx<=lidx,]
-    
+
 
 	#FUN=function(id){
 	#	keep=c()
@@ -56,7 +56,7 @@ gbcontain=function(x, rank="species", within="", ...){
 	#	}
 	#	return(keep)
 	#}
-    
+
     FUN=function(id){
         rr=match(gb[,"rank"], Linnaean)
 
@@ -68,7 +68,7 @@ gbcontain=function(x, rank="species", within="", ...){
         nm=gb[ww[gb$rank[ww]%in%rank],"node"]
         nm
     }
-	
+
 	gbc=function(x){
 		if(is.character(x)) {
 			ww=which(tolower(gb[,"node"])==tolower(x))
@@ -77,7 +77,7 @@ gbcontain=function(x, rank="species", within="", ...){
 		} else {
 			return(NULL)
 		}
-		
+
 		if(length(ww)==1){
 			id=gb[ww,"id"]
 			return(FUN(id))
@@ -99,17 +99,17 @@ gbcontain=function(x, rank="species", within="", ...){
 			return(x)
 		}
 	}
-    
+
 	f=.get.parallel()
-	
+
 	res=f(x, function(g) {gbc(g)})
 
 	probs=sapply(1:length(res), function(idx) all(x[idx]==res[[idx]]))
-	
+
 	if(any(probs)){
 		warning(paste("Try using the 'within' argument as the following taxa are not unique:\n\t", paste(x[probs], collapse="\n\t"), sep=""))
 	}
-	
+
 	res=res[!probs]
 	if(length(res)){
 		names(res)=x[!probs]
@@ -137,42 +137,42 @@ gbcontain=function(x, rank="species", within="", ...){
 
 
 gbresolve=function(x, rank="phylum", within="", ...){
-    require(ncbit)
+    ## require(ncbit)
     UseMethod("gbresolve")
 }
 
 gbresolve.default=function(x, rank="phylum", within="", ...){
-		
+
     ridx=match(rank, Linnaean)
-    if(any(is.na(ridx)) | length(ridx)>2) stop("'rank' should be a vector of one or two elements occuring in Linnaean") 
+    if(any(is.na(ridx)) | length(ridx)>2) stop("'rank' should be a vector of one or two elements occuring in Linnaean")
     rank=rank[oridx<-order(ridx)]
     ridx=ridx[oridx]
 
-	gb=ncbit(...)
+	gb=ncbit::ncbit(...)
 
 	FUN=.fetch_gbhierarchy.above(gb, rank=rank[1], within=within)
-				
+
 	if(all(is.numeric(x) | is.integer(x))){
 		ss=gb[,"type"]=="scientific name"
-		x=sapply(x, function(y) gb[which(gb[,"id"]==y & ss),"node"])				  
+		x=sapply(x, function(y) gb[which(gb[,"id"]==y & ss),"node"])
 	}
-		
+
 
     tt=unique(tips<-x)
     names(tips)=tips
-						  
-	
+
+
 	f=.get.parallel()
-	
+
 	tmp=f(tt, FUN)
-	
+
 	dd=sapply(tmp, function(y) all(is.na(y)))
 	if(any(dd)) {
 		warning(paste("The following taxa were not encountered in the NCBI taxonomy:\n\t", paste(tt[which(dd)], collapse="\n\t"), sep=""))
 		tmp=tmp[-which(dd)]
 		tt=tt[-which(dd)]
 	}
-    
+
     tmp=lapply(1:length(tmp), function(idx) {
         x=tmp[[idx]]
         mm=match(names(x), Linnaean)
@@ -181,7 +181,7 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
         y=x[ss]
         y
     })
-    
+
     if(!length(tmp)) return(NULL)
 
     dd=sapply(tmp, function(y) all(is.na(y)))
@@ -190,12 +190,12 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
 		tmp=tmp[-which(dd)]
 		tt=tt[-which(dd)]
 	}
-	
+
 	if(!length(tmp)) return(NULL)
-	
+
 	names(tmp)=tt
 	tmp=.compile_taxonomy(tmp)
-	
+
 	res=matrix(tmp[match(tips, rownames(tmp)),], nrow=length(tips))
 	rownames(res)=names(tips)
 	colnames(res)=colnames(tmp)
@@ -206,7 +206,7 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
 
 ## Assign internal node labels to phy based on genbank taxonomy
 gbresolve.phylo=function(x, rank="phylum", within="", ...){
-	
+
 	phy=x
 	x=x$tip.label
 	res=gbresolve(x, rank=rank, within=within, ...)
@@ -217,21 +217,21 @@ gbresolve.phylo=function(x, rank="phylum", within="", ...){
 	} else {
 		tmp=res
 	}
-	
+
 	phy=nodelabel.phylo(phy, tmp)
 	return(list(phy=phy, tax=res))
 }
 
 subset.phylo=function(x, taxonomy, rank="", ncores=NULL, ...){
 ## rank (e.g., 'family') and 'family' must be in columns of 'taxonomy'
-	
+
 	phy=x
 	if(!rank%in%colnames(taxonomy)){
 		stop(paste(sQuote(rank), " does not appear as a column name in 'taxonomy'", sep=""))
 	}
-	
+
 	xx=match(phy$tip.label, rownames(taxonomy))
-	
+
 	new=as.matrix(cbind(tip=phy$tip.label, rank=taxonomy[xx,rank]))
 	drop=apply(new, 1, function(x) if( any(is.na(x)) | any(x=="")) return(TRUE) else return(FALSE))
 	if(any(drop)){
@@ -239,13 +239,13 @@ subset.phylo=function(x, taxonomy, rank="", ncores=NULL, ...){
 #		phy=.drop.tip(phy, phy$tip.label[drop])
 #		new=new[!drop,]
 	}
-	
+
 	tips=phy$tip.label
 	hphy=hashes.phylo(phy, tips=tips, ncores=ncores)
 	tax=as.data.frame(new, stringsAsFactors=FALSE)
 	stax=split(tax$tip,tax$rank)
 	rank_hashes=sapply(stax, function(ss) .hash.tip(ss, tips=tips))
-	
+
 	pruned=hphy
 	pruned$tip.label=ifelse(drop==TRUE, tax$tip, tax$rank)
 
@@ -256,12 +256,12 @@ subset.phylo=function(x, taxonomy, rank="", ncores=NULL, ...){
             pruned$tip.label[vv]=tax$tip[vv]
 #       }
 #		pruned=.drop.tip(pruned, nonmon)
-        
+
 	}
-		
+
 	rank_phy=unique.phylo(pruned)
 	rank_phy$tip.label=as.character(rank_phy$tip.label)
-	return(rank_phy)	
+	return(rank_phy)
 }
 
 
@@ -284,31 +284,31 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 
 ## FINDS MOST REPRESENTATIVE LINEAGE (i.e., exemplars) for EACH TAXON from a TAXONOMIC TABLE
 #Chioglossa_lusitanica           "Chioglossa"       "Salamandridae"   -->	Chioglossa
-#Lyciasalamandra_antalyana       "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_antalyana   
-#Lyciasalamandra_atifi           "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_atifi       
-#Lyciasalamandra_billae          "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_billae      
-#Lyciasalamandra_fazilae         "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_fazilae     
+#Lyciasalamandra_antalyana       "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_antalyana
+#Lyciasalamandra_atifi           "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_atifi
+#Lyciasalamandra_billae          "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_billae
+#Lyciasalamandra_fazilae         "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_fazilae
 #Lyciasalamandra_flavimembris    "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_flavimembris
-#Lyciasalamandra_helverseni      "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_helverseni  
-#Lyciasalamandra_luschani        "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_luschani    
-#Mertensiella_caucasica          "Mertensiella"     "Salamandridae"   -->	Mertensiella      
-#Salamandra_algira               "Salamandra"       "Salamandridae"   -->	Salamandra_algira           
-#Salamandra_atra                 "Salamandra"       "Salamandridae"   -->	Salamandra_atra             
+#Lyciasalamandra_helverseni      "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_helverseni
+#Lyciasalamandra_luschani        "Lyciasalamandra"  "Salamandridae"   -->	Lyciasalamandra_luschani
+#Mertensiella_caucasica          "Mertensiella"     "Salamandridae"   -->	Mertensiella
+#Salamandra_algira               "Salamandra"       "Salamandridae"   -->	Salamandra_algira
+#Salamandra_atra                 "Salamandra"       "Salamandridae"   -->	Salamandra_atra
 .exemplar.default=function(x){
-	
+
 	tax=x
 	if(!is.matrix(tax) | is.null(rownames(tax)) | is.null(colnames(tax))) stop("supply 'tax' as a matrix with both row and column names")
 
 	incomparables=c("", NA)
 	z=rownames(tax)
 	for(j in 1:ncol(tax)){
-		tt=table(tax[,j])	
+		tt=table(tax[,j])
 		tt=tt[!names(tt)%in%incomparables]
 		if(any(jj<-(tt==1))){
 			nn=names(tt[jj])
 			mm=match(nn, tax[,j])
 			z[mm]=nn
-		}	
+		}
 	}
 	z
 }
@@ -330,36 +330,36 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 
 
 .fetch_gbhierarchy.above=function(gb, rank="root", within=""){
-	
+
 ## returns taxonomic information for a 'taxon' up to the 'rank' given
-	dat=gb	
+	dat=gb
     sci=dat$type=="scientific name"
     gb=gb[sci,]
 
     ancFUN=.gb_anc_worker(gb$parent_id, gb$id, 1)
 
 	get_tax=function(name){
-		
+
 		# resolve highest rank requested
 		if(!is.null(rank)) if(!rank%in%Linnaean) {
 			cat(paste("Ensure that supplied 'rank' is in: \n\t", paste(Linnaean, collapse="\n\t"), "\n", sep=""))
 			stop("Supplied 'rank' is unrecognized.")
 		}
-		
+
 		rank=match.arg(rank, Linnaean)
-		
-		name=gsub("_", " ", name) 
+
+		name=gsub("_", " ", name)
 
 		fetch_anc=function(id){
 			ww=which(dat$id==id & sci==TRUE)
 			if(length(ww)!=1) return(NA)
 			ww
 		}
-		
+
 
 		# resolve 'name' to 'id'
 		idx=which(dat$node==name)
-		
+
 		## NO MATCH -- use grep
 		if(!length(idx)){
 			idx=grep(name, dat$node, ignore.case=TRUE)
@@ -372,7 +372,7 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 				}
 			}
 		}
-		
+
 		## MORE THAN ONE MATCH -- see if all point to same 'anc'
 		if(length(idx)>1){
 			if(length(unique(dat$parent_id))==1){
@@ -384,7 +384,7 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 #				}
 			}
 		}
-		
+
 
 		alltax=function(idx){
 			## COMMON NAME --- resolve to scientific name
@@ -396,22 +396,22 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 					}
 					return(xx)
 				})
-				
-				
+
+
 			}
-			
+
 			id=dat$id[idx]
-			
+
             tmp=ancFUN(id)
             mm=match(tmp, gb$id)
             pnms=gb$node[mm]
             rnks=gb$rank[mm]
             res=pnms
             names(res)=rnks
-    
-			return(res[rnks%in%Linnaean])			
+
+			return(res[rnks%in%Linnaean])
 		}
-		
+
 		if(length(idx)>1){
 			tmp=lapply(idx, alltax)
 			ww=sapply(tmp, function(x) tolower(within)%in%tolower(x))
@@ -456,14 +456,14 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 			}
 		}
 	}
-	
+
 	return(get_tax)
 }
 
 
 .compile_taxonomy=function(tax){
-	all=Linnaean	
-	
+	all=Linnaean
+
 	tmp=sapply(tax, names)
 	drop=sapply(tmp, function(x) all(is.null(x)))
 	dat=tax
@@ -480,11 +480,9 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
 		cur=dat[[i]]
 		mm[i,match(names(cur), hier)]=cur
 	}
-	
+
 	mm[is.na(mm)]=""
 	rownames(mm)=names(dat)
 	colnames(mm)=hier
 	mm
 }
-
-

@@ -6,7 +6,7 @@
 		lab=lab[lab!=""]
 		lab
 	}
-	
+
 	data.frame(genus=sapply(species, function(s) .split_lab(s)[1]), species=species, stringsAsFactors=FALSE)
 }
 
@@ -16,17 +16,17 @@
 #			time                             hash
 #	1001 352.234677 3a4adb7cc0d4a51b9012dfb5615b3d71
 #	1002 243.269677 33757769ee61bde8dd5574ae35b47053
-	
+
 #	scion: phylo tree with 'hash' object -- to be scaled from stock
-	
+
 	fetch_spanning=function(phy, nd, desc){
 		# desc: a list from 1:(Ntip(phy)+Nnode(phy)) of tips descended from 'nd'
 		if(nd<=Ntip(phy)) return(NULL)
 		dd=.get.desc.of.node(nd,phy)[1:2]
 		tt=sapply(dd, function(x) return(desc[[x]][1]))
-		return(phy$tip.label[sort(tt)])		  
+		return(phy$tip.label[sort(tt)])
 	}
-	
+
 	if(is.null(scion_desc)) scion_desc=.cache.descendants(scion)$tips
 
 	N=Ntip(scion)
@@ -49,8 +49,8 @@
 
 congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8"), ncores=NULL){
     ## adding requirement for ncbit
-    require(ncbit)
-    
+    ## require(ncbit)
+
     stock=reference
     scion=target
 #	stock: a time-calibrated phylogeny with tip-labels that can be treated as an exemplar for clades in 'scion'
@@ -60,10 +60,10 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 #	taxonomy: linkage table between tipsets for 'stock' and 'scion'; if empty, one is attempted to be built by 'scion' labels
 #		-- if NULL, 'stock' tips must correspond to tips in 'scion'... e.g., A, B, C in 'stock'; A_sp1, B_sp2, C_sp3 in 'scion'
 #		-- rownames of taxonomy must be tips in megaphylogeny
-	
+
 	## functions
 	method=match.arg(unname(sapply(scale, toString)), c("NA", "PATHd8"))
-	
+
 	hashes.mapping <- function (phy, taxa, mapping){
 	## GENERAL FUNCTION: find hash tag for every edge in tree (using phy$tip.label or predefined set of 'taxa')
 	# returns list of hash tags from node 1:(Nnode(phy)+Ntip(phy))
@@ -72,7 +72,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 		mapping=mapping[names(mapping)%in%phy$tip.label]
 		if(is.null(taxa)) stop("Must supply 'tips'.")
 		if(!all(names(mapping)%in%phy$tip.label)) stop("'mapping' must be named list with names in tip labels of 'phy'.")
-		
+
 		mapping=mapping[match(names(mapping), phy$tip.label)]
 		descendants <- .cache.descendants(phy)$tips
 		hashes <- sapply(descendants, function(desc) .hash.tip(unlist(mapping[desc]), taxa))
@@ -83,11 +83,11 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 
 		return(phy)
 	}
-	
+
 	times.mapping=function(phy, taxa, mapping){
 	#	mapping: named list -- names are tips in 'phy'; elements are tips represented by each tip in 'phy' (and should also be present in 'taxa')
-	#	taxa: species that are represented by tips in 'stock' 
-		
+	#	taxa: species that are represented by tips in 'stock'
+
 		# find hash tags for stock 'phy'
 		stock=hashes.mapping(phy, taxa, mapping)
 		tmp=heights.phylo(stock)
@@ -97,7 +97,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 
 		return(list(stock=stock,dat=dat))
 	}
-	
+
 	smooth_scion=function(stock, scion, scion_desc, taxa, spp, tol=0.01, method=c("PATHd8", NA)){
 		method=match.arg(toString(method), c("NA", "PATHd8"))
 		if(!is.ultrametric(stock)) warning("Supplied 'stock' is non-ultrametric.")
@@ -116,18 +116,18 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 		} else if(method=="NA"){
 			phy=NULL
 		}
-		
+
 		stock$node.label=stock$hash[(Ntip(stock)+1):max(stock$edge)]
 		stock$node.label[is.na(stock$node.label)]=""
 		return(list(phy=phy, calibrations=calibration, reference=stock, target=scion))
 	}
-	
+
 	## end functions
-	
+
 	## PROCESSING ##
 	classification=taxonomy
 	unfurl=FALSE
-	
+
 	if(class(stock)=="phylo") {
 		stock=list(stock)
 		unfurl=TRUE
@@ -135,7 +135,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 	if(is.null(classification)) {
 		classification=as.data.frame(unique(as.matrix(.build_classification(scion$tip.label)),MARGIN=2))
 	}
-	
+
 	tips=unique(unlist(lapply(stock, function(x) x$tip.label)))
 	spp=lapply(tips, function(o) {
 			   x=rownames(classification)[which(classification==o, arr.ind=TRUE)[,1]]
@@ -143,17 +143,17 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 	})
 	names(spp)=tips
 	taxa=unique(unlist(spp))
-	
+
 	scion=hashes.phylo(scion, taxa, ncores)
 	scion_desc=.cache.descendants(scion)$tips
     if(is.null(scion$edge.length)) scion$edge.length=numeric(nrow(scion$edge)) ## JME 01302013
-	
+
 	f=lapply
 	results=f(1:length(stock), function(i) {
 			  phy=stock[[i]]
 			  smooth_scion(phy, scion, scion_desc, taxa, spp, tol=tol, method=method)
 	})
-	
+
 	if(unfurl) results=results[[1]]
 	return(results)
 }
@@ -163,14 +163,14 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 
 write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(smooth=100, nthreads=8, optad=0, opt=1, cvstart=1000, cviter=3, cvend=0.1, thorough=TRUE)){
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' from .build_calibrations
-#	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB 
+#	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB
 #	c65bacdf65aa29635bec90f3f0447c6e 352.234677 352.234677                          Inga_chartacea             Encephalartos_umbeluziensis
 #	d4bc6557dccbd4e8e18b867979f34f8e 243.269677 243.269677                          Inga_chartacea                     Nuphar_sagittifolia
 #	5e30c16531694aff7d94da3b35806677 217.632627 217.632627                          Inga_chartacea                  Schisandra_glaucescens
-	
+
 	if(file.exists(inp<-paste(base,"infile",sep="."))) unlink(inp)
 	if(file.exists(int<-paste(base,"intree",sep="."))) unlink(inp)
-	
+
 	poss=list(
 			  cv="numeric",
 			  collapse="boolean",
@@ -212,7 +212,7 @@ write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(sm
 		print(poss)
 		stop("No 'opts' specified")
 	}
-	
+
 # correct small branch lengths
 	z=phy$edge.length[which(phy$edge.length>0)]
 	if(any(z<min)){
@@ -220,17 +220,17 @@ write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(sm
 		phy$edge.length=phy$edge.length*scl
 	}
 	write.tree(phy, file=int)
-	
+
 ##	check appropriateness of constraints ##
 #	check for 'calibrations' and 'phy' congruence
 #	if(!is.null(phy)){
 #		check=function(t, phy) all(t%in%phy$tip.label)
 #		a=check(calibrations$taxonA, phy)
 #		b=check(calibrations$taxonB, phy)
-	
-#		if(!all(c(a,b))) stop("Some calibrations not encountered in tree.")		
+
+#		if(!all(c(a,b))) stop("Some calibrations not encountered in tree.")
 #	}
-	
+
 ##	build r8s file
 #	calibrations$fixage=ifelse(calibrations$MinAge==calibrations$MaxAge, TRUE, FALSE)
 	constraints<-constraintnames<-character(nrow(calibrations))
@@ -238,11 +238,11 @@ write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(sm
 		cal=calibrations[i,]
 		taxon=cal$MRCA
 		desc=c(cal$taxonA, cal$taxonB)
-		
+
 		txt1=ifelse(!is.na(cal$MinAge), paste("min =", taxon, cal$MinAge, sep=" "), "")
 		txt2=ifelse(!is.na(cal$MaxAge), paste("max =", taxon, cal$MaxAge, sep=" "), "")
 		txt=paste(txt1,txt2,sep="\n")
-		
+
 		constraints[i]=txt
 		constraintnames[i]=paste("mrca =", taxon, desc[1], desc[2], sep=" ")
 	}
@@ -254,32 +254,32 @@ write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(sm
 				out=paste("outfile = ", paste(base, "dated", "tre", sep="."), sep=""),
 				opt=paste(names(opts), opts, sep="=", collapse="\n")
 				)
-	
+
 	inp=paste(base,"infile",sep=".")
-	writeLines(paste(infile,collapse="\n\n"), con=inp)	
+	writeLines(paste(infile,collapse="\n\n"), con=inp)
 	attr(inp, "method")="treePL"
 	return(inp)
 }
 
 write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite", nsites=1, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), describe=c(plot="chrono_description")){
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' from .build_calibrations
-#	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB 
+#	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB
 #	c65bacdf65aa29635bec90f3f0447c6e 352.234677 352.234677                          Inga_chartacea             Encephalartos_umbeluziensis
 #	d4bc6557dccbd4e8e18b867979f34f8e 243.269677 243.269677                          Inga_chartacea                     Nuphar_sagittifolia
 #	5e30c16531694aff7d94da3b35806677 217.632627 217.632627                          Inga_chartacea                  Schisandra_glaucescens
-	
+
 	if(file.exists(inp<-paste(base,"infile",sep="."))) unlink(inp)
-	
+
 ##	check appropriateness of constraints ##
 #	check for 'calibrations' and 'phy' congruence
 #	if(!is.null(phy)){
 #		check=function(t, phy) all(t%in%phy$tip.label)
 #		a=check(calibrations$taxonA, phy)
 #		b=check(calibrations$taxonB, phy)
-	
-#		if(!all(c(a,b))) stop("Some calibrations not encountered in tree.")		
+
+#		if(!all(c(a,b))) stop("Some calibrations not encountered in tree.")
 #	}
-	
+
 ##	build r8s file
 #	calibrations$fixage=ifelse(calibrations$MinAge==calibrations$MaxAge, TRUE, FALSE)
 	constraints<-constraintnames<-character(nrow(calibrations))
@@ -287,9 +287,9 @@ write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite"
 		cal=calibrations[i,]
 		taxon=cal$MRCA
 		desc=c(cal$taxonA, cal$taxonB)
-		
+
 		txt=paste(paste("\tfixage taxon=", taxon,sep=""), paste("age=", cal$MinAge, ";\n", sep=""), sep=" ")
-		
+
 		constraints[i]=txt
 		constraintnames[i]=paste("\tMRCA", taxon, desc[1], paste(desc[2], ";\n", sep=""), sep=" ")
 	}
@@ -299,7 +299,7 @@ write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite"
 				"begin trees;\n",
 				paste("tree r8s = ", write.tree(phy), "\n", sep=""),
 				"end;\n",
-				"begin r8s;\n", 
+				"begin r8s;\n",
 				paste("\tblformat ", paste(names(blformat), blformat, collapse=" ", sep="="), ";\n", sep=""),
 				names=paste(unlist(constraintnames), collapse=""),
 				mrca=paste(unlist(constraints), collapse=""),
@@ -308,27 +308,27 @@ write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite"
 				paste("\tdescribe ", paste(names(describe), describe, sep="="), ";\n", sep="", collapse=""),
 				"end;"
 			),collapse="")
-	
+
 	inp=paste(base,"infile",sep=".")
-	writeLines(paste(infile,collapse="\n\n"), con=inp)	
+	writeLines(paste(infile,collapse="\n\n"), con=inp)
 	attr(inp, "method")="r8s"
 	return(inp)
 }
 
 
 write.pathd8=function(phy, calibrations, base=""){
-#	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' 
-	
+#	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB'
+
 	if(file.exists(inp<-paste(base,"infile",sep="."))) unlink(inp)
-	
+
 	##	check appropriateness of constraints ##
 	#	check for 'calibrations' and 'phy' congruence
 	check=function(t, phy) all(t%in%phy$tip.label)
 	a=check(calibrations$taxonA, phy)
 	b=check(calibrations$taxonB, phy)
-	
+
 	if(!all(c(a,b))) stop("Some calibrations not encountered in tree.")
-	
+
 	##	build PATHd8 file
 	calibrations$fixage=ifelse(calibrations$MinAge==calibrations$MaxAge, TRUE, FALSE)
 	constraints<-constraintnames<-character(nrow(calibrations))
@@ -351,17 +351,17 @@ write.pathd8=function(phy, calibrations, base=""){
 				mrca=paste(unlist(constraints), collapse="\n"),
 				names=paste(unlist(constraintnames), collapse="\n")
 				)
-	
+
 	inp=paste(base,"infile",sep=".")
-	writeLines(paste(infile,collapse="\n\n"), con=inp)	
+	writeLines(paste(infile,collapse="\n\n"), con=inp)
 	attr(inp, "method")="pathd8"
 	return(inp)
 }
 
 PATHd8.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
-#	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' 
+#	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB'
 #		-- if NULL, simple ultrametricization of 'phy' is performed
-	
+
 	phy$node.label=NULL
 	if(!is.null(calibrations)){
 		infile=write.pathd8(phy, calibrations, base)
@@ -385,5 +385,3 @@ PATHd8.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 	}
 	return(smoothed)
 }
-
-
