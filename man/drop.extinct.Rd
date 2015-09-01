@@ -7,7 +7,7 @@
   pruning a set of taxa from a tree
 }
 \usage{
-drop.extinct(phy, tol = NULL) 
+drop.extinct(phy, tol = NULL)
 drop.random(phy, n)
 
 }
@@ -21,7 +21,7 @@ drop.random(phy, n)
 \details{
 The functions prune taxa from a tree either at random or based either on a temporal criterion (whether the leaves reach the present within a given \code{tol}). By default, \code{tol = min(phy$edge.length)/100}. The result is a tree that has been pruned based on the given criterion. The function \code{is.extinct} will return a vector of the tip labels of inferred extinct taxa (or NULL is no extinct taxa exist).}
 
-	
+
 \author{
 LJ Harmon, and JW Brown
 }
@@ -31,6 +31,7 @@ LJ Harmon, and JW Brown
 \examples{
 
 # Birth-death tree with extinct taxa
+set.seed(42)
 p1 <- sim.bdtree(b=0.2, d=0.1, stop="time", t=30)
 plot(p1, cex=0.25)
 
@@ -56,4 +57,3 @@ plot(p4, cex=0.5)
 
 \keyword{graphs}
 \keyword{manip}
-
