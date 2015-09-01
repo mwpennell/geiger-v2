@@ -49,18 +49,19 @@ heights.multiPhylo=function(x){
 	out
 }
 
-as.phylo.hphylo=function(x, ...){
-    x$desc=NULL
-    x$hash=NULL
-    cl=class(x)
-    class(x)=cl[!cl%in%"hphylo"]
-    x
-}
+## as.phylo.hyplo - No idea what this does. Just going to comment it out...
+# as.phylo.hphylo=function(x, ...){
+#     x$desc=NULL
+#     x$hash=NULL
+#     cl=class(x)
+#     class(x)=cl[!cl%in%"hphylo"]
+#     x
+# }
 
 .unique.phylo=function(phy){
     # phy is assumed to have tips that are redundant (and whose exemplars are monophyletic)
     # prunes tree to leave one member of each unique label
-	
+
 	mon=table(phy$tip.label)
 	if(all(mon==1)) return(phy)
 	mon=mon[mon>1]
@@ -80,7 +81,7 @@ unique.phylo=function(x, incomparables=FALSE, ...){
     # returns phylogeny with unique tip labels
     # if a taxon (indicated by multiple tip labels of same string) is non-monophyletic, all tips of that taxon are removed with warning
     # likely used where an exemplar phylogeny is needed and phy$tip.label is 'tricked' into a non-unique vector of names
-	
+
 	phy=x
 	if(incomparables) warning("'incomparables' exerts no effect in this setting")
 	.exemplar.monophyly=function(tip, phy) {
@@ -91,8 +92,8 @@ unique.phylo=function(x, incomparables=FALSE, ...){
 		dd=unique(phy$tip.label[.get.descendants.of.node(anc, phy, tips=TRUE)])
 		if(length(dd)==1) return(TRUE) else return(FALSE)
 	}
-    
-	
+
+
 	tt=table(phy$tip.label)
 	if(!any(tt>1)) {
 		return(phy)
@@ -104,7 +105,7 @@ unique.phylo=function(x, incomparables=FALSE, ...){
             .exemplar.monophyly(t, phy)
         })
         #		cat("\n")
-		
+
 		if(any(!mon)) {
 			warning(paste("non-monophyletic lineages encountered:\n\t", paste(todo[!mon], collapse="\n\t"), "\n", sep=""))
 			phy=.drop.tip(phy, names(!mon))
@@ -161,24 +162,24 @@ is.root <- function (node,phy) {
 	} else {
 		warning(paste("Encountered no node.label for ",label,sep=""))
 		return(NULL)
-		
+
 	}
 }
 
 .cache.descendants=function(phy){
     # fetches all tips subtended by each internal node
-	
+
 	N=as.integer(Ntip(phy))
 	n=as.integer(Nnode(phy))
-	
+
 	phy=reorder(phy, "postorder")
-	
+
 	zz=list( N=N,
     MAXNODE=N+n,
     ANC=as.integer(phy$edge[,1]),
     DES=as.integer(phy$edge[,2])
     )
-	
+
 	res=.Call("cache_descendants", phy=zz, package="geiger")
 	return(res)
 }
@@ -198,35 +199,35 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
     # all phy$tip.label must be in taxonomy
     # taxonomy: exclusivity highest on left, lowest on right (species, genus, family, etc., as columns)
     # columns in 'taxonomy' should ONLY be taxonomic ranks
-	
-    
+
+
     #	tt=as.matrix(taxonomy)
     #	tt[!is.na(tt)]=""
     #	drp=apply(tt, 1, function(x) all(x==""))
     #	if(any(drp)) taxonomy=taxonomy[-which(drp),]
-	
-	
+
+
 	taxonomy=cbind(rownames=rownames(taxonomy),taxonomy)
 	rank="rownames"
-	
+
 	taxonomy=as.data.frame(as.matrix(taxonomy),stringsAsFactors=FALSE)
-    
+
 	if(!all(xx<-phy$tip.label%in%taxonomy[,rank])) {
 		warning(paste("taxa not found in 'taxonomy':\n\t", paste(phy$tip.label[!xx], collapse="\n\t"), sep=""))
 	}
 	taxonomy[taxonomy==""]=NA
-    
+
     op<-orig<-options()
     op$expressions=max(op$expressions, 500000)
 	options(op)
-	
+
 	unmatched=phy$tip.label[!xx]
 	idx=match(phy$tip.label, taxonomy[,rank])
 	tax=taxonomy[idx,]
-	
+
 	labels=unique(unlist(tax[,-which(names(tax)==rank)]))
 	labels=labels[!is.na(labels)]
-	
+
 	dat=tax[,-which(names(tax)==rank)]
 	hashes_labels=character(length(labels))
 	zz=tax[,rank]
@@ -241,12 +242,12 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
 			} else {
 				hashes_labels[which(labels==j)]=NA
 			}
-			
+
 		}
 	}
 	names(hashes_labels)=labels
 	hashes_labels=hashes_labels[!is.na(hashes_labels)]
-	
+
 	# redundancies for labels
 	tmp=table(hashes_labels)
 	if(any(tmp[tmp>1]->redund)){
@@ -263,7 +264,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
 			}
 		}
 	}
-	
+
     #	cat("resolving descendants for splits in tree...\n")
 	tmp=hashes.phylo(phy, tips, ncores=ncores)
 	hashes_tree=tmp$hash
@@ -279,14 +280,14 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
 			nodelabels[rdx[rdx!=min(rdx)]]=""
 		}
 	}
-	
+
 	phy$node.label=nodelabels
-	
+
 	edges=NULL
-    
+
 	desc=.cache.descendants(phy)$tips[-c(1:Ntip(phy))]
     tidx=match(tips, phy$tip.label)
-    
+
 	FUN=function(taxon){
 		nm=rownames(dat)
 		dat=as.matrix(dat, ncol=ncol(dat))
@@ -297,9 +298,9 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
 				warning(paste(sQuote(taxon), " not encountered in 'taxonomy'\n\nIntended search may have been:\n\t", paste(try, collapse="\n\t", sep=""), sep=""))
 			} else {
 				warning(paste(sQuote(taxon), " not encountered in 'taxonomy'", sep=""))
-                
+
 			}
-			
+
 			return(NULL)
 		}
 		expected=rownames(which(dat==taxon, arr.ind=TRUE))
@@ -311,16 +312,16 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
 			attr(res, "hash")=hs
 			attr(res, "expected")=sort(expected)
 			return(res)
-			
+
 		}
-		
+
 		bin=as.integer(tips%in%expected)
-		
+
         #		rownames(edges)=1:nrow(edges)
 		N=Ntip(phy)
-        
+
         ff=.get.parallel(ncores)
-        
+
 		dist=unlist(ff(desc, function(x) {
             y=tidx%in%x
             sum(abs(y-bin))
@@ -341,14 +342,14 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
         })
 		res
 	}
-	
+
 	# missed labels
 	mm=match(hashes_labels, hashes_tree)
 	if(any(is.na(mm))){
 		mss=hashes_labels[is.na(mm)]
 		if(!strict){
 			N=Ntip(phy)
-			
+
 			ll=list()
 			nm=rev(names(mss))
 			for(x in 1:length(nm)){
@@ -375,7 +376,7 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
 			phy$node.label[near-N]=names(near)
 		}
 	}
-	
+
 	nn=gsub("\"", "", unique(phy$node.label[phy$node.label!=""]))
 	hl=names(hashes_labels)
 	ms=sort(hl[!hl%in%nn])
@@ -383,9 +384,9 @@ nodelabel.phylo=function(phy, taxonomy, strict=TRUE, ncores=NULL){
 	if(length(ms)){
 		warning(paste("labels missing from 'phy':\n\t", paste(ms, collapse="\n\t"), sep=""))
 	}
-    
+
 	phy$FUN=FUN
-    
+
 	phy
 }
 
@@ -449,20 +450,20 @@ function(node, phy, tips=FALSE){
 
 .mrca=function(labels, phy){
 	mm=labels
-	
+
 	if(all(is.character(labels))){
-		
+
 		ll=c(phy$tip.label, phy$node.label)
 		mm=match(labels, ll)
 		if(any(is.na(mm))) stop("Some 'labels' not encountered in 'phy'")
-		
-		
+
+
 	}
-	
+
 	if(!all(is.numeric(mm))) stop("Supply 'labels' as a character or integer vector")
-    
+
     if(length(u<-unique(mm))==1) return(u)
-	
+
 	aa=unlist(lapply(mm, function(x) .get.ancestors.of.node(x, phy)))
 	tt=table(aa)
 	max(as.integer(names(tt[tt==length(labels)])))
@@ -476,7 +477,7 @@ is.phylo=function(x) "phylo"%in%class(x)
 # returns trees representing each clade definition
 # 'nested': an important variable -- this is the subset of clades that are defined (recursively) within 'clades'
 phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
-	
+
     ## give 'phy' as a multiPhylo, named list of trees (whose labels appear in the clade defs)
     ## clades:
     #	clades=list(
@@ -485,7 +486,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
     #			 Cryptobranchoidea=c("Hynobiidae", "Cryptobranchus_alleganiensis"),
     #			 CAUDATA=c("Sirenoidea","Salamandroidea","Cryptobranchoidea")
     #	)
-	
+
     if (!is.null(phy)) {
         if (!"multiPhylo" %in% class(phy) | is.null(phynm <- names(phy)))
         stop("Supply 'phy' as a 'multiPhylo' object with names")
@@ -511,7 +512,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
             }
         }
     }
-    
+
     ll = sapply(clades, length)
     if (any(ll == 1)) {
     	unis=clades[ll==1]
@@ -528,7 +529,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
         return(TRUE)
         else return(FALSE)
     }
-    
+
     fetch_nestedclades = function(clade, clades, nested) {
         if (is.nestedclade(clade, nested)) {
             desc = clades[[clade]]
@@ -546,7 +547,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
         }
         return(new)
     }
-    
+
     paths_through_clades = function(clades, nested) {
         nn = names(clades)
         res = lapply(nn, function(x) {
@@ -558,7 +559,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
         names(res) = nn
         res
     }
-    
+
     unplaced_phy = function(phy, cladepath) {
         if (any(names(cladepath) == "unplaced")) {
             tips = names(cladepath$unplaced)
@@ -572,7 +573,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
             return(phy)
         }
     }
-    
+
     tree_cladepath = function(cladepath, nested) {
         print_group = function(cladepath) {
             xx = sapply(names(cladepath), is.nestedclade, nested)
@@ -592,9 +593,9 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
         phy = read.tree(text = tmp)
         return(unplaced_phy(phy, cladepath))
     }
-    
+
     cladepaths = paths_through_clades(clades, nested)
-    
+
     if (unplaced) {
         for (i in 1:length(cladepaths)) {
             cur = cladepaths[[i]]
@@ -605,7 +606,7 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
             }
         }
     }
-    
+
     alt_tip_label=function(phy, unis){
     	phy$alt.tip.label=character(Ntip(phy))
     	pt=phy$tip.label
@@ -615,19 +616,19 @@ phylo.clades=function(clades, phy=NULL, unplaced=TRUE, ncores=NULL){
     	}
     	phy
     }
-    
+
     phy = lapply(cladepaths, tree_cladepath, nested)
     if(length(unis)) phy = lapply(phy, alt_tip_label, unis)
     nn=sapply(phy, Ntip)
     midx<-which(nn==max(nn))
    	master=phy[midx]
-    
+
     ## RESOLVE NODE LABELS for 'master' tree (most comprehensive)
    	if(length(master)==1){
    		master=master[[1]]
    		tt=master$tip.label
    		null=.hash.tip(c(), tt)
-		
+
    		mm=hashes.phylo(master, tt, ncores=ncores)
    		ss=sapply(phy, function(x) .hash.tip(x$tip.label, tt))
    		if(any(ss==null)){
@@ -663,13 +664,13 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
     ## taxonomy expected to have first column at same level as tip labels in phy
     ## first row in taxonomy is most exclusive
     ## clade_defs are phylogenetic trees of a clade representation
-	
+
 	if(!is.null(taxonomy)){
 		if(!any(taxonomy[,1]%in%phy$tip.label) & !is.null(rownames(taxonomy))) {
 			taxonomy=as.data.frame(as.matrix(cbind(species=rownames(taxonomy), taxonomy)),stringsAsFactors=FALSE)
 		}
 	}
-	
+
 	related_tips=function(tips, phy){
 		tips=tips[tips%in%phy$tip.label]
 		if(length(tips)<2) stop("related_tips(): 'tips' to be found in 'phy' are too few")
@@ -679,9 +680,9 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
 		dd=.get.descendants.of.node(anc, phy, tips=TRUE)
 		return(phy$tip.label[dd])
 	}
-	
+
 	tips_in_group=function(phy, taxonomy=NULL, clade_def){
-		
+
 		lengths=sapply(clade_def$tip.label, function(grp){
             if(!is.null(taxonomy)){
                 ww=which(taxonomy==grp, arr.ind=TRUE)[,"row"]
@@ -694,12 +695,12 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
                 return(length(phy$tip.label[which(phy$tip.label%in%grp)])>0)
             }
 		})
-		
+
 		if(sum(lengths)<2) return(NA)
-		
+
 		## FIXME: use 'lengths' to determine if 'clade_def' is satisfied (at least two members needed)
-		
-		
+
+
 		tmp=sapply(clade_def$tip.label, function(grp){
             if(!is.null(taxonomy)){
                 ww=which(taxonomy==grp, arr.ind=TRUE)[,"row"]
@@ -712,16 +713,16 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
                 return(phy$tip.label[which(phy$tip.label%in%grp)])
             }
 		})
-		
+
 		## most exclusive 'spp' (recognized from tree)
 		spanning_taxa=unique(unlist(tmp))
 		recovered_taxa=unique(related_tips(spanning_taxa, phy))
-		
+
 		return(recovered_taxa)
 	}
-	
+
 	orig_phy=phy
-	
+
 	if(!is.null(taxonomy)){
 		## check ordering of taxonomy
 		oo=order(apply(taxonomy, 2, function(x) length(unique(x))),decreasing=TRUE)
@@ -730,7 +731,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
 			taxonomy=taxonomy[,ncol(taxonomy):1] #reverse ordering of columns
 		}
 		original_taxonomy=taxonomy
-		
+
 		## check rank of tree
 		phy$node.label=NULL
 		gtips=sapply(phy$tip.label, function(x) unlist(strsplit(gsub(" ", "_", x), "_"))[1])
@@ -742,11 +743,11 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
 			genuslevel_tree=FALSE
 		}
 		tips=phy$tip.label
-		
+
 		## prune taxonomy down to members in the phylogeny
 		taxonomy=taxonomy[taxonomy[,1]%in%tips,]
 		matching_tips=taxonomy[,1]
-		
+
 		## BUILD taxonomic mapping to each row in 'phy'
 		mm=match(tips, matching_tips)
 		tt=taxonomy[mm,]
@@ -754,7 +755,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
 	} else {
 		tt=c()
 	}
-	
+
 	if(!is.null(clades)){
 		tips=phy$tip.label
 		clade_defs=phylo.clades(clades, ncores=ncores)
@@ -767,14 +768,14 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
         })
         #		cat("\n")
 		names(res)=names(clade_defs)
-		
+
 		zz=sapply(res, function(x) all(is.na(x)))
 		if(any(zz)){
 			warning(paste("taxa not represented in 'tips':\n\t", paste(names(res)[zz], collapse="\n\t"), sep=""))
 		}
 		res=res[!zz]
 		clade_defs=clade_defs[!zz]
-		
+
 		## BUILD clade-level mapping to each row in 'phy'
 		gg=matrix("", nrow=Ntip(phy), ncol=length(res))
 		for(i in 1:length(res)){
@@ -786,7 +787,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
 		colnames(gg)=names(clade_defs)
 		tt=as.matrix(cbind(tt, gg))
 	}
-	
+
 	if(is.null(tt)){
 		if(!is.null(nn<-phy$node.label)){
 			names(nn)=Ntip(phy)+1:length(nn)
@@ -798,7 +799,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
 					tt[phy$tip.label%in%phy$tip.label[dd[[as.integer(names(nn[i]))]]],i]=nn[i]
 				}
 				colnames(tt)=nn
-				
+
 			} else {
 				return(NULL)
 			}
@@ -822,7 +823,7 @@ lookup.phylo=function(phy, taxonomy=NULL, clades=NULL, ncores=NULL){
 		}
 		return(taxonomy)
 	}
-	
+
 	for(c in 1:(ncol(taxonomy)-1)){
 		ii=is.na(taxonomy[,c])
 		if(any(ii)) taxonomy=push.taxon(taxonomy, ii, c)
@@ -843,15 +844,15 @@ phylo.lookup=function(taxonomy, ncores=NULL) {
 	occurrences=table(tax)
 	occurrences=occurrences[names(occurrences)!="" & occurrences>1]
     if(any(labels%in%names(occurrences))) stop(paste("The following appear to be both ranks and row.names of 'taxonomy':\n\t", paste(labels[labels%in%names(occurrences)], collapse="\n\t"), sep=""))
-    
+
     if(!any(occurrences==mm)){
         tax=cbind(as.matrix(taxonomy, ncol=ncol(taxonomy)),root="root")
         rownames(tax)=labels
         occurrences=c(occurrences, root=mm)
     }
-	
+
     f=.get.parallel(ncores)
-	
+
     #clds=f(names(occurrences), function(x) {
     #		tmp=which(tax==x, arr.ind=TRUE)
 	#	xcol=max(tmp[,"col"])
@@ -867,18 +868,18 @@ phylo.lookup=function(taxonomy, ncores=NULL) {
 	#		   }
 	#	}))
 	#})
-    
-    
+
+
     clds=f(names(occurrences), function(x) {
 		tmp=which(tax==x, arr.ind=TRUE)[,"row"]
         taxinx=rownames(tax)[tmp]
         return(taxinx)
 	})
     names(clds)=names(occurrences)
-    
+
     nn=sapply(clds, length)
     clds=clds[order(nn)]
-    
+
     ## exclude DUPLICATES
     eq=f(1:length(clds), function(idx){
         others=clds[-which(names(clds)==names(clds)[idx])]
@@ -892,7 +893,7 @@ phylo.lookup=function(taxonomy, ncores=NULL) {
         tmp=tmp[order(mm)]
         mm=mm[order(mm)]
         names(mm)=tmp
-        
+
         for(i in 1:length(mm)){
             ww=which(sapply(eq, function(x) names(mm[i])%in%x))
             tt=names(clds)[ww]
@@ -900,16 +901,16 @@ phylo.lookup=function(taxonomy, ncores=NULL) {
             b=match(tt, names(clds))
             if(any(b<a)) drop=c(drop, names(mm[i]))
         }
-        
+
         clds=clds[-which(names(clds)%in%drop)]
     }
-    
+
     resolve_definition=function(taxon, clades){
         cldother=clades[-which(names(clades)==taxon)]
         tips=clades[[taxon]]
-        
+
         resolver=function(tips, cld){
-            
+
             members=c()
             if(!length(cld)) {
                 members=c(members, tips)
@@ -917,7 +918,7 @@ phylo.lookup=function(taxonomy, ncores=NULL) {
                 tt=sapply(cld, function(y){
                     all(y%in%tips)
                 })
-                
+
                 if(any(tt)){
                     nm=names(cld)[max(which(tt))]
                     members=c(members, nm)
@@ -928,25 +929,25 @@ phylo.lookup=function(taxonomy, ncores=NULL) {
                 } else {
                     members=c(members, tips)
                 }
-                
+
             }
             return(members)
         }
-        
+
         def=resolver(tips, cldother)
         def
     }
-    
+
     defs=lapply(1:length(clds), function(idx){
         taxon=names(clds)[idx]
         resolve_definition(taxon, clds)
     })
     names(defs)=names(clds)
-    
+
     op=options()
     op$expressions=max(op$expressions, 500000)
     options(op)
-	
+
 	tmp=phylo.clades(defs, ncores=ncores)
 	phy=tmp[[length(defs)]]
 	tt=table(phy$tip.label)
@@ -956,12 +957,12 @@ phylo.lookup=function(taxonomy, ncores=NULL) {
 		phy=.drop.tip(phy, names(tt[tt>1]))
 	}
 	phy$root.edge=0
-	phy		
+	phy
 }
 
 
 name.check <- function(phy, data, data.names = NULL) {
-	
+
 	if (is.null(data.names)) {
 		if (is.vector(data)) {
 			data.names <- names(data);
@@ -972,9 +973,9 @@ name.check <- function(phy, data, data.names = NULL) {
 	t <- phy$tip.label;
 	r1 <- t[is.na(match(t, data.names))];
 	r2 <- data.names[is.na(match(data.names, t))];
-	
+
 	r <- list(sort(r1), sort(r2));
-	
+
 	names(r) <- cbind("tree_not_data", "data_not_tree")
 	if (length(r1) == 0 && length(r2) == 0) {
 		return("OK");
@@ -1009,17 +1010,17 @@ span.phylo=function(phy){
     desc=.cache.descendants(phy)
     N=Ntip(phy)
     labs=c(phy$tip.label, phy$node.label)
-    
+
     ff=function(node){
         if(length(node)>1) stop("Supply 'node' as a single value")
         if(!is.numeric(node)) node=which(labs==node)
-        
+
         if(node<=N) return(NULL)
         dd=desc$fdesc[[node]]
         labs[sapply(dd, function(x) desc$tips[[x]][1])]
     }
     ff
-    
+
 }
 
 # data.names is optional, and will replace the names or rownames
@@ -1030,9 +1031,9 @@ span.phylo=function(phy){
 # as the taxon names in phy$tip.label
 
 treedata <- function(phy, data, sort=FALSE, warnings=TRUE) {
-	
+
 	dm=length(dim(data))
-	
+
 	if (is.vector(data)) {
 		data<-as.matrix(data)
 	}
@@ -1042,7 +1043,7 @@ treedata <- function(phy, data, sort=FALSE, warnings=TRUE) {
 	if (is.array(data) & length(dim(data))==1) {
 		data<-as.matrix(data)
 	}
-	
+
 #	if (is.null(data.names)) {
 	if (is.null(rownames(data))) {
 		stop("names for 'data' must be supplied")
@@ -1064,7 +1065,7 @@ treedata <- function(phy, data, sort=FALSE, warnings=TRUE) {
 #JME			cat("\n")
 			}
 		}
-		
+
 		if(length(nc[[2]]!=0)) {
 			m<-match(data.names, nc[[2]])
 			data=as.matrix(data[is.na(m),])
@@ -1077,24 +1078,24 @@ treedata <- function(phy, data, sort=FALSE, warnings=TRUE) {
 			}
 		}
  	}
-	order<-match(data.names, phy$tip.label)	
-	
+	order<-match(data.names, phy$tip.label)
+
 	rownames(data)<-phy$tip.label[order]
-	
+
 	if (sort) {
     	index <- match(phy$tip.label, rownames(data))
    		data <- as.matrix(data[index,])
-	} 
+	}
 	if (dm==2){
 		data <- as.matrix(data)
 	}
-	
+
 	phy$node.label=NULL
-	
+
 	return(list(phy=phy, data=data))
 }
 
-## GENERIC 
+## GENERIC
 rescale=function(x, ...) UseMethod("rescale")
 
 ## GENERIC
@@ -1116,7 +1117,7 @@ argn.mkn=function(x, ...){
 	if(length(dm)!=1) {warning("FAILURE in Hessian CI computation: 'm' must be a square matrix"); return(NA)}
 	if(dm!=length(p) | dm!=length(s)) {warning("FAILURE in Hessian CI computation: 'p' and 's' must be of equal length to the dimensions of 'm'"); return(NA)}
 	if(!all(s%in%c("exp","nat"))) {warning("FAILURE in Hessian CI computation: 's' must indicate the space of 'p': expecting either 'exp' or 'nat' as elements"); return(NA)}
-	
+
 	qq=qnorm(1-(prob/2))
 	dd=try(sqrt(diag(solve(m))),silent=TRUE)
 	if(inherits(dd, "try-error")){
@@ -1126,7 +1127,7 @@ argn.mkn=function(x, ...){
 	bb=qq*dd
 	res=sapply(1:length(s), function(idx) {
 			   if(s[idx]=="exp"){
-			   
+
 			   return(c(lb=exp(log(p[idx])-bb[idx]), ub=exp(log(p[idx])+bb[idx])))
 			   } else {
 			   return(c(lb=p[idx]-bb[idx], ub=p[idx]+bb[idx]))
@@ -1135,7 +1136,7 @@ argn.mkn=function(x, ...){
 	rownames(res)=c("lb", "ub")
 	colnames(res)=names(p)
 	res
-	
+
 }
 
 
@@ -1173,7 +1174,7 @@ argn.mkn=function(x, ...){
     if(!length(pars)==length(expected)) stop(paste("The following 'pars' are expected:\n\t", paste(expected, collapse="\n\t", sep=""), sep=""))
 	if(all(!is.null(nm<-names(pars)))){
 		if(!all(nm%in%expected)) stop(paste("The following 'pars' are unexpected:\n\t", paste(nm[!nm%in%expected], collapse="\n\t", sep=""), sep=""))
-		if(length(unique(nm))!=length(expected)) stop(paste("The following 'pars' are expected:\n\t", paste(expected, collapse="\n\t", sep=""), sep="")) 
+		if(length(unique(nm))!=length(expected)) stop(paste("The following 'pars' are expected:\n\t", paste(expected, collapse="\n\t", sep=""), sep=""))
 		mm=match(expected, nm)
 		return(pars[mm])
 	} else {
@@ -1186,7 +1187,7 @@ argn.mkn=function(x, ...){
 .constrain.k=function(f, model=c("ER", "SYM", "ARD", "meristic"), ...){
 	e=environment(f)
 	k=e$k
-	
+
 	m=matrix(1:k^2,nrow=k,byrow=TRUE)
 	model=match.arg(model,c("ER", "SYM", "ARD", "meristic"))
 	mm=switch(model,
@@ -1203,7 +1204,7 @@ argn.mkn=function(x, ...){
 .constrain.m=function(f, m){
 # if entry is 0, assumed to constrain rate to 0
 	k=ncol(m)
-	if(nrow(m)!=k) stop("supply 'm' as a square matrix")	
+	if(nrow(m)!=k) stop("supply 'm' as a square matrix")
 	idx <- cbind(rep(1:k, each = k - 1), unlist(lapply(1:k, function(i) (1:k)[-i])))
 	npar <- k * (k - 1)
 	par=cbind(idx, m[idx], duplicated(m[idx]))
@@ -1221,8 +1222,8 @@ argn.mkn=function(x, ...){
 					  return(paste(curspar, spar[mm], sep="~") )
 					  } else {
 					  return(NULL)
-					  }  	
-					  })) 
+					  }
+					  }))
 	return(.constrain(f, formulae=res))
 }
 
@@ -1254,7 +1255,7 @@ argn.mkn=function(x, ...){
 
 # compute path length from root to tip
 .paths.cache=function(cache){
-	
+
     if(is.null(cache$ordering) || cache$ordering!="postorder"){
         stop("'cache' should be postordered")
     }
@@ -1270,10 +1271,10 @@ argn.mkn=function(x, ...){
 		xx[e2[i]] <- var.cur.node + EL[i]
 		j <- i - 1L
 		while (e1[j] == e1[i] && j > 0) {
-			left <- if (e2[j] > n) 
+			left <- if (e2[j] > n)
 			pp[[e2[j] - n]]
 			else e2[j]
-			right <- if (e2[i] > n) 
+			right <- if (e2[i] > n)
 			pp[[e2[i] - n]]
 			else e2[i]
 			j <- j - 1L
@@ -1284,7 +1285,7 @@ argn.mkn=function(x, ...){
 
 # compute path length from root to tip
 .paths.phylo=function(phy, ...){
-    
+
     ## much from ape:::vcv.phylo()
 	phy <- reorder(phy, "postorder")
 
@@ -1318,17 +1319,17 @@ argn.mkn=function(x, ...){
             return(xx[1:n])
         }
     }
-    
+
     FUN(...)
 }
 
 
-.heights.cache=function (cache) 
+.heights.cache=function (cache)
 {
     if(is.null(cache$ordering) || cache$ordering!="postorder"){
         stop("'cache' should be postordered")
     }
-        
+
 	n <- cache$n.tip
 	n.node <- cache$n.node
 	xx <- numeric(n + n.node)
@@ -1345,19 +1346,19 @@ argn.mkn=function(x, ...){
 	rownames(res) = idx
 	colnames(res) = c("start", "end")
 	res = data.frame(res)
-	res	
+	res
 }
 
 ## tree transformation
 rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "lambda", "kappa", "delta", "white", "depth"), ...){
-	
+
 	phy=x
-	
+
 	model=match.arg(model, c("BM", "OU", "EB", "nrate", "lrate", "trend", "lambda", "kappa", "delta", "white", "depth"))
-	
+
 	if(!"phylo"%in%class(phy)) stop("supply 'phy' as a 'phylo' object")
-	
-	FUN=switch(model, 
+
+	FUN=switch(model,
                BM=.bm.phylo(phy),
 			   OU=.ou.phylo(phy),
 			   EB=.eb.phylo(phy),
@@ -1386,7 +1387,7 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	N=cache$n.tip
 	cache$len[]=0
 	cache$len[1:N]=1
-	
+
 	z=function(){
 		cache
 	}
@@ -1447,16 +1448,16 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	ht$a=ht$t-ht$e
 	ht$rS=ht$a/Tmax
 	ht$rE=ht$t/Tmax
-	
+
 	dd=phy$edge[,2]
-	
+
 	relscale.brlen=function(start, end, len, dat){
 		ss=start<=dat[,"time"]
 		strt=min(which(ss))
-		
+
 		ee=dat[,"time"]<end
 		etrt=max(which(ee))+1
-		
+
 		bl=numeric()
         fragment=numeric()
 		marker=start
@@ -1471,8 +1472,8 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 		sc=structure(as.numeric(sclbrlen), names=strt:etrt)
 		return(sc)
 	}
-	
-	
+
+
 	z=function(time, rate, sigsq=1){
 		if(any(time>1) | any(time<0)) stop("supply 'time' as a vector of relative time:\n\tvalues should be in the range 0 (root) to 1 (present)")
 		if(any(rate<0)) stop("'rate' must consist of positive values")
@@ -1500,18 +1501,18 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
     vv=rep(1, N+n-1)
 
 	z=function(node, rate, sigsq=1){
-        
-        
+
+
         shifts=c(sort(node[node>N]), node[node<=N])
         mm=match(shifts, node)
         rates=rate[mm]
-        
+
         phy$edge.length=phy$edge.length*sigsq
         for(i in 1:length(shifts)) vv=.assigndescendants(vv, shifts[i], rates[i], exclude=shifts, cache=cache)
         phy$edge.length=vv*phy$edge.length
         phy
     }
-    
+
 	attr(z, "argn")=c("node", "rate", "sigsq")
 	return(z)
 }
@@ -1521,10 +1522,10 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 .lambda.cache=function(cache){
 	N=cache$n.tip
 	paths=.paths.cache(cache)
-	
+
 	z=function(lambda){
 		if(lambda<0) stop("'lambda' must be positive valued")
-		
+
 		bl=cache$len*lambda
 		bl[1:N]=bl[1:N]+(paths-(paths*lambda))
 		cache$len=bl
@@ -1545,10 +1546,10 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	mm=match(1:N, phy$edge[,2])
 	ht$e=ht$start-ht$end
 	paths=.paths.phylo(phy)
-	
+
 	z=function(lambda, sigsq=1){
 		if(lambda<0) stop("'lambda' must be positive valued")
-		
+
 		bl=phy$edge.length*lambda
 		bl[mm]=bl[mm]+(paths-(paths*lambda))
 		phy$edge.length=bl
@@ -1573,12 +1574,12 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	ht$t=Tmax-ht$end
 	ht$e=ht$start-ht$end
 	ht$a=ht$t-ht$e
-	
+
 	z=function(delta, rescale=TRUE){
 		if(delta<0) stop("'delta' must be positive valued")
 		bl=(ht$a+ht$e)^delta-ht$a^delta
 		cache$len=bl
-		
+
 		if(rescale){
 			scl=Tmax^delta
 			cache$len=(cache$len/scl)*Tmax
@@ -1598,12 +1599,12 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	ht$t=Tmax-ht$end
 	ht$e=ht$start-ht$end
 	ht$a=ht$t-ht$e
-	
+
 	z=function(delta, sigsq=1, rescale=TRUE){
 		if(delta<0) stop("'delta' must be positive valued")
 		bl=(ht$a+ht$e)^delta-ht$a^delta
 		phy$edge.length=bl[phy$edge[,2]]
-		
+
 		if(rescale){
 			scl=Tmax^delta
 			phy$edge.length=(phy$edge.length/scl)*Tmax
@@ -1619,15 +1620,15 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 
 # tree transformation
 .trend.cache=function(cache){
-	
+
 	ht=.heights.cache(cache)
 	N=cache$n.tip
 	Tmax=ht$start[N+1]
 	mm=match(1:nrow(ht), cache$edge[,2])
 	ht$head=Tmax-ht$end[cache$edge[mm,1]] # age
 	ht$tail=ht$head+(ht$start-ht$end)
-	
-	
+
+
 	z=function(slope){
 		ht$br=1+ht$head*slope
 		ht$er=1+ht$tail*slope
@@ -1651,15 +1652,15 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 
 # tree transformation
 .trend.phylo=function(phy){
-	
+
 	ht=heights.phylo(phy)
 	N=Ntip(phy)
 	Tmax=ht$start[N+1]
 	mm=match(1:nrow(ht), phy$edge[,2])
 	ht$head=Tmax-ht$end[phy$edge[mm,1]] # age
 	ht$tail=ht$head+(ht$start-ht$end)
-	
-	
+
+
 	z=function(slope, sigsq=1){
         # begin (age): head
         # end: tail
@@ -1676,7 +1677,7 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
                 return(ht$br[idx]*(si-ht$head[idx])/(2*(ht$tail[idx]-ht$head[idx])))
             }
         })
-        
+
 		phy$edge.length=phy$edge.length*scl[phy$edge[,2]]
         phy$edge.length=phy$edge.length*sigsq
 		phy
@@ -1700,9 +1701,9 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 		if (alpha == 0){
       			bl = ht$t2-ht$t1
     		} else {
-      			bl = (1/(2 * alpha)) * exp(-2 * alpha * (Tmax - ht$t2)) * 
-        		-(expm1(-2 * alpha * ht$t2)) - (1/(2 * alpha)) * 
-        		exp(-2 * alpha * (Tmax - ht$t1)) * -(expm1(-2 * 
+      			bl = (1/(2 * alpha)) * exp(-2 * alpha * (Tmax - ht$t2)) *
+        		-(expm1(-2 * alpha * ht$t2)) - (1/(2 * alpha)) *
+        		exp(-2 * alpha * (Tmax - ht$t1)) * -(expm1(-2 *
                                                      		alpha * ht$t1))
     			}
 		cache$len=bl
@@ -1735,14 +1736,14 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 
 # tree transformation
 .eb.cache=function(cache){
-	
+
 	ht=.heights.cache(cache)
 	N=cache$n.tip
 	Tmax=ht$start[N+1]
 	mm=match(1:nrow(ht), cache$edge[,2])
 	ht$t1=Tmax-ht$end[cache$edge[mm,1]]
 	ht$t2=ht$start-ht$end+ht$t1
-	
+
 	z=function(a){
 		if(a==0) return(cache)
 		bl = (exp(a*ht$t2)-exp(a*ht$t1))/(a)
@@ -1755,15 +1756,15 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 
 # tree transformation
 .eb.phylo=function(phy){
-	
-	
+
+
 	ht=heights.phylo(phy)
 	N=Ntip(phy)
 	Tmax=ht$start[N+1]
 	mm=match(1:nrow(ht), phy$edge[,2])
 	ht$t1=Tmax-ht$end[phy$edge[mm,1]]
 	ht$t2=ht$start-ht$end+ht$t1
-	
+
 	z=function(a, sigsq=1){
 		if(a==0) return(phy)
 		bl = (exp(a*ht$t2)-exp(a*ht$t1))/(a)
@@ -1779,10 +1780,10 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 
 # tree transformation
 .kappa.cache=function(cache){
-	
+
 	z=function(kappa){
 		if(kappa<0) stop("'kappa' must be positive valued")
-		
+
 		cache$len=cache$len^kappa
 		cache
 	}
@@ -1792,10 +1793,10 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 
 # tree transformation
 .kappa.phylo=function(phy){
-	
+
 	z=function(kappa, sigsq=1){
 		if(kappa<0) stop("'kappa' must be positive valued")
-		
+
 		phy$edge.length=phy$edge.length^kappa
         phy$edge.length=phy$edge.length*sigsq
 		phy
@@ -1872,15 +1873,14 @@ is.extinct <- function (phy, tol=NULL) {
 }
 
 
-drop.random<-function (phy, n) 
+drop.random<-function (phy, n)
 {
-    if (class(phy) != "phylo") 
+    if (class(phy) != "phylo")
 	stop("object \"phy\" is not of class \"phylo\"")
     nb.tip <- length(phy$tip.label)
-    if (n > nb.tip) 
+    if (n > nb.tip)
 	return(NULL)
     cut <- sample(1:nb.tip, n)
     r <- .drop.tip(phy, cut)
     return(r)
 }
-

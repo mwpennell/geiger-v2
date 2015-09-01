@@ -47,10 +47,9 @@ if (length(p1.extinct) > 0) {
 p2 <- drop.extinct(p1)
 if(!is.null(p2)) plot(p2, cex=0.5)
 
-p3 <- sim.bdtree(b=0.2, d=0, stop="taxa", n=100)
-p4 <- drop.random(p3, 40)
+p3 <- drop.random(p1, 40)
 
-plot(p4, cex=0.5)
+plot(p1, cex=0.5)
 
 
 }
