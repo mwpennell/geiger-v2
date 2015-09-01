@@ -31,25 +31,15 @@ LJ Harmon, and JW Brown
 \examples{
 
 # Birth-death tree with extinct taxa
-set.seed(42)
-p1 <- sim.bdtree(b=0.2, d=0.1, stop="time", t=30)
+p1 <- sim.bdtree(b=0.2, d=0.1, stop="time", seed=1, t=30)
 plot(p1, cex=0.25)
 
 # List extinct taxa
 p1.extinct <- is.extinct(p1)
-if (length(p1.extinct) > 0) {
-    cat(length(p1.extinct), "extinct taxa:", p1.extinct, "\n", sep=" ");
-} else {
-    cat("No extinct taxa.\n");
-}
 
 # Previous tree with extinct taxa removed
 p2 <- drop.extinct(p1)
-if(!is.null(p2)) plot(p2, cex=0.5)
-
-p3 <- drop.random(p1, 40)
-
-plot(p1, cex=0.5)
+plot(p2, cex=0.5)
 
 
 }

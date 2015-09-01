@@ -49,14 +49,14 @@ heights.multiPhylo=function(x){
 	out
 }
 
-## as.phylo.hyplo - No idea what this does. Just going to comment it out...
-# as.phylo.hphylo=function(x, ...){
-#     x$desc=NULL
-#     x$hash=NULL
-#     cl=class(x)
-#     class(x)=cl[!cl%in%"hphylo"]
-#     x
-# }
+## as.phylo.hyplo
+as.phylo.hphylo=function(x, ...){
+     x$desc=NULL
+     x$hash=NULL
+     cl=class(x)
+     class(x)=cl[!cl%in%"hphylo"]
+     x
+}
 
 .unique.phylo=function(phy){
     # phy is assumed to have tips that are redundant (and whose exemplars are monophyletic)

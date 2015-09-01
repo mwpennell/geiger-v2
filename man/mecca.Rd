@@ -72,10 +72,10 @@ name stem for output file names
 }
 }
 \details{
-The output files produced are formatted to be used with the C++ Program ABCtoolbox (Wegmann et al. 2010), which produces adjusted posterior distributions and can perform model selection without likelihoods. 
+The output files produced are formatted to be used with the C++ Program ABCtoolbox (Wegmann et al. 2010), which produces adjusted posterior distributions and can perform model selection without likelihoods.
 }
 \value{
-MECCA does not store any output in memory. Instead, five output files are generated to the current working directory. This files are fully compatible with ABCtoolbox (Wegmann et al. 2011). The first file (outputname_bdSimFile.tx) will output the posterior sample for diversification parameters. The second file (outputname_bmSimFile.txt) ouputs the sampled trait evolution parameters and their associated raw summary statistics while outputname_ObsFile.txt gives the observed summaries.For ABC toolbox though, it will often be more efficient to use pls-transformed versions of the observed and simulated summary statistics. These are available in outputname_distObs.txt, and outputname_distSimFile.txt.   
+MECCA does not store any output in memory. Instead, five output files are generated to the current working directory. This files are fully compatible with ABCtoolbox (Wegmann et al. 2011). The first file (outputname_bdSimFile.tx) will output the posterior sample for diversification parameters. The second file (outputname_bmSimFile.txt) ouputs the sampled trait evolution parameters and their associated raw summary statistics while outputname_ObsFile.txt gives the observed summaries.For ABC toolbox though, it will often be more efficient to use pls-transformed versions of the observed and simulated summary statistics. These are available in outputname_distObs.txt, and outputname_distSimFile.txt.
 %%  If it is a LIST, use
 %%  \item{comp1 }{Description of 'comp1'}
 %%  \item{comp2 }{Description of 'comp2'}
@@ -113,7 +113,8 @@ stats <- Cal$trait[, -c(1,2)] ## extract the calibration summary stats
 
 ## now we run pls, determining combinations of summaries that explain variation in our parameters
 ## For BM, 2 components is sufficient. For more complex models, more componenets will be required.
-myPlsr<-plsr(as.matrix(params) ~ as.matrix(stats), scale=F, ncomp = 2)
+require(pls)
+myPlsr<-pls::plsr(as.matrix(params) ~ as.matrix(stats), scale=F, ncomp = 2)
 
 plot(RMSEP(myPlsr)) ## Look at Root Mean Square error plots
 

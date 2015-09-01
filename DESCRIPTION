@@ -18,7 +18,6 @@ Imports:
 	Rcpp (>= 0.9.0),
 	coda,
   ncbit,
-  pls,
   colorspace
 LinkingTo: Rcpp
 Description: Fitting macroevolutionary models to phylogenetic data.
