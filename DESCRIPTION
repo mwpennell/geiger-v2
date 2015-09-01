@@ -1,8 +1,8 @@
 Package: geiger
 Type: Package
-Title: Analysis of evolutionary diversification
-Version: 2.0.4
-Date: 2014-09-19
+Title: Analysis of Evolutionary Diversification
+Version: 2.0.5
+Date: 2015-09-01
 Author: Luke Harmon <lukeh@uidaho.edu>, Jason Weir, Chad Brock, Rich
         Glor, Wendell Challenger, Gene Hunt, Rich FitzJohn, Matt Pennell, Graham Slater, Joseph Brown, Josef Uyeda, and Jon Eastman <jonathan.eastman@gmail.com>
 Maintainer: Matt Pennell <mwpennell@gmail.com>
@@ -20,7 +20,7 @@ Imports:
   ncbit,
   colorspace
 LinkingTo: Rcpp
-Description: Fitting macroevolutionary models to phylogenetic data.
+Description: Methods for fitting macroevolutionary models to phylogenetic trees.
 License: GPL (>= 2)
 URL: http://www.webpages.uidaho.edu/~lukeh/software.html
 ByteCompile: yes
