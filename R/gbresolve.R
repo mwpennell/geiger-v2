@@ -29,7 +29,7 @@ Linnaean=c(
 	"forma"
 )
 
-gbcontain=function(x, rank="species", within="", ...){
+gbcontain=function(x, rank="species", within="", ncores=1, ...){
     ## adding requirement for ncbit
     ## require(ncbit)
 
@@ -100,7 +100,7 @@ gbcontain=function(x, rank="species", within="", ...){
 		}
 	}
 
-	f=.get.parallel()
+	f=.get.parallel(ncores)
 
 	res=f(x, function(g) {gbc(g)})
 
@@ -136,12 +136,12 @@ gbcontain=function(x, rank="species", within="", ...){
 }
 
 
-gbresolve=function(x, rank="phylum", within="", ...){
+gbresolve=function(x, rank="phylum", within="", ncores=1, ...){
     ## require(ncbit)
     UseMethod("gbresolve")
 }
 
-gbresolve.default=function(x, rank="phylum", within="", ...){
+gbresolve.default=function(x, rank="phylum", within="", ncores=1, ...){
 
     ridx=match(rank, Linnaean)
     if(any(is.na(ridx)) | length(ridx)>2) stop("'rank' should be a vector of one or two elements occuring in Linnaean")
@@ -162,7 +162,7 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
     names(tips)=tips
 
 
-	f=.get.parallel()
+	f=.get.parallel(ncores)
 
 	tmp=f(tt, FUN)
 
@@ -205,11 +205,11 @@ gbresolve.default=function(x, rank="phylum", within="", ...){
 }
 
 ## Assign internal node labels to phy based on genbank taxonomy
-gbresolve.phylo=function(x, rank="phylum", within="", ...){
+gbresolve.phylo=function(x, rank="phylum", within="", ncores=1, ...){
 
 	phy=x
 	x=x$tip.label
-	res=gbresolve(x, rank=rank, within=within, ...)
+	res=gbresolve(x, rank=rank, within=within, ncores=ncores, ...)
 	if(is.null(res)) return(res)
 	ll=apply(res, 2, function(x) length(unique(x))==1 & !any(x==""))
 	if(any(ll)){
@@ -222,7 +222,7 @@ gbresolve.phylo=function(x, rank="phylum", within="", ...){
 	return(list(phy=phy, tax=res))
 }
 
-subset.phylo=function(x, taxonomy, rank="", ncores=NULL, ...){
+subset.phylo=function(x, taxonomy, rank="", ncores=1, ...){
 ## rank (e.g., 'family') and 'family' must be in columns of 'taxonomy'
 
 	phy=x
