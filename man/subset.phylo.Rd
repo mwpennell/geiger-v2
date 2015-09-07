@@ -6,7 +6,7 @@ blending information from taxonomies and trees }
 working with systematic reference tables and phylogenies}
 \usage{
 
-    \method{subset}{phylo}(x, taxonomy, rank="", ncores=NULL, ...)
+    \method{subset}{phylo}(x, taxonomy, rank="", ncores=1, ...)
 }
 
 %- maybe also 'usage' for other objects documented here.
@@ -24,11 +24,10 @@ working with systematic reference tables and phylogenies}
 sal <- get(data(caudata))
 print(head(sal$tax))
 
-nphy <- subset(sal$phy, sal$tax, "genus", ncores=2)
+nphy <- subset(sal$phy, sal$tax, "genus", ncores=1)
 plot(nphy, type="fan", cex=0.15)
 
 }
 
 \keyword{ graphs }
 \keyword{manip}
-
