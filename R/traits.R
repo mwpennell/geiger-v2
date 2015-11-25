@@ -607,19 +607,8 @@ ncores=NULL,
         class(res)=c("gfits", class(res))
 		return(res)
 	} else {
-		tmp=dat[,1]
-		names(tmp)=rownames(dat)
-		dat=tmp
-		#if(!all(is.integer(dat))) stop("supply 'dat' as a vector (or matrix) of positive integers")
-
-		# this changes the discrete data to 1:n and remembers the original charStates
-		fdat<-as.factor(dat)
-		charStates<-levels(fdat)
-		k<-nlevels(fdat)
-
-		ndat<-as.numeric(fdat)
-    	names(ndat) <- names(fdat)
-
+		ndat <- dat[,1]; # ah, gotta love R scoping...
+		charStates <- sort(unique(ndat));
 	}
 
 
