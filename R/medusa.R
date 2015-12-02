@@ -1208,15 +1208,15 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 	models <- res$model$model;
 	#z <- res$model$z;
 	z <- res$zSummary;
+	inc <- 0.05;
 
 	prof.par <- matrix(nrow=length(parm[,1]), ncol=4);
 	colnames(prof.par) <- c("r.low", "r.high", "eps.low", "eps.high")
-	inc <- 0.05;
 
 	# get this out of for-loop format
 	for (i in 1:length(parm[,1])) {
 		#cat("Model",i,"\n")
-		model <- models[i]
+		model <- models[i];
 		sp <- as.numeric(parm[i,]);
 		new.part <- z[z[,"partition"] == i,,drop=FALSE];
 		lik <- .lik.partition.medusa(partition=new.part, model=model);
@@ -1243,7 +1243,8 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 			}
 			if (low.bound != 0) {
 				while (threshold(low.bound) > 0) {
-					low.bound <- low.bound - inc;
+					#low.bound <- low.bound - inc;
+					low.bound <- low.bound * 0.95;
 				}
 			}
 			while (threshold(up.bound) > 0) {
@@ -1269,7 +1270,8 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 			up.bound <- par1 + par1/2;
 
 			while (thresholdR(low.bound) > 0) {
-				low.bound <- low.bound - inc;
+				#low.bound <- low.bound - inc;
+				low.bound <- low.bound * 0.95;
 			}
 			while (thresholdR(up.bound) > 0) {
 				up.bound <- up.bound + inc;
@@ -1278,7 +1280,9 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 
 			prof.par[i,1] <- uniroot(thresholdR, lower=low.bound, upper=par1)$root;
 			prof.par[i,2] <- uniroot(thresholdR, lower=par1, upper=up.bound)$root;
-
+            
+			# test
+			
 	## now, epsilon
 			thresholdE <- function (x) lik(c(par1, x)) - maxLik + crit;
 
@@ -1286,7 +1290,8 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 			up.bound <- par2 + par2/2;
 
 			while (thresholdE(low.bound) > 0) {
-				low.bound <- low.bound - inc;
+				#low.bound <- low.bound - inc;
+				low.bound <- low.bound * 0.95;
 			}
 			while (thresholdE(up.bound) > 0) {
 				up.bound <- up.bound + inc;
