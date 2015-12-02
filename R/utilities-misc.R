@@ -55,20 +55,17 @@ aicw <- function (x) {
 }
 
 # ooh, this is nice.
-.get.parallel <- function (ncores = NULL, ...)
-{
+.get.parallel <- function (ncores = NULL, ...) {
     if ((Sys.getenv("R_PARALLEL") == "FALSE")) {
         fx <- function(X, FUN, ...) lapply(X, FUN, ...)
-    }
-    else {
+    } else {
         if (.check.parallel() & Sys.info()["sysname"] != "Windows") {
             if (is.null(ncores)) {
                 ncores <- parallel::detectCores()
             }
             fx <- function(X, FUN, ...) parallel::mclapply(X, FUN, ...,
                 mc.silent = TRUE, mc.cores = ncores)
-        }
-        else {
+        } else {
             fx <- function(X, FUN, ...) lapply(X, FUN, ...)
         }
     }
@@ -141,7 +138,7 @@ aicw <- function (x) {
 	return (v);
 }
 
-.resolve.executable=function(package="geiger"){
+.resolve.executable=function(package="geiger") {
 	packagedir=system.file(package=package)
 	execs=lapply(d<-dir(paste(packagedir,"exec",sep="/")), function(x) {paste(packagedir, "exec", x, sep="/")})
 	names(execs)=.basename.noext(d)
