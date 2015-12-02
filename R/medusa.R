@@ -195,6 +195,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 
 	} else {
 		res <- medusa_runner(phyData$phy, phyData$richness);
+		cat("Calculating profile likelihoods on parameter values.\n\n");
 		res$model$prof.par <- .get.profile.likelihoods(res); # add profile likelihoods on parameter values
 		res$summary <- cbind(res$summary, res$model$prof.par);
 		res$richness <- phyData$richness;
@@ -1290,8 +1291,7 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 			up.bound <- par2 + par2/2;
 
 			while (thresholdE(low.bound) > 0) {
-				#low.bound <- low.bound - inc;
-				low.bound <- low.bound * 0.95;
+				low.bound <- low.bound - inc;
 			}
 			while (thresholdE(up.bound) > 0) {
 				up.bound <- up.bound + inc;
