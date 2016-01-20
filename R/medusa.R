@@ -351,7 +351,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	c <- -0.100615083407549;
 	Offset <- 27.5166786643334;
 	y <- a * (N - b)^c + Offset;
-	if (y < 0) {
+	if (y < 0 | is.na(y)) {
 		y <- 0;
 	}
 
