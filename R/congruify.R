@@ -385,3 +385,32 @@ PATHd8.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 	}
 	return(smoothed)
 }
+
+r8s.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
+#	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB'
+#		-- if NULL, simple ultrametricization of 'phy' is performed
+
+	phy$node.label=NULL
+	if(!is.null(calibrations)){
+		infile=write.r8s(phy, calibrations, base)
+	} else {
+		infile=paste(base, "infile", sep=".")
+		write.tree(phy, infile)
+	}
+	smooth.file=paste(base, "smoothed.tre", sep=".")
+	parsed.outfile=paste(base, "r8s.out", sep=".")
+	outfile=paste(base, "r8s.orig.out", sep=".")
+	if(file.exists(outfile)) unlink(outfile)
+	if(!system("which r8s", ignore.stdout=TRUE)==0) stop("Install 'r8s' before proceeding.")
+	system(paste("r8s -b -f", infile, " >", outfile, sep=" "))
+	system(paste("grep \" tree\" ", outfile, ">", parsed.outfile, sep=" "))
+	smoothed=read.tree(parsed.outfile)
+	if(rm & base=="") {
+		unlink(parsed.outfile)
+		unlink(smooth.file)
+		unlink(outfile)
+		unlink(infile)
+	}
+	return(smoothed)
+}
+
