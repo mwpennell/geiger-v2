@@ -79,6 +79,7 @@
 \alias{unique.phylo}
 \alias{white.mkn}
 \alias{write.pathd8}
+\alias{write.r8s}
 \alias{write.treePL}
 
 \title{internal geiger functions}

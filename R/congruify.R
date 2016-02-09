@@ -386,13 +386,13 @@ PATHd8.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 	return(smoothed)
 }
 
-r8s.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
+r8s.phylo=function(phy, calibrations=NULL, base="", rm=TRUE,  blformat=c(lengths="persite", nsites=1, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL")){
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB'
 #		-- if NULL, simple ultrametricization of 'phy' is performed
 
 	phy$node.label=NULL
 	if(!is.null(calibrations)){
-		infile=write.r8s(phy, calibrations, base)
+		infile=write.r8s(phy, calibrations, base, blformat=blformat, divtime=divtime)
 	} else {
 		infile=paste(base, "infile", sep=".")
 		write.tree(phy, infile)
@@ -403,7 +403,7 @@ r8s.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 	if(file.exists(outfile)) unlink(outfile)
 	if(!system("which r8s", ignore.stdout=TRUE)==0) stop("Install 'r8s' before proceeding.")
 	system(paste("r8s -b -f", infile, " >", outfile, sep=" "))
-	system(paste("grep \" tree\" ", outfile, ">", parsed.outfile, sep=" "))
+	system(paste("grep \"tree r8s\" ", outfile, ">", parsed.outfile, sep=" "))
 	smoothed=read.tree(parsed.outfile)
 	if(rm & base=="") {
 		unlink(parsed.outfile)
