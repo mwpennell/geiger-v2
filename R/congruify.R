@@ -161,7 +161,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 ## END CONGRUIFICATION FUNCTIONS ##
 
 
-write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(smooth=100, nthreads=8, optad=0, opt=1, cvstart=1000, cviter=3, cvend=0.1, thorough=TRUE)){
+write.treePL=function(phy, calibrations, nsites, min=0.0001, base="", opts=list(smooth=100, nthreads=8, optad=0, opt=1, cvstart=1000, cviter=3, cvend=0.1, thorough=TRUE)){
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' from .build_calibrations
 #	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB
 #	c65bacdf65aa29635bec90f3f0447c6e 352.234677 352.234677                          Inga_chartacea             Encephalartos_umbeluziensis
@@ -261,7 +261,7 @@ write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(sm
 	return(inp)
 }
 
-write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite", nsites=1e5, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), describe=c(plot="chrono_description"), cv=c(cvStart=0, cvInc=0.5, cvNum=8), do.cv=FALSE){
+write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite", nsites=10000, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), describe=c(plot="chrono_description"), cv=c(cvStart=0, cvInc=0.5, cvNum=8), do.cv=FALSE){
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' from .build_calibrations
 #	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB
 #	c65bacdf65aa29635bec90f3f0447c6e 352.234677 352.234677                          Inga_chartacea             Encephalartos_umbeluziensis
@@ -390,7 +390,7 @@ PATHd8.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 	return(smoothed)
 }
 
-r8s.phylo=function(phy, calibrations=NULL, base="r8srun", ez.run="none", rm=TRUE,  blformat=c(lengths="persite", nsites=1e5, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), cv=c(cvStart=0, cvInc=0.5, cvNum=8), do.cv=FALSE){
+r8s.phylo=function(phy, calibrations=NULL, base="r8srun", ez.run="none", rm=TRUE,  blformat=c(lengths="persite", nsites=10000, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), cv=c(cvStart=0, cvInc=0.5, cvNum=8), do.cv=FALSE){
 	if(grepl("nprs",ez.run, ignore.case=TRUE)) {
 		divtime <- c(method="NPRS", algorithm="POWELL")
 		do.cv <- FALSE
