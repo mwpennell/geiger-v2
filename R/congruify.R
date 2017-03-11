@@ -100,7 +100,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 
 	smooth_scion=function(stock, scion, scion_desc, taxa, spp, tol=0.01, method=c("PATHd8", NA)){
 		method=match.arg(toString(method), c("NA", "PATHd8"))
-		if(!is.ultrametric(stock)) warning("Supplied 'stock' is non-ultrametric.")
+		if(!is.ultrametric(stock, tol=tol)) warning("Supplied 'stock' is non-ultrametric.")
 		stock_tmp=times.mapping(stock, taxa, spp)
         stock=stock_tmp$stock
         stock_dat=stock_tmp$dat
@@ -397,8 +397,8 @@ r8s.phylo=function(phy, calibrations=NULL, base="r8srun", ez.run="none", rm=TRUE
 	}
 	if(grepl("pl",ez.run, ignore.case=TRUE)) {
 		divtime <- c(method="PL", algorithm="qnewt")
-		cv <- c(cvStart=0, cvInc=0.5, cvNum=8)		
-		do.cv <- TRUE			
+		cv <- c(cvStart=0, cvInc=0.5, cvNum=8)
+		do.cv <- TRUE
 	}
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB'
 #		-- if NULL, simple ultrametricization of 'phy' is performed
@@ -426,4 +426,3 @@ r8s.phylo=function(phy, calibrations=NULL, base="r8srun", ez.run="none", rm=TRUE
 	}
 	return(smoothed)
 }
-
