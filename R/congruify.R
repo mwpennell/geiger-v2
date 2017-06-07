@@ -100,7 +100,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 
 	smooth_scion=function(stock, scion, scion_desc, taxa, spp, tol=0.01, method=c("PATHd8", NA)){
 		method=match.arg(toString(method), c("NA", "PATHd8"))
-		if(!is.ultrametric(stock)) warning("Supplied 'stock' is non-ultrametric.")
+		if(!is.ultrametric(stock, tol=tol)) warning("Supplied 'stock' is non-ultrametric.")
 		stock_tmp=times.mapping(stock, taxa, spp)
         stock=stock_tmp$stock
         stock_dat=stock_tmp$dat
@@ -161,7 +161,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 ## END CONGRUIFICATION FUNCTIONS ##
 
 
-write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(smooth=100, nthreads=8, optad=0, opt=1, cvstart=1000, cviter=3, cvend=0.1, thorough=TRUE)){
+write.treePL=function(phy, calibrations, nsites, min=0.0001, base="", opts=list(smooth=100, nthreads=8, optad=0, opt=1, cvstart=1000, cviter=3, cvend=0.1, thorough=TRUE)){
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' from .build_calibrations
 #	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB
 #	c65bacdf65aa29635bec90f3f0447c6e 352.234677 352.234677                          Inga_chartacea             Encephalartos_umbeluziensis
@@ -261,7 +261,7 @@ write.treePL=function(phy, calibrations, nsites, min=1e-4, base="", opts=list(sm
 	return(inp)
 }
 
-write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite", nsites=1, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), describe=c(plot="chrono_description")){
+write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite", nsites=10000, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), describe=c(plot="chrono_description"), cv=c(cvStart=0, cvInc=0.5, cvNum=8), do.cv=FALSE){
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' from .build_calibrations
 #	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB
 #	c65bacdf65aa29635bec90f3f0447c6e 352.234677 352.234677                          Inga_chartacea             Encephalartos_umbeluziensis
@@ -294,6 +294,10 @@ write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite"
 		constraintnames[i]=paste("\tMRCA", taxon, desc[1], paste(desc[2], ";\n", sep=""), sep=" ")
 	}
 	#	phy$node.label=NULL
+	cv.code <- ""
+	if(do.cv) {
+		cv.code <- 	paste(paste(names(cv), cv, sep="="), ";\n", sep="", collapse="")
+	}
 	infile=paste(c(
 				"#nexus\n",
 				"begin trees;\n",
@@ -304,7 +308,7 @@ write.r8s=function(phy=NULL, calibrations, base="", blformat=c(lengths="persite"
 				names=paste(unlist(constraintnames), collapse=""),
 				mrca=paste(unlist(constraints), collapse=""),
 				"\tcollapse;\n",
-				paste("\tdivtime ", paste(names(divtime), divtime, collapse=" ", sep="="), ";\n", sep=""),
+				paste("\tdivtime ", paste(names(divtime), divtime, collapse=" ", sep="="), cv.code, ";\n", sep=""),
 				paste("\tdescribe ", paste(names(describe), describe, sep="="), ";\n", sep="", collapse=""),
 				"end;"
 			),collapse="")
@@ -376,6 +380,43 @@ PATHd8.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 	if(!system("which PATHd8", ignore.stdout=TRUE)==0) stop("Install 'PATHd8' before proceeding.")
 	system(paste("PATHd8 -n", infile, "-pn >", outfile, sep=" "))
 	system(paste("grep \"d8 tree\" ", outfile, ">", parsed.outfile, sep=" "))
+	smoothed=read.tree(parsed.outfile)
+	if(rm & base=="") {
+		unlink(parsed.outfile)
+		unlink(smooth.file)
+		unlink(outfile)
+		unlink(infile)
+	}
+	return(smoothed)
+}
+
+r8s.phylo=function(phy, calibrations=NULL, base="r8srun", ez.run="none", rm=TRUE,  blformat=c(lengths="persite", nsites=10000, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), cv=c(cvStart=0, cvInc=0.5, cvNum=8), do.cv=FALSE){
+	if(grepl("nprs",ez.run, ignore.case=TRUE)) {
+		divtime <- c(method="NPRS", algorithm="POWELL")
+		do.cv <- FALSE
+	}
+	if(grepl("pl",ez.run, ignore.case=TRUE)) {
+		divtime <- c(method="PL", algorithm="qnewt")
+		cv <- c(cvStart=0, cvInc=0.5, cvNum=8)
+		do.cv <- TRUE
+	}
+#	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB'
+#		-- if NULL, simple ultrametricization of 'phy' is performed
+
+	phy$node.label=NULL
+	if(!is.null(calibrations)){
+		infile=write.r8s(phy, calibrations, base, blformat=blformat, divtime=divtime, cv=cv, do.cv=do.cv)
+	} else {
+		infile=paste(base, "infile", sep=".")
+		write.tree(phy, infile)
+	}
+	smooth.file=paste(base, "smoothed.tre", sep=".")
+	parsed.outfile=paste(base, "r8s.out", sep=".")
+	outfile=paste(base, "r8s.orig.out", sep=".")
+	if(file.exists(outfile)) unlink(outfile)
+	if(!system("which r8s", ignore.stdout=TRUE)==0) stop("Install 'r8s' before proceeding.")
+	system(paste("r8s -b -f", infile, " >", outfile, sep=" "))
+	system(paste("grep \"tree r8s\" ", outfile, ">", parsed.outfile, sep=" "))
 	smoothed=read.tree(parsed.outfile)
 	if(rm & base=="") {
 		unlink(parsed.outfile)
