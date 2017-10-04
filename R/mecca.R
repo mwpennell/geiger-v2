@@ -163,7 +163,7 @@ sim.mecca <-
 #MECCAsim <-
 function(phy, richness, cladeAges, model, prop, makeNewTipTrees = TRUE, mytiptrees = NULL, hotBranches = NULL) {
 
-	root.age = max(branching.times(phy));
+	root.age = max(node.depth.edgelength(phy));
 
 	if(makeNewTipTrees == FALSE & is.null(mytiptrees)) stop("there are no tip trees provided");
 	cladeAncStates <- .mecca.nodesim(phy, model, prop, hotBranches);
@@ -910,7 +910,7 @@ function(phy, model, cladeAges, treelist, prop, hotBranches = NULL, richness=ric
 	Smean	<- numeric(length(treelist))
 	Svar <- numeric(length(treelist))
 
-    root.age <- max(branching.times(phy));
+    root.age <- max(node.depth.edgelength(phy));
 	cladeAncStates <- .mecca.nodesim(phy, model, prop, hotBranches);
 
 	for(i in 1:length(treelist)) {

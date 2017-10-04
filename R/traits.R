@@ -64,7 +64,7 @@ ncores=NULL, ...
 	argn=argn(lik)
 
     ## CONSTRUCT BOUNDS ##
-	mn=c(-500, -500, (log(10^(-5))/max(branching.times(phy))), -100, -100, -500, -500, -500, -500)
+	mn=c(-500, -500, (log(10^(-5))/max(node.depth.edgelength(phy))), -100, -100, -500, -500, -500, -500)
 	mx=c(100, 1, -0.000001, 100, 100, 0, 0, log(2.999999), 100)
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("exp", "exp", "nat", "nat", "nat", "exp", "exp", "exp", "exp")
