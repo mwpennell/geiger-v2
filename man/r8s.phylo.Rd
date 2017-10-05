@@ -9,7 +9,10 @@ call r8s from geiger}
 \description{
 call r8s, including a calibration file}
 \usage{
-r8s.phylo(phy, calibrations=NULL, base="r8srun", ez.run="none", rm=TRUE,  blformat=c(lengths="persite", nsites=10000, ultrametric="no", round="yes"), divtime=c(method="NPRS", algorithm="POWELL"), cv=c(cvStart=0, cvInc=0.5, cvNum=8), do.cv=FALSE)
+r8s.phylo(phy, calibrations=NULL, base="r8srun", ez.run="none", rm=TRUE,
+  blformat=c(lengths="persite", nsites=10000, ultrametric="no", round="yes"),
+  divtime=c(method="NPRS", algorithm="POWELL"),
+  cv=c(cvStart=0, cvInc=0.5, cvNum=8), do.cv=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -58,7 +61,8 @@ phy <- read.tree(text=paste0("(Marchantia:0.033817,",
   "0.019263):0.003527):0.021625):0.012469):",
   "0.019372);"))
   	
-	calibrations <- data.frame(MRCA="LP", MaxAge=450, MinAge=450, taxonA="marchantia", taxonB="pisum", stringsAsFactors=FALSE)
+	calibrations <- data.frame(MRCA="LP", MaxAge=450, MinAge=450,
+		taxonA="marchantia", taxonB="pisum", stringsAsFactors=FALSE)
 	\dontrun{
 	phy.nprs <- r8s.phylo(phy=phy, calibrations=calibrations, base="nprs_file", ez.run="NPRS")
 	phy.pl <- r8s.phylo(phy=phy, calibrations=calibrations, base="pl_file", ez.run="PL")
