@@ -13,7 +13,6 @@
   tip=tip[tip%in%c(1:Ntip)]
   if(!length(tip)) return(phy)
 
-
   phy <- reorder(phy)
   NEWROOT <- ROOT <- Ntip + 1
   Nnode <- phy$Nnode

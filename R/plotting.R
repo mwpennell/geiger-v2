@@ -659,7 +659,7 @@ bg = "lightgreen", horiz = FALSE, width = NULL, height = NULL,
 	pp=pretty(c(0,max(hist$time)))
 	plot(x=NULL, y=NULL, xlim=rev(range(pp)), ylim=range(pretty(c(-mm+alpha, mm+alpha))), bty="n", xlab="time", ylab="phenotypic value")
 	hist$ptime=abs(hist$time-max(hist$time))
-	mbt=max(branching.times(phy))
+	mbt=max(node.depth.edgelength(phy))
 	for(i in 1:nrow(hist)) {
 		start=ifelse(hist$ancestor[i]==root, alpha, hist$phenotype[which(hist$descendant==hist$ancestor[i])])
 		stime=ifelse(hist$ancestor[i]==root, mbt, hist$ptime[which(hist$descendant==hist$ancestor[i])])
