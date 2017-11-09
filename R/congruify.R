@@ -114,7 +114,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 			phy$hash=c(rep("", Ntip(phy)), phy$node.label)
 			phy$hash[phy$hash==""]=NA
 		} else if(method=="treePL") {
-			phy=treepl.phylo(scion, calibration, base=".tmp_PATHd8", rm=FALSE)
+			phy=treePL.phylo(scion, calibration, base=".tmp_treePL", rm=FALSE)
 			phy$hash=c(rep("", Ntip(phy)), phy$node.label)
 			phy$hash[phy$hash==""]=NA
 		} else if(method=="NA"){
@@ -165,7 +165,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 ## END CONGRUIFICATION FUNCTIONS ##
 
 
-write.treePL=function(phy, calibrations, nsites, min=0.0001, base="", opts=list(smooth=100, nthreads=8, optad=0, opt=1, cvstart=1000, cviter=3, cvend=0.1, thorough=TRUE)){
+write.treePL=function(phy, calibrations, nsites=10000, min=0.0001, base="", opts=list(smooth=100, nthreads=8, optad=0, opt=1, cvstart=1000, cviter=3, cvend=0.1, thorough=TRUE)){
 #	calibrations: dataframe with minimally 'MRCA' 'MaxAge' 'MinAge' 'taxonA' and 'taxonB' from .build_calibrations
 #	MRCA							MaxAge     MinAge                                  taxonA                                  taxonB
 #	c65bacdf65aa29635bec90f3f0447c6e 352.234677 352.234677                          Inga_chartacea             Encephalartos_umbeluziensis
@@ -397,21 +397,19 @@ PATHd8.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 treePL.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 	phy$node.label=NULL
 	if(!is.null(calibrations)){
-		infile=write.treePL(phy, calibrations, base)
+		infile=write.treePL(phy=phy, calibrations=calibrations, base=base)
 	} else {
 		infile=paste(base, "infile", sep=".")
 		write.tree(phy, infile)
 	}
-	smooth.file=paste(base, "smoothed.tre", sep=".")
-	parsed.outfile=paste(base, "treePL.out", sep=".")
+	smooth.file=paste(base, "dated.tre", sep=".")
 	outfile=paste(base, "treePL.orig.out", sep=".")
 	if(file.exists(outfile)) unlink(outfile)
 	if(!system("which treePL", ignore.stdout=TRUE)==0) stop("Install 'treePL' before proceeding.")
-	system(paste("treePL -n", infile, "-pn >", outfile, sep=" "))
-	system(paste("grep \"tree\" ", outfile, ">", parsed.outfile, sep=" "))
-	smoothed=read.tree(parsed.outfile)
+	system(paste("treePL ", infile, " >", outfile, sep=" "))
+	#system(paste("grep \"tree\" ", outfile, ">", parsed.outfile, sep=" "))
+	smoothed=read.tree(smooth.file)
 	if(rm & base=="") {
-		unlink(parsed.outfile)
 		unlink(smooth.file)
 		unlink(outfile)
 		unlink(infile)
