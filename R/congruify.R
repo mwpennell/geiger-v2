@@ -47,7 +47,7 @@
 	return(df[,-which(names(df)=="valid")])
 }
 
-congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8"), ncores=NULL){
+congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "PATHd8", "treePL"), ncores=NULL){
     ## adding requirement for ncbit
     ## require(ncbit)
 
@@ -62,7 +62,7 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 #		-- rownames of taxonomy must be tips in megaphylogeny
 
 	## functions
-	method=match.arg(unname(sapply(scale, toString)), c("NA", "PATHd8"))
+	method=match.arg(unname(sapply(scale, toString)), c("NA", "PATHd8", "treePL"))
 
 	hashes.mapping <- function (phy, taxa, mapping){
 	## GENERAL FUNCTION: find hash tag for every edge in tree (using phy$tip.label or predefined set of 'taxa')
@@ -98,8 +98,8 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 		return(list(stock=stock,dat=dat))
 	}
 
-	smooth_scion=function(stock, scion, scion_desc, taxa, spp, tol=0.01, method=c("PATHd8", NA)){
-		method=match.arg(toString(method), c("NA", "PATHd8"))
+	smooth_scion=function(stock, scion, scion_desc, taxa, spp, tol=0.01, method=c("PATHd8", NA, "treePL")){
+		method=match.arg(toString(method), c("NA", "PATHd8", "treePL"))
 		if(!is.ultrametric(stock, tol=tol)) warning("Supplied 'stock' is non-ultrametric.")
 		stock_tmp=times.mapping(stock, taxa, spp)
         stock=stock_tmp$stock
@@ -111,6 +111,10 @@ congruify.phylo=function(reference, target, taxonomy=NULL, tol=0, scale=c(NA, "P
 		}
 		if(method=="PATHd8") {
 			phy=PATHd8.phylo(scion, calibration, base=".tmp_PATHd8", rm=FALSE)
+			phy$hash=c(rep("", Ntip(phy)), phy$node.label)
+			phy$hash[phy$hash==""]=NA
+		} else if(method=="treePL") {
+			phy=treepl.phylo(scion, calibration, base=".tmp_PATHd8", rm=FALSE)
 			phy$hash=c(rep("", Ntip(phy)), phy$node.label)
 			phy$hash[phy$hash==""]=NA
 		} else if(method=="NA"){
@@ -380,6 +384,31 @@ PATHd8.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
 	if(!system("which PATHd8", ignore.stdout=TRUE)==0) stop("Install 'PATHd8' before proceeding.")
 	system(paste("PATHd8 -n", infile, "-pn >", outfile, sep=" "))
 	system(paste("grep \"d8 tree\" ", outfile, ">", parsed.outfile, sep=" "))
+	smoothed=read.tree(parsed.outfile)
+	if(rm & base=="") {
+		unlink(parsed.outfile)
+		unlink(smooth.file)
+		unlink(outfile)
+		unlink(infile)
+	}
+	return(smoothed)
+}
+
+treePL.phylo=function(phy, calibrations=NULL, base="", rm=TRUE){
+	phy$node.label=NULL
+	if(!is.null(calibrations)){
+		infile=write.treePL(phy, calibrations, base)
+	} else {
+		infile=paste(base, "infile", sep=".")
+		write.tree(phy, infile)
+	}
+	smooth.file=paste(base, "smoothed.tre", sep=".")
+	parsed.outfile=paste(base, "treePL.out", sep=".")
+	outfile=paste(base, "treePL.orig.out", sep=".")
+	if(file.exists(outfile)) unlink(outfile)
+	if(!system("which treePL", ignore.stdout=TRUE)==0) stop("Install 'treePL' before proceeding.")
+	system(paste("treePL -n", infile, "-pn >", outfile, sep=" "))
+	system(paste("grep \"tree\" ", outfile, ">", parsed.outfile, sep=" "))
 	smoothed=read.tree(parsed.outfile)
 	if(rm & base=="") {
 		unlink(parsed.outfile)
