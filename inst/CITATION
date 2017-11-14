@@ -43,11 +43,11 @@ citEntry(entry="Article",
 
 citEntry(entry="Article",
 	header="geiger",
-	title = "GEIGER: investigating evolutionary radiations",
-        author = personList(as.person("LJ Harmon"),as.person("JT Weir"), as.person("CD Brock"),as.person("RE Glor"),as.person("W Challenger")),
+	title = "geiger v2.0: an expanded suite of methods for fitting macroevolutionary models to phylogenetic trees",
+        author = personList(as.person("MW Pennell"),as.person("JM Eastman"),as.person("GJ Slater"),as.person("JW Brown"),as.person("JC Uyeda"),as.person("RG FitzJohn"),as.person("ME Alfaro"),as.person("LJ Harmon)),
 	journal = "Bioinformatics",
-  	year = "2008",
-	volume = "24",
-	pages = "129-131",
+  	year = "2014",
+	volume = "30",
+	pages = "2216-2218",
 
-        textVersion = "Harmon Luke J, Jason T Weir, Chad D Brock, Richard E Glor, and Wendell Challenger. 2008. GEIGER: investigating evolutionary radiations. Bioinformatics 24:129-131.")
+        textVersion = "Pennell Matthew W, Jonathan M Eastman, Graham J Slater, Joseph W Brown, Josef C Uyeda, Richard G FitzJohn, Michael E Alfaro, and Luke J Harmon. 2014. geiger v2.0: an expanded suite of methods for fitting macroevolutionary models to phylogenetic trees. Bioinformatics 30:2216-2218.")
