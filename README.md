@@ -10,6 +10,7 @@ install.packages("geiger")
 or installed directly from github with the [devtools](https://github.com/hadley/devtools) package
 ```
 install.packages("devtools")
+library(devtools)
 install_github("mwpennell/geiger-v2")
 ```
 
