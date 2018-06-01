@@ -37,6 +37,7 @@ SANDERSON r8s ____NEED TO ADD_____
 
 \examples{
 
+\dontrun{
 phy <- read.tree(text=paste0("(Marchantia:0.033817,",
   "(Lycopodium:0.040281,((Equisetum:0.048533",
   "Osmunda:0.033640,Asplenium:0.036526):0.000425):",
@@ -60,10 +61,10 @@ phy <- read.tree(text=paste0("(Marchantia:0.033817,",
   "Austrobail:0.019265):1.687e-86):1.687e-86,Amborella:",
   "0.019263):0.003527):0.021625):0.012469):",
   "0.019372);"))
-  	
+
 	calibrations <- data.frame(MRCA="LP", MaxAge=450, MinAge=450,
 		taxonA="marchantia", taxonB="pisum", stringsAsFactors=FALSE)
-	\dontrun{
+
 	phy.nprs <- r8s.phylo(phy=phy, calibrations=calibrations, base="nprs_file", ez.run="NPRS")
 	phy.pl <- r8s.phylo(phy=phy, calibrations=calibrations, base="pl_file", ez.run="PL")
 	}
@@ -72,4 +73,3 @@ phy <- read.tree(text=paste0("(Marchantia:0.033817,",
 % R documentation directory.
 \keyword{graphs}
 \keyword{manip}
-
