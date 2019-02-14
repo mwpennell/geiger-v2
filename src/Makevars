@@ -1,2 +1,1 @@
-PKG_CXXFLAGS = `$(R_HOME)/bin/Rscript -e "Rcpp:::CxxFlags()"`
-PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` ${BLAS_LIBS} ${FLIBS} -L${R_HOME}/lib
+PKG_LIBS = ${BLAS_LIBS} ${FLIBS}

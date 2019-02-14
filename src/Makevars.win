@@ -1,2 +1,1 @@
-PKG_CXXFLAGS = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" -e "Rcpp:::CxxFlags()")
-PKG_LIBS = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" -e "Rcpp:::LdFlags()") ${BLAS_LIBS} ${FLIBS}
+PKG_LIBS = ${BLAS_LIBS} ${FLIBS}
