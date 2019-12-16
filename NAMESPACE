@@ -144,6 +144,7 @@ S3method(unique,multiPhylo)
 S3method(unique,phylo)
 export(white.mkn)
 export(write.pathd8)
+export(write.r8s)
 export(write.treePL)
 import(MASS, digest, deSolve, coda, mvtnorm, subplex, Rcpp, ape)
 importFrom("grDevices", "col2rgb", "dev.interactive", "dev.new",

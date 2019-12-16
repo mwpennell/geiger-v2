@@ -7,8 +7,8 @@ ultrametricization of trees from a supplied timetree}
 \description{
 automagically generating secondary calibrations}
 \usage{
-congruify.phylo(reference, target, taxonomy = NULL, tol = 0, scale=c(NA, "PATHd8", "treePL"),
-    ncores=NULL)
+congruify.phylo(reference, target, taxonomy = NULL, tol = 0,
+  scale=c(NA, "PATHd8", "treePL"), ncores=NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
