@@ -977,6 +977,9 @@ name.check <- function(phy, data, data.names = NULL) {
 	r <- list(sort(r1), sort(r2));
 
 	names(r) <- cbind("tree_not_data", "data_not_tree")
+	
+	class(r) <- "name.check"
+	
 	if (length(r1) == 0 && length(r2) == 0) {
 		return("OK");
 	} else {

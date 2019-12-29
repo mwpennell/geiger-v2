@@ -11,7 +11,9 @@ coef.gfits <- function(object, ...) {
 }
 
 logLik.gfit <- function(object, ...) {
-    object$opt$lnL;
+    lik <- object$opt$lnL[1]
+	attr(lik, "df") <- object$opt$k[1]
+	lik
 }
 
 logLik.gfits <- function(object, ...) {

@@ -129,6 +129,7 @@ export(startingpt.mecca)
 export(stem.limits)
 export(stem.p)
 S3method(subset,phylo)
+S3method(summary,name.check)
 
 #export(summary.medusaRAW)
 
