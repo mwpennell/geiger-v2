@@ -130,6 +130,7 @@ export(stem.limits)
 export(stem.p)
 S3method(subset,phylo)
 S3method(summary,name.check)
+S3method(print,name.check)
 
 #export(summary.medusaRAW)
 
@@ -152,7 +153,7 @@ importFrom("grDevices", "col2rgb", "dev.interactive", "dev.new",
            "gray.colors", "rgb")
 importFrom("graphics", "arrows", "layout", "legend", "lines", "mtext",
            "par", "plot", "points", "polygon", "text")
-importFrom("methods", "as")
+importFrom("methods", "as", "hasArg")
 importFrom("stats", "anova", "approxfun", "as.formula", "coef",
            "density", "dexp", "dist", "dnorm", "dpois", "dunif",
            "ecdf", "end", "lm", "logLik", "manova", "median",
