@@ -580,6 +580,8 @@ control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALS
 ncores=NULL,
 ...)
 {
+	if(hasArg(suppressWarnings)) suppressWarnings<-list(...)$suppressWarnings
+	else suppressWarnings<-FALSE
 
 ## NOTE: 'model' can be a constraint matrix
 #
@@ -618,7 +620,7 @@ ncores=NULL,
 
 # CONTROL OBJECT
 	ct=list(method=c("subplex","L-BFGS-B"), niter=ifelse(model=="none", 50, 100), FAIL=1e200, hessian=FALSE, CI=0.95)
-	if(any(!names(control)%in%names(ct)->tmp)) warning("Unexpected 'control' parameters:\n\t", paste(names(control)[tmp], collapse="\n\t"), sep="")
+	if(any(!names(control)%in%names(ct)->tmp)) if(suppressWarnings) warning("Unexpected 'control' parameters:\n\t", paste(names(control)[tmp], collapse="\n\t"), sep="")
 	control=control[which(!tmp)]
 	if("method"%in%names(control)) control$method=match.arg(control$method, c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent", "subplex"), several.ok=TRUE)
 	ct[names(control)]=control
@@ -653,7 +655,7 @@ ncores=NULL,
 	if(length(bounds)>0){
 		mm=match(names(bounds), rownames(bnds))
 		if(any(is.na(mm))){
-			warning("Unexpected 'bounds' parameters:\n\t", paste(names(bounds)[is.na(mm)], collapse="\n\t"), sep="")
+			if(suppressWarnings) warning("Unexpected 'bounds' parameters:\n\t", paste(names(bounds)[is.na(mm)], collapse="\n\t"), sep="")
 		}
 		mm=mm[!is.na(mm)]
 		if(length(mm)){
@@ -852,7 +854,8 @@ ncores=NULL,
 			   }
 			   })
 	if(any(chk)){
-		warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
+		if(suppressWarnings) 
+			warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
 	}
 
 # RETURN OBJECT
