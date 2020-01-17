@@ -303,31 +303,36 @@ print.gfits=function(x, format=c("default", "oldestyle"), ...){
             return(res)
 }
 
-summary.name.check <- function(x, ...){ 
+summary.name.check <- function(object, ...){ 
 	if(hasArg(printlen)) printlen <- list(...)$printlen
 	else printlen <- 6
-	if( length(x)==1 && x == "OK" ) cat("No difference between tree & data.\n\n")
+	if( length(object)==1 && object == "OK" ) 
+		cat("No difference between tree & data.\n\n")
 	else {
-		if( length( x$tree_not_data ) > 0 ){
-			cat(paste(length(x$tree_not_data),
-				if(length(x$tree_not_data)==1) " taxon is" else " taxa are",
+		if( length( object$tree_not_data ) > 0 ){
+			cat(paste(length(object$tree_not_data),
+				if(length(object$tree_not_data)==1) " taxon is" else " taxa are",
 				" present in the tree but not the data:\n",sep=""))
-			for( i in 1:min(length(x$tree_not_data),printlen) ){
-				cat(paste("   ",x$tree_not_data[i]))
-				if(i < min(length(x$tree_not_data),printlen)) cat(",\n")
+			for( i in 1:min(length(object$tree_not_data),printlen) ){
+				cat(paste("   ",object$tree_not_data[i]))
+				if(i < min(length(object$tree_not_data),printlen)) cat(",\n")
 			}
-			if(length(x$tree_not_data) > printlen) cat(",\n    ....\n") else cat("\n")
+			if(length(object$tree_not_data) > printlen) 
+				cat(",\n    ....\n") else cat("\n")
 		}
-		if( length( x$data_not_tree ) > 0 ){
-			cat(paste(length(x$data_not_tree),
-				if(length(x$data_not_tree)==1) " taxon is" else " taxa are",
+		if( length( object$data_not_tree ) > 0 ){
+			cat(paste(length(object$data_not_tree),
+				if(length(object$data_not_tree)==1) " taxon is" else " taxa are",
 				" present in the data but not the tree:\n",sep=""))
-			for( i in 1:min(length(x$data_not_tree),printlen) ){
-				cat(paste("   ",x$data_not_tree[i]))
-				if(i < min(length(x$data_not_tree),printlen)) cat(",\n")
+			for( i in 1:min(length(object$data_not_tree),printlen) ){
+				cat(paste("   ",object$data_not_tree[i]))
+				if(i < min(length(object$data_not_tree),printlen)) cat(",\n")
 			}
-			if(length(x$data_not_tree) > printlen) cat(",\n    ....\n") else cat("\n")
+			if(length(object$data_not_tree) > printlen) 
+				cat(",\n    ....\n") else cat("\n")
 		}
 		cat("\nTo see complete list of mis-matched taxa, print object.\n\n")
 	}
 }
+
+print.name.check <- function(x, ...) print(unclass(x))
