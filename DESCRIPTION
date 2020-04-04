@@ -1,8 +1,8 @@
 Package: geiger
 Type: Package
 Title: Analysis of Evolutionary Diversification
-Version: 2.0.6.3
-Date: 2019-12-16
+Version: 2.0.6.4
+Date: 2020-4-04
 Author: Luke Harmon, Matthew Pennell, Jason Weir, Chad Brock, Rich
         Glor, Wendell Challenger, Gene Hunt, Rich FitzJohn, Graham Slater, Joseph Brown, Josef Uyeda, and Jon Eastman
 Maintainer: Luke Harmon <lukeh@uidaho.edu>
