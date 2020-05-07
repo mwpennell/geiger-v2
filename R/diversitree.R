@@ -206,10 +206,10 @@ ROOT.ALL   <- ROOT.BOTH
     stop("'tree' must be ultrametric")
 	if ( any(tree$edge.length < 0) )
     stop("Negative branch lengths in tree")
-	## ape is.binary.tree() can let a few nasties through - for
+	## ape is.binary.phylo() can let a few nasties through - for
 	## e.g. each tritomy, an unbranched node and this gets through.
 	## This expression is a little stricter, even if a touch slower.
-	if ( bifurcating && (!is.binary.tree(tree) ||
+	if ( bifurcating && (!is.binary.phylo(tree) ||
 						 any(tabulate(tree$edge[, 1]) == 1)) )
     stop("'tree must be bifurcating (no polytomies or unbranched nodes)'")
 	

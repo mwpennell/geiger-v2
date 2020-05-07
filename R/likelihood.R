@@ -44,7 +44,7 @@ function(rphy, ic) {
 	phy$node.label=NULL
 	nb.tip <- Ntip(phy)
     nb.node <- phy$Nnode
-	if(!is.binary.tree(phy)) stop("'phy' is not fully dichotomous.")
+	if(!is.binary.phylo(phy)) stop("'phy' is not fully dichotomous.")
 	
     phy <- reorder(phy, "postorder")
 	
@@ -285,7 +285,7 @@ function(rphy, ic) {
     ## MATCHING and major problems
     td=treedata(phy, dat, sort=TRUE, warnings=FALSE)
     phy=reorder(td$phy, "postorder")
-    if(ct$binary) if(!is.binary.tree(phy)) stop("'phy' should be a binary tree")
+    if(ct$binary) if(!is.binary.phylo(phy)) stop("'phy' should be a binary tree")
     if(ct$ultrametric) if(!is.ultrametric(phy)) stop("'phy' should be an ultrametric tree")
     if(is.null(phy$edge.length)) stop("'phy' must include branch lengths in units of time")
 
