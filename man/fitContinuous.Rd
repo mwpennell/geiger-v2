@@ -1,12 +1,12 @@
 \name{fitContinuous}
 \alias{fitContinuous}
-\title{ model fitting for continuous comparative data }
+\title{ Model fitting for continuous comparative data }
 \description{
 	fitting macroevolutionary models to phylogenetic trees
 }
 \usage{
 fitContinuous(phy, dat, SE = 0,
-    model = c("BM","OU","EB","trend","lambda","kappa","delta","drift","white"),
+    model = c("BM","OU","EB","rate_trend","lambda","kappa","delta","mean_trend","white"),
     bounds= list(), control = list(method = c("subplex","L-BFGS-B"),
     niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), ncores=NULL, \dots)
 }
@@ -55,7 +55,7 @@ Possible models are as follows:
 	\item{\bold{EB} }{is the Early-burst model (Harmon et al. 2010) and also called the \code{ACDC} model (accelerating-decelerating; Blomberg et al. 2003). Set by the \code{a} rate parameter, \code{EB}
 		fits a model where the rate of evolution increases or decreases exponentially through time, under the model r[t] = r[0] * exp(a * t), where \code{r[0]} is the
 		initial rate, \code{a} is the rate change parameter, and \code{t} is time. The maximum bound is set to \code{-0.000001}, representing a decelerating rate of evolution. The minimum bound is set to log(10^-5)/depth of the tree.}
-	\item{\bold{trend} }{is a diffusion model with linear trend in rates through time (toward larger or smaller rates). Default bounds are \code{slope = c(min = -100, max = 100)}}
+	\item{\bold{rate_trend} }{is a diffusion model with linear trend in rates through time (toward larger or smaller rates). Used to be denominated the \code{"trend"} model, which is still accepted by \code{fitContinuous} for backward compatibility. Default bounds are \code{slope = c(min = -100, max = 100)}}
 	\item{\bold{lambda} }{is one of the Pagel (1999) models that fits the extent to which the phylogeny predicts covariance among trait values for species. The model effectively transforms the tree:
 		values of \code{lambda} near 0 cause the phylogeny to become more star-like, and a \code{lambda} value of 1 recovers the \code{BM} model. Default
 		bounds are \code{lambda = c(min = exp(-500), max = 1}}
@@ -65,7 +65,7 @@ Possible models are as follows:
 	\item{\bold{delta} }{is a time-dependent model of trait evolution (Pagel 1999).  The \code{delta} model is similar to \code{ACDC} insofar as the \code{delta} model fits the relative contributions of
 		early versus late evolution in the tree to the covariance of species trait values.  Where \code{delta} is greater than 1, recent evolution has been relatively fast; if \code{delta} is less
 		than 1, recent evolution has been comparatively slow. Intrepreted as a tree transformation, the model raises all node depths to an estimated power (\code{delta}). Default bounds are \code{delta = c(min = exp(-500), max = 3)}}
-    \item{\bold{drift} }{is a model of trait evolution with a directional drift component (i.e., a \emph{trend} toward smaller or larger values).  This model is sensible only for non-ultrametric trees, as the likelihood surface is entirely flat with respect to the slope of the trend if the tree is ultrametric. Default bounds are \code{drift = c(min = -100, max = 100)}}
+    \item{\bold{mean_trend} }{is a model of trait evolution with a directional drift or \emph{trend} component (i.e., toward smaller or larger values through time).  This model is sensible only for non-ultrametric trees, as the likelihood surface is entirely flat with respect to the slope of the trend if the tree is ultrametric. The model used to be denominated the \code{"drift"} model, which is still accepted by \code{fitContinuous} for backward compatibility. Default bounds are \code{drift = c(min = -100, max = 100)}}
 	\item{\bold{white} }{is a \code{white}-noise (non-phylogenetic) model, which assumes data come from a single normal distribution with no covariance structure among species. The variance parameter \code{sigsq}
 		takes the same bounds defined under the \code{BM} model}
 }

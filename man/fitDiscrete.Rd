@@ -1,6 +1,6 @@
 \name{fitDiscrete}
 \alias{fitDiscrete}
-\title{ model fitting for discrete comparative data }
+\title{ Model fitting for discrete comparative data }
 \description{
 	fitting macroevolutionary models to phylogenetic trees
 }

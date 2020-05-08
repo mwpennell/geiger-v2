@@ -2,7 +2,7 @@ fitContinuous=function(
 phy,
 dat,
 SE = 0,
-model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"),
+model=c("BM", "OU", "EB", "rate_trend", "lambda", "kappa", "delta", "mean_trend", "white"),
 bounds=list(),
 control=list(method=c("subplex","L-BFGS-B"), niter=100, FAIL=1e200, hessian=FALSE, CI=0.95),
 ncores=NULL, ...
@@ -46,8 +46,13 @@ ncores=NULL, ...
 	ct[names(control)]=control
 	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
 	ct$hessian_P=1-ct$CI
+	
+	if(length(model)==1) {
+		if(model=="trend") model<-"rate_trend"
+		else if(model=="drift") model<-"mean_trend"
+	}
 
-	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
+	model=match.arg(model, c("BM", "OU", "EB", "rate_trend", "lambda", "kappa", "delta", "mean_trend", "white"))
 
     # CONTROL OBJECT for likelihood
         if(model=="OU" & !is.ultrametric(phy)){
@@ -69,7 +74,7 @@ ncores=NULL, ...
 	bnds=as.data.frame(cbind(mn, mx))
 	bnds$typ=c("exp", "exp", "nat", "nat", "nat", "exp", "exp", "exp", "exp")
 	rownames(bnds)=c("sigsq", "alpha", "a", "drift", "slope", "lambda", "kappa", "delta", "SE")
-	bnds$model=c("BM", "OU", "EB", "drift", "trend", "lambda", "kappa", "delta", "SE")
+	bnds$model=c("BM", "OU", "EB", "mean_trend", "rate_trend", "lambda", "kappa", "delta", "SE")
 	typs=bnds[argn, "typ"]
 
     # User bounds
@@ -297,8 +302,13 @@ ncores=NULL, ...
     cache
 }
 
-bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"), ...){
-	model=match.arg(model, c("BM", "OU", "EB", "trend", "lambda", "kappa", "delta", "drift", "white"))
+bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "rate_trend", "lambda", "kappa", "delta", "mean_trend", "white"), ...){
+	if(length(model)==1){
+		if(model=="trend") model<-"rate_trend"
+		else if(model=="drift") model<-"mean_trend"
+	}
+
+	model=match.arg(model, c("BM", "OU", "EB", "rate_trend", "lambda", "kappa", "delta", "mean_trend", "white"))
 
     cache=.prepare.bm.univariate(phy, dat, SE=SE, ...)
     cache$ordering=attributes(cache$phy)$order ## SHOULD BE POSTORDER
@@ -314,11 +324,11 @@ bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", 
         BM=.null.cache(cache),
         OU=.ou.cache(cache),
         EB=.eb.cache(cache),
-        trend=.trend.cache(cache),
+        rate_trend=.trend.cache(cache),
         lambda=.lambda.cache(cache),
         kappa=.kappa.cache(cache),
         delta=.delta.cache(cache),
-        drift=.null.cache(cache),
+        mean_trend=.null.cache(cache),
         white=.white.cache(cache)
     )
 
@@ -405,7 +415,7 @@ bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "trend", "lambda", 
         }
 
         #drift
-        if(model=="drift") {
+        if(model=="mean_trend") {
             attb=c(attb, "drift")
         }
 

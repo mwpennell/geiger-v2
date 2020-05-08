@@ -9,9 +9,9 @@ This function is essentially an MCMC version of the fitContinuous function that 
 }
 \usage{
 fitContinuousMCMC(phy, d, model = c("BM", "Trend", "SSP", "ACDC.exp","ACDC.lin"),
-Ngens = 1e+06, sampleFreq = 1000, printFreq = 1000,
-propwidth = rep(0.1, 5), node.priors = NULL, root.prior = NULL,
-acdc.prior = NULL, sample.node.states = T, outputName = "mcmc.output")
+	Ngens = 1e+06, sampleFreq = 1000, printFreq = 1000,
+	propwidth = rep(0.1, 5), node.priors = NULL, root.prior = NULL,
+	acdc.prior = NULL, sample.node.states = T, outputName = "mcmc.output")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
