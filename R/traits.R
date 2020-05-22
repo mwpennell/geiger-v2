@@ -267,7 +267,7 @@ ncores=NULL, ...
         }
     })
 	if(any(chk)){
-		warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
+		warning(paste("\nParameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
 	}
 
 	mm=.aic(mm, n=length(dat))
@@ -865,7 +865,7 @@ ncores=NULL,
 			   })
 	if(any(chk)){
 		if(suppressWarnings) 
-			warning(paste("Parameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
+			warning(paste("\nParameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
 	}
 
 # RETURN OBJECT
