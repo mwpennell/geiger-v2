@@ -130,7 +130,7 @@ gbcontain=function(x, rank="species", within="", ncores=1, ...){
             DES=as.integer(des),
             keep=as.integer(keep)
         )
-		.Call("compile_descendants", mat=mat, package="geiger")[[1]]
+		.Call("compile_descendants", mat=mat, PACKAGE="geiger")[[1]]
     }
     fetcher
 }
@@ -323,7 +323,7 @@ exemplar.phylo=function(phy, taxonomy=NULL, ...){
             ANC=as.integer(anc),
             DES=as.integer(des)
         )
-		.Call("compile_ancestors", mat=mat, package="geiger")[[1]]
+		.Call("compile_ancestors", mat=mat, PACKAGE="geiger")[[1]]
 	}
 	fetcher
 }
