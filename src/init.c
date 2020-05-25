@@ -11,12 +11,12 @@ extern void derivs_mkn_pij(int *, double *, double *, double *, double *, int *)
 
 /* .Call calls */
 extern SEXP binary_edges(SEXP);
-extern SEXP bm_direct(SEXP, SEXP, SEXP);
-extern SEXP cache_descendants(SEXP, SEXP);
-extern SEXP compile_ancestors(SEXP, SEXP);
-extern SEXP compile_descendants(SEXP, SEXP);
+extern SEXP bm_direct(SEXP, SEXP);
+extern SEXP cache_descendants(SEXP);
+extern SEXP compile_ancestors(SEXP);
+extern SEXP compile_descendants(SEXP);
 extern SEXP get_descendants(SEXP);
-extern SEXP open_subtree(SEXP, SEXP, SEXP);
+extern SEXP open_subtree(SEXP, SEXP);
 
 static const R_CMethodDef CEntries[] = {
     {"pic_variance", (DL_FUNC) &pic_variance, 6},
@@ -28,12 +28,12 @@ static const R_CMethodDef CEntries[] = {
 
 static const R_CallMethodDef CallEntries[] = {
     {"binary_edges",        (DL_FUNC) &binary_edges,        1},
-    {"bm_direct",           (DL_FUNC) &bm_direct,           3},
-    {"cache_descendants",   (DL_FUNC) &cache_descendants,   2},
-    {"compile_ancestors",   (DL_FUNC) &compile_ancestors,   2},
-    {"compile_descendants", (DL_FUNC) &compile_descendants, 2},
+    {"bm_direct",           (DL_FUNC) &bm_direct,           2},
+    {"cache_descendants",   (DL_FUNC) &cache_descendants,   1},
+    {"compile_ancestors",   (DL_FUNC) &compile_ancestors,   1},
+    {"compile_descendants", (DL_FUNC) &compile_descendants, 1},
     {"get_descendants",     (DL_FUNC) &get_descendants,     1},
-    {"open_subtree",        (DL_FUNC) &open_subtree,        3},
+    {"open_subtree",        (DL_FUNC) &open_subtree,        2},
     {NULL, NULL, 0}
 };
 

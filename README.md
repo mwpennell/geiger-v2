@@ -36,6 +36,10 @@ Pennell, M.W., J.M. Eastman, G.J. Slater, J.W. Brown, J.C. Uyeda, R.G. FitzJohn,
 
 in addition to the original papers describing the methods.
 
+## Acknowledgements
+
+We thank the CRAN team for help cleaning up our package errors.
+
 ## Feedback
 
 We are always looking to improve geiger. If you have comments/questions/ideas, we encourage you to get in contact by posting an issue or making a pull request.
