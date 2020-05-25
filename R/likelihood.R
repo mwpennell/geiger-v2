@@ -14,7 +14,7 @@ make.bm.relaxed <- function(phy, dat, SE=NA, method=c("direct","vcv","reml")){
 #primary function for computing the likelihood of data, given a root state, VCV matrix, and Brownian motion model
 #author: LJ HARMON 2009 and JM EASTMAN 2010
 .bm.lik.fn.vcv <-
-function(root, dat, vcv, SE) { 
+function(root, dat, vcv, SE) {
 # mod 12.02.2010 JM Eastman: using determinant()$modulus rather than det() to stay in log-space
 	y=dat
 	b <- vcv
@@ -26,10 +26,10 @@ function(root, dat, vcv, SE) {
 }
 
 
-#primary function for computing the likelihood of data, using REML, under Brownian motion model 
+#primary function for computing the likelihood of data, using REML, under Brownian motion model
 #author: LJ HARMON, LJ REVELL, and JM EASTMAN 2011
 #'rphy' is rate-scaled tree in pruning-wise order (as 'ic')
-.bm.lik.fn.reml <- 
+.bm.lik.fn.reml <-
 function(rphy, ic) {
     new.var=.pic_variance.phylo(rphy)
 	reml=dnorm(ic, mean=0, sd=sqrt(new.var), log=TRUE)
@@ -37,7 +37,7 @@ function(rphy, ic) {
 }
 
 
-#compute expected PIC variance given tree: used for .bm.lik.fn.reml()  
+#compute expected PIC variance given tree: used for .bm.lik.fn.reml()
 #author: JM EASTMAN 2011
 .pic_variance.phylo <- function(phy)
 {
@@ -45,29 +45,29 @@ function(rphy, ic) {
 	nb.tip <- Ntip(phy)
     nb.node <- phy$Nnode
 	if(!is.binary.phylo(phy)) stop("'phy' is not fully dichotomous.")
-	
+
     phy <- reorder(phy, "postorder")
-	
+
 	ans <- .C("pic_variance", as.integer(nb.tip), as.integer(nb.node),
               as.integer(phy$edge[, 1]), as.integer(phy$edge[, 2]),
               as.double(phy$edge.length), double(nb.node),
               PACKAGE = "geiger")
-	
+
     var <- ans[[6]]
     var
 }
 
 .make.bm.relaxed.vcv <- function(phy, dat, SE=NULL){
     ## NOT currently handling given node states
-    
+
 	cache=.prepare.bm.univariate(phy, dat, nodes=NULL, SE=SE, control=list(binary=FALSE))
-	
+
 	check.argn=function(rates, root){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
-	
+
     adjvar = as.integer(attributes(cache$y)$adjse)
- 
+
     if(any(adjvar==1)){ # adjustable SE
 		likSE <- function(rates, root, SE) {
 			check.argn(rates, root)
@@ -100,24 +100,24 @@ function(rphy, ic) {
 }
 
 .make.bm.relaxed.pic <- function(phy, dat, SE=NULL){
-    
+
     ## NOT currently handling given node states
 	cache=.prepare.bm.univariate(phy, dat, nodes=NULL, SE=SE)
-	
+
 	ic=pic(cache$dat, cache$phy, scaled=FALSE)
 	cache$ic=ic
-	
+
 	check.argn=function(rates){
 		if(length(rates)!=(cache$n.node+cache$n.tip-1)) stop("Supply 'rates' as a vector of rate scalars for each branch.")
 	}
-	
+
     adjvar = as.integer(attributes(cache$y)$adjse)
 
     xSE=cache$SE
     N=Ntip(cache$phy)
     subSE=match(1:N, cache$phy$edge[,2])
 
-    
+
     if(any(adjvar==1)){ # adjustable SE
 		likSE <- function(rates, SE) {
 			check.argn(rates)
@@ -146,11 +146,11 @@ function(rphy, ic) {
 }
 
 
-.make.bm.relaxed.direct <- function (phy, dat, SE=NULL) 
+.make.bm.relaxed.direct <- function (phy, dat, SE=NULL)
 {
 
     ## NOT currently handling given node states
-    
+
 	cache=.prepare.bm.univariate(phy, dat, nodes=NULL, SE=SE)
     N = cache$n.tip
     n = cache$n.node
@@ -159,12 +159,12 @@ function(rphy, ic) {
     adjvar = as.integer(attributes(cache$y)$adjse)
 	given = as.integer(attributes(cache$y)$given)
     given[rootidx]=1
-    
+
     datc_init = list(
                 len = as.numeric(cache$len),
-				intorder = as.integer(cache$order[-length(cache$order)]), 
-				tiporder = as.integer(1:N), 
-				root = rootidx, 
+				intorder = as.integer(cache$order[-length(cache$order)]),
+				tiporder = as.integer(1:N),
+				root = rootidx,
                 y = as.numeric(cache$y[1, ]),
 				n = as.integer(z),
                 given = as.integer(given),
@@ -172,9 +172,9 @@ function(rphy, ic) {
 				descLeft = as.integer(cache$children[, 2]),
                 drift=0
     )
-	
+
 	ll.bm.direct <- function(pars, datc) {
-        out = .Call("bm_direct", dat = datc, pars = pars, package = "geiger")
+        out = .Call("bm_direct", dat = datc, pars = pars, PACKAGE = "geiger")
 #       vals = c(out$initM[rootidx], out$initV[rootidx], out$lq[rootidx])
         loglik <- sum(out$lq)
 #       intermediates=FALSE
@@ -185,15 +185,15 @@ function(rphy, ic) {
         return(loglik)
     }
     class(ll.bm.direct) <- c("bm.direct", "bm", "function")
-	
+
 	vv = numeric(N+n)
     mm = match(cache$phy$edge[, 2], 1:(N+n))
 	check.argn=function(rates, root){
 		if(length(rates)!=(N+n-1) && length(root)==1) stop("Supply 'rates' as a vector of rate scalars for each branch, and supply 'root' as a single value.")
 	}
-	   
+
     var = as.numeric(cache$y[2, ]^2)
-    
+
 	## LIKELIHOOD FUNCTION
 	if(any(adjvar==1)){ # adjustable SE
 		likSE <- function(rates, root, SE) {
@@ -202,9 +202,9 @@ function(rphy, ic) {
 			datc_se=datc_init
 			var[which(adjvar==1)]=SE^2
             datc_se$var=var
-            
+
             datc_se$y[rootidx]=root
-            
+
 			ll = ll.bm.direct(pars = vv,  datc_se)
 			return(ll)
 		}
@@ -226,12 +226,12 @@ function(rphy, ic) {
 		attr(lik,"argn")=list(rates=cache$phy$edge[,2], root="root")
 		class(lik)=c("rbm","bm","function")
 		return(lik)
-	}	
+	}
 }
 
-.cache.tree <- function (phy) 
+.cache.tree <- function (phy)
 {
-	ordxx=function (children, is.tip, root) 
+	ordxx=function (children, is.tip, root)
 # from diversitree:::get.ordering
 	{
 		todo <- list(root)
@@ -239,13 +239,13 @@ function(rphy, ic) {
 		repeat {
 			kids <- children[i, ]
 			i <- kids[!is.tip[kids]]
-			if (length(i) > 0) 
+			if (length(i) > 0)
             todo <- c(todo, list(i))
 			else break
 		}
 		as.vector(unlist(rev(todo)))
 	}
-	
+
     edge <- phy$edge
     edge.length <- phy$edge.length
     idx <- seq_len(max(edge))
@@ -253,7 +253,7 @@ function(rphy, ic) {
     tips <- seq_len(n.tip)
     root <- n.tip + 1
     is.tip <- idx <= n.tip
-	
+
 	desc=.cache.descendants(phy)
     children <- desc$fdesc
 	if(!max(sapply(children, length) == 2)){
@@ -262,15 +262,15 @@ function(rphy, ic) {
 		binary=FALSE
 	} else {
 		children <- rbind(matrix(NA, n.tip, 2), t(matrix(unlist(children), nrow=2)))
-		order <- ordxx(children, is.tip, root)	
+		order <- ordxx(children, is.tip, root)
 		binary=TRUE
 	}
-	
+
     len <- edge.length[mm<-match(idx, edge[, 2])]
-	
+
 	ans <- list(tip.label = phy$tip.label, node.label = phy$node.label,
-				len = len, children = children, order = order, 
-				root = root, n.tip = n.tip, n.node = phy$Nnode, tips = tips, 
+				len = len, children = children, order = order,
+				root = root, n.tip = n.tip, n.node = phy$Nnode, tips = tips,
 				edge = edge, edge.length = edge.length, nodes = phy$edge[,2], binary = binary, desc = desc)
     ans
 }
@@ -281,7 +281,7 @@ function(rphy, ic) {
     ## CONTROL OBJECT
     ct=list(binary=TRUE, ultrametric=FALSE)
     ct[names(control)]=control
-    
+
     ## MATCHING and major problems
     td=treedata(phy, dat, sort=TRUE, warnings=FALSE)
     phy=reorder(td$phy, "postorder")
@@ -294,9 +294,9 @@ function(rphy, ic) {
 
 	## RESOLVE SE
     seTMP=structure(rep(NA, length(dat)), names=names(dat))
-    
+
 	if(is.null(SE)) SE=NA
-    
+
     if(length(SE)>1){
         if(is.null(names(SE))) stop("'SE' should be a named vector")
         if(!all(names(dat)%in%names(SE))) stop("names in 'SE' must all occur in names of 'dat'")
@@ -310,15 +310,15 @@ function(rphy, ic) {
             SE=seTMP
         }
     }
-    
+
     if(!all(is.na(SE) | SE >= 0)) stop("'SE' values should be positive (including 0) or NA")
-  
+
     ## CACHE tree
     cache=.cache.tree(phy)
     N=cache$n.tip
     n=cache$n.node
     m<-s<-g<-numeric(N+n)
-    
+
     ## RESOLVE data: given trait values (m and g) and SE (s) for every node (tips and internals)
     g[1:N]=1
     m[]=NA; m[1:N]=dat
@@ -333,18 +333,18 @@ function(rphy, ic) {
         attr(vec, "given")=g
         attr(vec, "adjse")=as.numeric(is.na(s))[1:N]
     }
-     	
+
 	cache$SE=SE
 	cache$dat=dat[match(phy$tip.label, names(dat))]
 	cache$phy=phy
-    
+
     cache$y=vec
 
     return(cache)
 }
 
 .cache.y.nodes=function(m, s, g, nn, phy, nodes){
-    
+
     if(is.numeric(nodes) & is.vector(nodes)){
         if(!all(names(nodes)%in%nn)) stop("'nodes' must have (integer) names corresponding to the internal nodes of 'phy'")
         nodes=data.frame(cbind(node=as.integer(names(nodes)), mean=nodes, SE=0), stringsAsFactors=FALSE)
@@ -364,30 +364,30 @@ function(rphy, ic) {
             if(!is.numeric(nodes$mean) | !is.numeric(nodes$SE)){
                 stop("'nodes' must have numeric vectors for 'mean' and 'SE'")
             }
-            
+
             if(!all(zz<-unique(c(as.character(nodes$taxon1), as.character(nodes$taxon2)))%in%phy$tip.label)){
                 stop(paste("Some taxa appear missing from 'phy':\n\t", paste(zz[!zz%in%phy$tip.label], collapse="\n\t", sep=""), sep=""))
             }
-            
+
             nodes$node=apply(nodes[,c("taxon1", "taxon2")], 1, .mrca, phy=phy)
         }
-        
+
         if(!length(unique(nodes$node))==nrow(nodes)) {
             stop("Some nodes multiply constrained:\n\t", paste(nodes$node[duplicated(nodes$node)], collapse="\n\t", sep=""), sep="")
         }
     }
-    
+
     nidx=nodes$node
     if(any(g[nidx]==1->zz)) stop("Some nodes already constrained:\n\t", paste(nidx[which(zz)], collapse="\n\t", sep=""), sep="")
-    
+
     m[nidx]=as.numeric(nodes$mean)
     s[nidx]=as.numeric(nodes$SE)
     g[nidx]=1
-    
+
  	vec=rbind(m=m, s=s)
    	attr(vec, "given")=g
    	attr(vec, "adjse")=as.numeric(is.na(s))
-    
+
 	vec
 }
 
@@ -404,8 +404,8 @@ function(rphy, ic) {
 
 	lnR=(heat * lnLikelihoodRatio) + (heat * lnp) + lnh
 
-	r=.assess.lnR(lnR)	
-	
+	r=.assess.lnR(lnR)
+
 	if(r$error) .error.rjmcmc(gen, subprop, cur.lnL, new.lnL, lnLikelihoodRatio, lnp, lnh, control$errorlog)
 	return(r)
 }
@@ -419,9 +419,9 @@ function(rphy, ic) {
 		r=0
 	} else {
 		if(lnR < -20) {
-			r=0 
+			r=0
 		} else if(lnR >= 0) {
-			r=1 
+			r=1
 		} else {
 			r=exp(lnR)
 		}
@@ -429,6 +429,3 @@ function(rphy, ic) {
 	}
 	return(list(r=r, error=error))
 }
-
-
-
