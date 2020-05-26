@@ -1353,11 +1353,13 @@ argn.mkn=function(x, ...){
 }
 
 ## tree transformation
-rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "lambda", "kappa", "delta", "white", "depth"), ...){
+rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", 
+	"lambda", "kappa", "delta", "white", "depth"), ...){
 
 	phy=x
 
-	model=match.arg(model, c("BM", "OU", "EB", "nrate", "lrate", "trend", "lambda", "kappa", "delta", "white", "depth"))
+	model=match.arg(model, c("BM", "OU", "EB", "nrate", "lrate", "trend", "lambda", 
+		"kappa", "delta", "white", "depth"))
 
 	if(!"phylo"%in%class(phy)) stop("supply 'phy' as a 'phylo' object")
 
@@ -1377,7 +1379,9 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	class(FUN)=c("transformer", "function")
 	dots=list(...)
 	if(!missing(...)) {
-        if(!all(names(dots)%in%argn(FUN))) stop(paste("The following parameters are expected:\n\t", paste(argn(FUN), collapse="\n\t", sep=""), sep=""))
+        if(!all(names(dots)%in%argn(FUN))) 
+			stop(paste("The following parameters are expected:\n\t", paste(argn(FUN), 
+				collapse="\n\t", sep=""), sep=""))
         return(FUN(...))
     } else {
     	return(FUN)
@@ -1565,7 +1569,6 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", "
 	attr(z,"argn")=c("lambda", "sigsq")
 	return(z)
 }
-
 
 
 # tree transformation
