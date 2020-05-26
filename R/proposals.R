@@ -84,7 +84,7 @@ dcount=function(x, FUN, ...){
 
 ## PROPOSAL UTILITY ##
 .check.lim=function(x, lim=list(min=0,max=Inf), ...){
-    
+
     ff=function(at.bound=TRUE){
         return(at.bound)
     }
@@ -110,7 +110,7 @@ function(phy, scalars){
 	FUN=function(x){
 		if(x!=n) return(NA) else return(log(1))
 	}
-	
+
 	g=0
 	attr(g,"count")=n
 	attr(g,"cumsum")=1
@@ -121,17 +121,17 @@ function(phy, scalars){
 ## PRIOR DISTRIBUTIONS ##
 # truncated poisson probability mass vector
 dtpois=function(x, min, max, log=TRUE, ...){
-		
+
 	if(any(x>max)){
 		max=max(x)
 		warning("'max' is inconsistent with 'x'")
 	}
-		
+
 	if(any(x<min)){
 		min=min(x)
 		warning("'min' is inconsistent with 'x'")
 	}
-	
+
 	y=dpois(min:max, log=TRUE, ...)
 	yp=exp(y)
 	if(log){
@@ -143,7 +143,7 @@ dtpois=function(x, min, max, log=TRUE, ...){
 		if(any(yp==0)) warning("Probability mass for some 'x' is effectively zero.")
 		y=yp*(1/sum(yp))
 	}
-	
+
 	nm=min:max
 	z=y[match(x, nm)]
 
@@ -157,12 +157,12 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 #	log: whether to use log density
 #	max: upper limit on the range of integers
 #	min: typically 1 unless 'x' does not involve 0
-		
+
 	if(any(x>max)){
 		max=max(x)
 		warning("'max' is inconsistent with 'x'")
 	}
-	
+
 	if(min<1){
 		tmp=max(c(1,min(x)))
 		if(tmp!=min) {
@@ -170,22 +170,22 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 			min=tmp
 		}
 	}
-	
+
 	if(any(x==0) && !is.numeric(dzero)) stop("Probability mass at zero must be supplied.")
-	
+
 	const=log(max)-log(min)
 	xx=min:max
 	y=1/(xx*const)
 	names(y)=xx
-	
+
 	if(is.numeric(dzero) && dzero>0){
 		sumd=sum(y)
 		dz=dzero*sumd
 		names(dz)=0
 		y=c(dz,y)
 	}
-	
-	
+
+
 	s=sum(y)
 	y=y*(1/s)
 	z=y[match(x, names(y))]
@@ -206,10 +206,10 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 	root=cache$root
 	rootd=fdesc[[root]]
 	nm=phy$edge[,2]
-	
+
 	bb=delta
 	vv=x
-	
+
 	.shifts.simulation <- function(phy, exclude=NULL)
 	{
 		drp=phy$edge[,2]%in%exclude
@@ -217,7 +217,7 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 		nd=nm[sample(1:length(nm), 1)]
 		nd
 	}
-	
+
 	.splitrate <-
 	function(value, n.desc, n.split, lim=list(min=0, max=Inf)){
 		if(!.check.lim(value, lim)) stop("Rate appears out of bounds.")
@@ -225,12 +225,12 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 			u=runif(1, -n.desc*value, n.split*value)
 			nr.desc=value+u/n.desc
 			nr.split=value-u/n.split
-			
+
 			if(.check.lim(c(nr.desc, nr.split), lim)) break()
 		}
 		return(list(nr.desc=nr.desc, nr.split=nr.split))
 	}
-	
+
 	.splitvalue <-
 	function(cur.vv, n.desc, n.split, factor=log(2)){
 		dev=cur.vv-.adjustvalue(cur.vv, factor)
@@ -238,8 +238,8 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 		nr.split=cur.vv - dev/n.split
 		return(list(nr.desc=nr.desc, nr.split=nr.split))
 	}
-	
-	
+
+
 	s=.shifts.simulation(cache$phy, exclude=control$excludeSHIFT)
 	marker=match(s, nm)
 	if(s%in%rootd){
@@ -261,12 +261,12 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 	}
 	new.vv=vv
 	cur.vv=vv[marker]
-    
+
 	shifts=nm[bb>0]
 	K=sum(bb)
 	Nk=nrow(phy$edge)-length(control$excludeSHIFT)
 	logspace=TRUE
-	
+
 	if(sum(new.bb)>sum(bb)) {			## add transition: SPLIT
         if(sum(new.bb)==Nk){
             return(list(x=x, delta=delta, lnpriorproposalRatio=0, decision="none")) ## CANNOT SPLIT
@@ -285,7 +285,7 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 		new.vv[vv==cur.vv]=nr.split
 		ms=match(nd.desc, nm)
 		new.vv[ms]=nr.desc
-		
+
         ###
         lnpriorproposalRatio=.lnpriorhastings_ratio.split(K=K, N=Nk, r=cur.vv, r_i=nr.split, r_j=nr.desc, n_i=n.split, n_j=n.desc, fun_k=control$dlnSHIFT, fun_v=control$dlnRATE, delta=1)
 	} else {							## drop transition: MERGE
@@ -305,18 +305,18 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 			nr=(sis.vv*ns.vv+cur.vv*ca.vv)/(ca.vv+ns.vv)
 			new.vv[vv==cur.vv | vv==sis.vv]=nr
 		}
-		
+
         ###
         lnpriorproposalRatio=.lnpriorhastings_ratio.merge(K=K, N=Nk, r=nr, r_i=cur.vv, r_j=anc.vv, n_i=ca.vv, n_j=na.vv, fun_k=control$dlnSHIFT, fun_v=control$dlnRATE)
 	}
-	
+
 	new.values=new.vv
-	
+
 	return(list(x=new.vv, delta=new.bb, lnpriorproposalRatio=lnpriorproposalRatio, decision=decision))
 }
 
 ## PROPOSAL MECHANISM ##
-#author: JM EASTMAN and J UYEDA 2013 
+#author: JM EASTMAN and J UYEDA 2013
 .lnpriorhastings_ratio.split=function(K, N, r, r_i, r_j, n_i, n_j, fun_k, fun_v, delta=1){
     #K: number of current shifts
     #N: number of tips in bifurcating tree
@@ -333,29 +333,29 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
     #priors
     lpk1=fun_k(K+1)
     lpk=fun_k(K)
-    
+
     lpri=fun_v(r_i)
     lprj=fun_v(r_j)
     lpr=fun_v(r)
-    
+
     #proposals
     vi=-r_i*n_i
     vj=r_j*n_j
-    
+
     lk1=log(K+1)
     ln2k=log(2*N-2-K)
     lvij=log(vj-vi)
     lnij=log(n_i+n_j)
     ldelta=log(delta)
-    
+
     num=lpk1+lk1+lpri+lprj+lvij+lnij+ldelta
     den=lpk+ln2k+lpr
-    
+
     num-den
 }
 
 ## PROPOSAL MECHANISM ##
-#author: JM EASTMAN and J UYEDA 2013 
+#author: JM EASTMAN and J UYEDA 2013
 .lnpriorhastings_ratio.merge=function(K, N, r, r_i, r_j, n_i, n_j, fun_k, fun_v){
     #K: number of current shifts
     #N: number of tips in bifurcating tree
@@ -366,23 +366,23 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
     #n_j: number of branches in class j
     #fun_k: log-prior function for shifts
     #fun_k: log-prior function for rates
-    
+
     #  from J UYEDA
     #priors
     lpk1=fun_k(K-1)
     lpk=fun_k(K)
-    
+
     lpri=fun_v(r_i)
     lprj=fun_v(r_j)
     lpr=fun_v(r)
-    
+
     #proposals
     lninj=log(n_i*n_j)
     lninj2=2*(log(n_i+n_j))
 
     lk=log(K)
     ln2k=log(2*N-1-K)
-    
+
     num=lpk1+ln2k+lpr+lninj
     den=lpk+lk+lpri+lprj+lninj2
 
@@ -397,7 +397,7 @@ dlunif=function(x, min=1, max, log=TRUE, dzero=NULL) {
 .adjustvalue <-
 function(value, prop.width) {
 # mod 10.20.2010 JM Eastman
-	
+
 	vv=value
 	if(runif(1)<0.95 | length(unique(vv))==1) {
 		rch <- runif(1, min = -prop.width, max = prop.width)
@@ -429,37 +429,37 @@ function(rate, prop.width) {
 #author: JM EASTMAN 2011
 # fixed bug (10/2012) concerning shifts round the root
 .adjustshift <- function(x, delta, rootv, control, cache){
-	
+
 	values=x
     rootv=rootv
 	fdesc=cache$desc$fdesc
 	phy=cache$phy
 	root=cache$root
-	
-	
+
+
 	root.des=fdesc[[root]]
 	names(delta)<-names(values)<-phy$edge[,2]
 	shifts=as.numeric(names(which(delta==1)))
 	node=shifts[sample(1:length(shifts),1)]
 	val=as.numeric(values[which(names(values)==node)])
-	
+
 	# select new node
 	tmp=.treeslide(node=node, up=NA, use.edges=FALSE, cache=cache)
 	newnode=tmp$node
 	direction=tmp$direction
-	
+
 	# store all current shifts
 	shifts=shifts[shifts!=node]
-	
+
 	# determine if new shift is non-permissible
 	if(newnode%in%c(node,shifts) | newnode%in%control$excludeSHIFT) {
 		return(list(new.delta=delta, new.values=values, lnHastingsRatio=0, direction="none"))
-	} else {		
-		
+	} else {
+
 		# update delta
 		new.delta=delta
 		new.delta[match(c(newnode, node),names(delta))]=1-delta[match(c(newnode, node),names(delta))]
-		
+
 		# update values
 		new.values=values
 		if(direction=="up") {
@@ -495,7 +495,7 @@ function(rate, prop.width) {
 function(jumps, add=FALSE, drop=FALSE, swap=FALSE, control, cache){
 	# jump.table: orient as with phy$edge[,2]
 	# jumps: list of nodes
-	
+
 	lim=control$jump.lim
 	if(lim!=1) stop("Cannot yet accommodate more than a single jump per branch.")
 	origjumps=jumps
@@ -506,15 +506,15 @@ function(jumps, add=FALSE, drop=FALSE, swap=FALSE, control, cache){
 	jnd=nd[xx]
 	nnd=c(nd[!(nd%in%c(jnd, control$excludeJUMP))])
 	lnh=0
-		
+
 	if(add==TRUE){
-		
+
 		ajnl=nnd[sample(1:length(nnd), 1)]
 #		h=(1/(length(jnd)+1)) / (1/length(nnd))
 #		lnh=log(h)
 		mm=match(ajnl,nd)
 		jumps[mm]=jumps[mm]+1
-		
+
 #		jj=.treeslide(node=NULL, use.edges=FALSE, cache=cache)$node
 #		if(jj%in%control$excludeJUMP){
 #			return(list(jumps=origjumps, lnHastingsRatio=0))
@@ -526,42 +526,42 @@ function(jumps, add=FALSE, drop=FALSE, swap=FALSE, control, cache){
 #		if(any(jumps>lim)) {
 #			return(list(jumps=origjumps, lnHastingsRatio=0))
 #		}
-				
+
 	} else if(drop==TRUE){
-		
+
 		if(length(jnd)) {
 			ajnl=jnd[sample(1:length(jnd), 1)]
 			mm=match(ajnl,nd)
 			jumps[mm]=jumps[mm]-1
 		}
-		
-		
+
+
 #		h=(1/(length(nnd)+1)) / (1/length(jnd))
 #		lnh=log(h)
-				
+
 #		if(!length(jnd)) {
 #			return(list(jumps=origjumps, lnHastingsRatio=0))
 #		}
-		
+
 		# select branch
-		
+
 #		if(drop==TRUE) {
-#			
+#
 #			jumps[mm]=jumps[mm]-1
 #			node.from=ajl
 #			node.to=NULL
-#			
+#
 #			h = (1/length(nnd)) / (1/length(jnd))
 #			lnh=log(h)
 #			todo="drop"
-			
+
 	} else if(swap==TRUE){
 		if(length(nnd)){
-			
+
 			ajl = jnd[sample(1:length(jnd),1)]
 			mm = match(ajl, nd)
 			jumps[mm]=jumps[mm]-1
-			
+
 			ajnl=nnd[sample(1:length(nnd), 1)]
 			nn=match(ajnl, nd)
 			jumps[nn]=jumps[nn]+1
@@ -569,24 +569,24 @@ function(jumps, add=FALSE, drop=FALSE, swap=FALSE, control, cache){
 
 #		h=(1/length(nnd)) / (1/length(jnd))
 #		lnh=log(h)
-		
-		
-		
-		
+
+
+
+
 #		ajnl<-tmp$node
 #		if(ajnl%in%control$excludeJUMP){
 #			return(list(jumps=origjumps, lnHastingsRatio=0))
-#		} 
-		
+#		}
+
 #		if(any(jumps>lim)) {
 #			return(list(jumps=origjumps, lnHastingsRatio=0))
 #		}
-		
+
 #		from=ajl
 #		to=ajnl
 #			print(c(from,to))
 #		todo="swap"
-		
+
 #		direction=tmp$direction
 #		if(from==to) {
 #			lnh=0
@@ -616,12 +616,12 @@ function(jumps, add=FALSE, drop=FALSE, swap=FALSE, control, cache){
 #				print("here")
 				#			}
 
-			
-		
+
+
 	} else {
 		stop("Must 'add', 'drop', or 'swap' jumps.")
 	}
-	
+
 	return(list(jumps=jumps, lnHastingsRatio=lnh))
 }
 
@@ -631,22 +631,22 @@ function(jumps, add=FALSE, drop=FALSE, swap=FALSE, control, cache){
 #author: JM EASTMAN 2011
 .treeslide <-
 function(node=NULL, up=NA, use.edges=FALSE, cache){
-	
+
 	phy=cache$phy
 	nd=phy$edge[,2]
 	root=cache$root
 	fdesc=cache$desc$fdesc
 	edges=cache$edge.length.cs
-	
+
 	# choose random node if none given
 	if(is.null(node)){
 		if(!use.edges) node=nd[sample(1:length(nd), 1)] else node=nd[min(which(runif(1, max=max(edges))<edges))]
 		return(list(node=node, direction="none"))
 	} else {
-		
+
 		# choose direction if none given
 		if(is.na(up)) up=as.logical(round(runif(1)))
-		
+
 		if(up){
 			choice.tmp=.get.ancestor.of.node(node,phy)
 			if(choice.tmp==root){	# choice traverses around root
@@ -685,9 +685,9 @@ function(node=NULL, up=NA, use.edges=FALSE, cache){
 				direction="down"
 			}
 		}
-		
+
 		return(list(node=choice, direction=direction))
-	}	
+	}
 }
 
 
@@ -722,14 +722,14 @@ function(vv, node, value, exclude=NULL, cache){
 
 
 ## PROPOSAL UTILITY ##
-.opensubtree.phylo=function (node, phy, adesc, exclude = NULL) 
+.opensubtree.phylo=function (node, phy, adesc, exclude = NULL)
 {
 	N=as.integer(Ntip(phy))
 	n=as.integer(Nnode(phy))
 	node=as.integer(node)
 	exclude=as.integer(exclude)
 	dat=list(N=N, n=n, node=node, exclude=exclude)
-	res=.Call("open_subtree", dat=dat, desc=adesc, package="geiger")
+	res=.Call("open_subtree", dat=dat, desc=adesc, PACKAGE="geiger")
 	res
 }
 
@@ -744,21 +744,21 @@ function(rates, control) {
 	prop.width=control$prop.width
 	tuner=control$tune.scale
 	lim=control$rate.lim
-	
+
 	ss=rates[sample(1:length(rates), 1)]
 	ww=which(rates==ss)
-	
+
 	if(runif(1)<tuner){
 		nn=.proposal.slidingwindow(ss, prop.width, lim)
 	} else {
 		nn=.proposal.multiplier(ss, prop.width, lim)
 	}
-	
+
 	nv=nn$v
 	new.rates=rates
 	new.rates[ww]=nv
 	lhr=nn$lnHastingsRatio
-	
+
 	return(list(values=new.rates, lnHastingsRatio=lhr))
 
 }
@@ -771,22 +771,22 @@ function(values, control) {
 	prop.width=control$prop.width
 	tuner=control$tune.scale
 	lim=control$root.lim
-	
+
 	ss=values[sample(1:length(values), 1)]
-	ww=which(values==ss)	
-	
+	ww=which(values==ss)
+
 	if(runif(1)<tuner){
 		nn=.proposal.slidingwindow(ss, prop.width, lim)
 	} else {
 		nn=.proposal.multiplier(ss, prop.width, lim)
 	}
-	
+
 	nv=nn$v
 	lhr=nn$lnHastingsRatio
 	lpr=0
-	
+
 	values[ww]=nv
-	
+
 	return(list(values=values, lnHastingsRatio=lhr, lnPriorRatio=lpr))
 }
 
@@ -801,20 +801,20 @@ function(values, control) {
 	prop.width=control$prop.width
 	tuner=control$tune.scale
 	lim=control$se.lim
-	
+
 	ss=values[sample(1:length(values), 1)]
-	ww=which(values==ss)	
-	
+	ww=which(values==ss)
+
 	if(runif(1)<tuner){
 		nn=.proposal.slidingwindow(ss, prop.width, lim)
 	} else {
 		nn=.proposal.multiplier(ss, prop.width, lim)
 	}
-	
+
 	nv=nn$v
 	lhr=nn$lnHastingsRatio
 	lpr=0
-	
+
 	values[ww]=nv
 
 	return(list(values=values, lnHastingsRatio=lhr, lnPriorRatio=lpr))
@@ -829,11 +829,11 @@ function(values, control) {
 	if(!.check.lim(value, lim)) stop("Values appear out of bounds.")
 	min=lim$min
 	max=lim$max
-	
+
 	while(1){
 		u=runif(1)
 		v=value+(u-0.5)*prop.width
-		
+
 		# reflect if out-of-bounds
 		if(any(v>max)) {
 			v[v>max]=max-(v[v>max]-max)
@@ -843,7 +843,7 @@ function(values, control) {
 		}
 		if(.check.lim(v, lim)) break()
 	}
-		
+
 	return(list(v=v, lnHastingsRatio=0))
 }
 
@@ -854,7 +854,7 @@ function(values, control) {
 # from Lakner et al. 2008 Syst Biol
 .proposal.multiplier <- function(value, prop.width, lim=list(min=-Inf, max=Inf)){
 	if(!.check.lim(value, lim)) stop("Values appear out of bounds.")
-	
+
 #	tmp=c(prop.width, 1/prop.width)
 #	a=min(tmp)
 #	b=max(tmp)
@@ -867,6 +867,3 @@ function(values, control) {
 	}
 	return(list(v=v, lnHastingsRatio=log(m)))
 }
-
-
-

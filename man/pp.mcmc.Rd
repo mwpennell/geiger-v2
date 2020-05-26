@@ -18,12 +18,12 @@ pp.mcmc(phy, d, Ngens = 1000000, sampleFreq = 1000, printFreq = 1000,
 A time calibrated phylogeny in "phylo" format
 }
   \item{d}{
-A named vector or dataframe of trait values. 
+A named vector or dataframe of trait values.
 }
   \item{Ngens}{
-Number of generations that the posterior predictive MCMC will run for. Default is 1 million generations 
+Number of generations that the posterior predictive MCMC will run for. Default is 1 million generations
 }
- 
+
   \item{sampleFreq}{
 The frequency with which model parameters will be sampled from the chain and simulations run. Default is every 1000 generations
 }
@@ -43,7 +43,7 @@ The type of exponential change model assumed. If eb.type = "exponential" (the de
 }
 
 \item{clade }{
-Default = NULL and is used if model = "BM" or model = "EB". If using model = "edge.shift", then a clade must be specified for which the stem lineage experiences a different rate of evolution. The clade is specified by giving the names of two taxa spanning the clade of interest, e.g. clade = c("A", "B") 
+Default = NULL and is used if model = "BM" or model = "EB". If using model = "edge.shift", then a clade must be specified for which the stem lineage experiences a different rate of evolution. The clade is specified by giving the names of two taxa spanning the clade of interest, e.g. clade = c("A", "B")
 }
 
 \item{rlm.maxit}{
@@ -102,41 +102,40 @@ nht.rlm <- nh.test(phy, dat, regression.type = "rlm",
 
 mdi.exp <- 0
 
-#---- run short pp.mcmc 
+#---- run short pp.mcmc
 
 pp.eb <- pp.mcmc(phy, dat, Ngens = 1000, sampleFreq = 10, printFreq = 100, model ="EB")
 
 # ---- plot results
 
-quartz(width = 5, height = 7)
+# quartz(width = 5, height = 7)
 par(mar = c(4,5,1,1))
 par(mfcol = c(3,1))
 
 
-hist(pp.eb$MDI, col = "gray", border = "gray", main = NULL, xlab = "pp.MDI", 
+hist(pp.eb$MDI, col = "gray", border = "gray", main = NULL, xlab = "pp.MDI",
 ylab = "Frequency", cex.axis = 1.2)
 
 abline(v = mdi.exp, col = "black", lwd = 3, lty = 2)
 
 mdi.p <- length(which(pp.eb$MDI<=0))/length(pp.eb$MDI)
 
-hist(pp.eb$node.height.slope.lm, col = "gray", border = "gray", main = NULL, xlab = "pp.nht_ols", 
+hist(pp.eb$node.height.slope.lm, col = "gray", border = "gray", main = NULL, xlab = "pp.nht_ols",
 ylab = "Frequency", cex.axis = 1.2)
 
 abline(v = nht.ols, col = "black", lwd = 3, lty = 2)
 
-node.height.ols.p <- length(which(pp.eb$node.height.slope.lm <= nht.ols)) / 
+node.height.ols.p <- length(which(pp.eb$node.height.slope.lm <= nht.ols)) /
 (length(pp.eb$node.height.slope.lm) +1)
 
 
-hist(pp.eb$node.height.slope.rlm, col = "gray", border = "gray", main = NULL, xlab = "pp.nht_ols", 
+hist(pp.eb$node.height.slope.rlm, col = "gray", border = "gray", main = NULL, xlab = "pp.nht_ols",
 ylab = "Frequency", cex.axis = 1.2)
 
 abline(v = nht.rlm, col = "black", lwd = 3, lty = 2)
 
-node.height.rr.p <- length(which(pp.eb$node.height.slope.rlm <= nht.rlm)) / 
+node.height.rr.p <- length(which(pp.eb$node.height.slope.rlm <= nht.rlm)) /
 (length(pp.eb$node.height.slope.rlm) +1)
 
 }
 }
-

@@ -71,8 +71,12 @@ disparity <- function(phy=NULL, data, index=c("avg.sq", "avg.manhattan", "num.st
 	}
 	else if(disp=="num.states") {
 		f<-function(x) length(unique(x))
-		d<-apply(data, 2, f)
-		r<-mean(d)
+		if(!is.null(dim(data))) {
+		  d<-apply(data, 2, f)
+		  r<-mean(d)
+		} else {
+		  r<-f(d)
+		}
 	}
 	else r<-0;
 	return(r)

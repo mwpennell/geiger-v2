@@ -46,7 +46,7 @@ ncores=NULL, ...
 	ct[names(control)]=control
 	if(ct$niter<2) stop("'niter' must be equal to or greater than 2")
 	ct$hessian_P=1-ct$CI
-	
+
 	if(length(model)==1) {
 		if(model=="trend") model<-"rate_trend"
 		else if(model=="drift") model<-"mean_trend"
@@ -384,7 +384,7 @@ bm.lik=function(phy, dat, SE = NA, model=c("BM", "OU", "EB", "rate_trend", "lamb
         #print(datC)
         parsC=as.numeric(rep(sigsq, n.cache$z))
 
-        out = .Call("bm_direct", dat = datC, pars = parsC, package = "geiger")
+        out = .Call("bm_direct", dat = datC, pars = parsC, PACKAGE = "geiger")
         loglik <- sum(out$lq)
 		if(is.na(loglik)) loglik=-Inf
         attr(loglik, "ROOT.MAX")=out$initM[datC$root]
@@ -864,7 +864,7 @@ ncores=NULL,
 			   }
 			   })
 	if(any(chk)){
-		if(suppressWarnings) 
+		if(suppressWarnings)
 			warning(paste("\nParameter estimates appear at bounds:\n\t", paste(names(par)[chk], collapse="\n\t", sep=""), sep=""))
 	}
 
