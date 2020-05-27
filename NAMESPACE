@@ -168,3 +168,5 @@ importFrom("utils", "installed.packages", "modifyList",
            "packageDescription", "packageVersion", "read.table",
            "setTxtProgressBar", "tail", "txtProgressBar",
            "write.table")
+importFrom("phytools", "fitMk", "matchNodes")
+

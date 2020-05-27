@@ -8,7 +8,7 @@ as.Qmatrix<-function(x,...){
 as.Qmatrix.default<-function(x, ...){
 	warning(paste(
 		"as.Qmatrix does not know how to handle objects of class ",
-		class(object),"."))
+		class(x),"."))
 }
 
 as.Qmatrix.gfit<-function(x,...){
