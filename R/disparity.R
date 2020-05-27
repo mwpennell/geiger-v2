@@ -42,7 +42,6 @@ disparity <- function(phy=NULL, data, index=c("avg.sq", "avg.manhattan", "num.st
 		nb.tip <- length(td$phy$tip.label)
 		nb.node <- td$phy$Nnode
 		result<-numeric()
-
 		for(i in 1:nb.node) {
 			l<-desc[[nb.tip+i]]
 			d<-td$data[phy$tip.label[l],]
@@ -75,7 +74,7 @@ disparity <- function(phy=NULL, data, index=c("avg.sq", "avg.manhattan", "num.st
 		  d<-apply(data, 2, f)
 		  r<-mean(d)
 		} else {
-		  r<-f(d)
+		  r<-f(data)
 		}
 	}
 	else r<-0;
@@ -189,29 +188,38 @@ dtt<-function(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"), mdi.r
 	dtt.data<-.dtt(td$phy, td$data, disp=disp)
 	ltt<-sort(branching.times(td$phy), decreasing=TRUE)
 	ltt<-c(0, (max(ltt)-ltt)/max(ltt));
+	
+	if(disp=="num.states") {
+	  warning("Simulations and MDI calculation not currently supported for dtt with discrete traits")
+	  nsim=0
+	  ylim=c(range(pretty(dtt.data)))
+	  dtt.sims=NULL
+	  MDI=NULL
+	} else {
 
-	s<-ratematrix(td$phy, td$data)
-	dtt.sims=NULL
-	MDI=NULL
+	  s<-ratematrix(td$phy, td$data)
+	  dtt.sims=NULL
+	  MDI=NULL
 
     ylim=c(range(pretty(dtt.data)))
 
-	if(is.numeric(nsim)){
-		if(nsim>0){
-			sims<-sim.char(td$phy, s, nsim)
+	  if(is.numeric(nsim)){
+		  if(nsim>0){
+			  sims<-sim.char(td$phy, s, nsim)
 
-			dtt.sims<-.dtt(td$phy, sims)
-			mean.sims<-apply(dtt.sims, 1, mean)
+			   dtt.sims<-.dtt(td$phy, sims)
+			   mean.sims<-apply(dtt.sims, 1, mean)
             median.sims<-apply(dtt.sims, 1, median)
 
 
-			MDI<-unname(.area.between.curves(ltt, apply(dtt.sims, 1, median), dtt.data, sort(mdi.range)))
+			   MDI<-unname(.area.between.curves(ltt, apply(dtt.sims, 1, median), dtt.data, sort(mdi.range)))
             names(MDI)=disp
-			colnames(dtt.sims)=NULL
+			   colnames(dtt.sims)=NULL
 
-            yy=range(dtt.sims)
-            ylim=range(c(ylim, yy))
-		}
+          yy=range(dtt.sims)
+          ylim=range(c(ylim, yy))
+		    }
+	  }
 	}
 
 	if(plot){
@@ -244,4 +252,39 @@ getMDIp<-function(dttRes) {
 	mdis<-apply(dttRes$sim,2,foo)
 	pVal<-length(which(mdis>=0))/length(mdis)
 	return(pVal)
+}
+
+getPars<-function (bt, xx, model, Q, tree, tol, m, liks = TRUE, pi, args = list()) 
+{
+  if (!is.null(args$pi)) 
+    args$pi <- NULL
+  args <- c(list(tree = bt, x = xx, model = model, fixedQ = Q, 
+                 output.liks = liks, pi = pi), args)
+  obj <- do.call(fitMk, args)
+  N <- length(bt$tip.label)
+  II <- obj$index.matrix + 1
+  lvls <- obj$states
+  if (liks) {
+    L <- obj$lik.anc
+    rownames(L) <- N + 1:nrow(L)
+    if (!is.binary(tree)) {
+      ancNames <- matchNodes(tree, bt)
+      L <- L[as.character(ancNames[, 2]), ]
+      rownames(L) <- ancNames[, 1]
+    }
+    L <- rbind(xx, L)
+    rownames(L)[1:N] <- 1:N
+  }
+  else L <- NULL
+  Q <- matrix(c(0, obj$rates)[II], m, m, dimnames = list(lvls, 
+                                                         lvls))
+  if (any(rowSums(Q, na.rm = TRUE) < tol)) {
+    message(paste("\nWarning: some rows of Q not numerically distinct from 0; setting to", 
+                  tol, "\n"))
+    ii <- which(rowSums(Q, na.rm = TRUE) < tol)
+    for (i in 1:length(ii)) Q[ii[i], setdiff(1:ncol(Q), ii[i])] <- tol/(ncol(Q) - 
+                                                                          1)
+  }
+  diag(Q) <- -rowSums(Q, na.rm = TRUE)
+  return(list(Q = Q, L = L, loglik = logLik(obj)))
 }
