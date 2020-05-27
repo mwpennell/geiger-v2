@@ -7,6 +7,9 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	initialE <- init[["epsilon"]];
 	initialR <- init[["r"]];
 	sp = c(initialR, initialE);
+	
+	## Medusa requires cladewise trees, so:
+	phy<-reorder(phy, "cladewise")
 
 	## Determine whether multiple cores can be used (i.e. non-Windows, non-GUI).
 	## This is apparently breaking the build. Fix!
