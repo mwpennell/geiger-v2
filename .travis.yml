@@ -4,16 +4,17 @@ warnings_are_errors: TRUE
 
 before_install:
 - sudo apt-get install libgmp3-dev
-- export RGL_USE_NULL=TRUE 
+- sudo apt-get install libmagick++-dev
+- export RGL_USE_NULL=TRUE
 
 script:
 - R CMD build .
 - travis_wait 45 R CMD check *tar.gz --as-cran
-  
+
 #after_success:
 #  - Rscript -e 'covr::codecov()'
 
-  
+
 #before_install:
 #  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
 #  - chmod 755 ./travis-tool.sh
