@@ -184,6 +184,11 @@ function(phy, d, model = c("BM", "Trend", "SSP", "ACDC.exp", "ACDC.lin"), Ngens 
 	
 	if(!is.null(root.prior)) {if(length(root.prior) < 2)  {stop(" if using a fossil prior on the root, you must specify distribution parameters using the root.prior argument") }};
 	
+	if(model=="EB") stop("EB is now an invalid option, please choose one of ACDC.lin or ACDC.exp; see documentation for more details.")
+	  
+	model=match.arg(model, c("BM", "Trend", "SSP", "ACDC.exp", "ACDC.lin"))
+	
+	
 	if(model == "ACDC.exp" | model == "ACDC.lin") {		
 		if(is.null(acdc.prior)) {		
 		scaler.prior <- .acdc.prior(phy, model);
