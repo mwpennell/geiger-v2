@@ -1,5 +1,7 @@
 \name{fitDiscrete}
 \alias{fitDiscrete}
+\alias{as.Qmatrix}
+\alias{as.Qmatrix.gfit}
 \title{ Model fitting for discrete comparative data }
 \description{
 	fitting macroevolutionary models to phylogenetic trees
@@ -11,6 +13,7 @@ fitDiscrete(phy, dat,
     bounds = list(), control = list(method = c("subplex", "L-BFGS-B"),
     niter = 100, FAIL = 1e+200, hessian = FALSE, CI = 0.95), ncores=NULL,
     ...)
+\method{as.Qmatrix}{gfit}(x, ...)
 }
 \arguments{
   \item{phy}{ a phylogenetic tree of class phylo}
@@ -20,6 +23,7 @@ fitDiscrete(phy, dat,
   \item{bounds}{ range to constrain parameter estimates (see \bold{Details})  }
   \item{control}{ settings used for optimization of the model likelihood}
   \item{ncores}{ Number of cores. If \code{NULL} then number of cores is detected}
+  \item{x}{ Object of class \code{"gfit"} for S3 method \code{as.Qmatrix} }
   \item{...}{if \code{model="meristic"}, \code{...} can dictate whether the matrix is asymmetric (\code{symmetric=FALSE})}
 }
 \details{

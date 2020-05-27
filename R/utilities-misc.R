@@ -1,5 +1,29 @@
 .geigerwarn <- function(...) warning("the called function is currently in development and is not fully vetted", ...);
 
+as.Qmatrix<-function(x,...){
+	if(identical(class(x),"Qmatrix")) return(x)
+	UseMethod("as.Qmatrix")
+}
+
+as.Qmatrix.default<-function(x, ...){
+	warning(paste(
+		"as.Qmatrix does not know how to handle objects of class ",
+		class(object),"."))
+}
+
+as.Qmatrix.gfit<-function(x,...){
+	if("mkn"%in%class(x$lik)){
+		object<-.Qmatrix.from.gfit(x)
+		class(object)<-"Qmatrix"
+		return(object)
+	} else cat("\"gfit\" object does not appear to contain a Q matrix.\n")
+}
+
+print.Qmatrix<-function(x,...){
+	cat("Estimated Q matrix:\n")
+	print(unclass(x))
+}
+
 coef.gfit <- function(object, ...) {
     if (is.constrained(object$lik)) p=names(object$lik(argn(object$lik),pars.only=TRUE)) else p=argn(object$lik)
     if ("bm"%in%class(object$lik)) p=c(p, "z0");
