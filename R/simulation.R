@@ -135,8 +135,14 @@ sim.bdtree <- function (b=1, d=0, stop=c("taxa", "time"), n=100, t=4, seed=0, ex
 	
 	stop = match.arg(stop, c("taxa", "time"));
 	time.stop <- taxa.stop <- 0;
-	if (stop == "taxa") taxa.stop = n + 1;
-	if (stop == "time") time.stop = t;
+	if (stop == "taxa") {
+	  taxa.stop = n + 1;
+	  if(t!=4) warning("You have set the simulation to stop at a set number of taxa, but also set a time stopping parameter 't'. The time argument 't' will be ignored.")
+	}
+	if (stop == "time") {
+	  time.stop = t;
+	  if(n!=100) warning("You have set the simulation to stop at a set time, but also set a taxa stopping parameter 'n'. The taxon limit argument 'n' will be ignored.")
+	}
 	if (time.stop == 0 & taxa.stop == 0) stop("Stopping criterion ('n' or 't') must be provided");
 	if (seed == 0) {
 		seed = .set.seed.clock(print = FALSE);
