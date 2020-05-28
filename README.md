@@ -1,6 +1,6 @@
 # Geiger
 
-[![Build Status](https://travis-ci.org/mwpennell/geiger-v2.png?branch=master)](https://travis-ci.org/mwpennell/geiger-v2)
+[![Build Status](https://travis-ci.org/mwpennell/geiger-v2.svg?branch=master)](https://travis-ci.org/mwpennell/geiger-v2)
 
 This is the development version of the [geiger package](http://bioinformatics.oxfordjournals.org/content/30/15/2216) for manipulating phylogenetic comparative data
 and fitting macroevolutionary models. The package can be downloaded from CRAN
