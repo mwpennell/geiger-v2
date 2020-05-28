@@ -8,7 +8,7 @@ S3method(argn,default)
 S3method(argn,mkn)
 export("argn<-")
 S3method(as.phylo,hphylo)
-export(as.Qmatrix)
+export(as.Qmatrix.gfit)
 export(bd.km)
 export(bd.ms)
 export(BDsim)
@@ -130,7 +130,6 @@ export(startingpt.mecca)
 export(stem.limits)
 export(stem.p)
 S3method(as.Qmatrix, gfit)
-S3method(print, Qmatrix)
 S3method(subset, phylo)
 S3method(summary, name.check)
 S3method(print, name.check)
@@ -153,20 +152,21 @@ export(write.r8s)
 export(write.treePL)
 import(MASS, digest, deSolve, coda, mvtnorm, subplex, Rcpp, ape)
 importFrom("grDevices", "col2rgb", "dev.interactive", "dev.new",
-           "gray.colors", "rgb")
+	"gray.colors", "rgb")
 importFrom("graphics", "arrows", "layout", "legend", "lines", "mtext",
-           "par", "plot", "points", "polygon", "text")
+	"par", "plot", "points", "polygon", "text")
 importFrom("methods", "as", "hasArg")
 importFrom("stats", "anova", "approxfun", "as.formula", "coef",
-           "density", "dexp", "dist", "dnorm", "dpois", "dunif",
-           "ecdf", "end", "lm", "logLik", "manova", "median",
-           "na.omit", "optim", "optimize", "qnorm", "quantile",
-           "reorder", "rexp", "rnorm", "runif", "sd", "spline",
-           "start", "summary.manova", "uniroot", "var",
-           "weighted.mean")
+	"density", "dexp", "dist", "dnorm", "dpois", "dunif",
+	"ecdf", "end", "lm", "logLik", "manova", "median",
+	"na.omit", "optim", "optimize", "qnorm", "quantile",
+	"reorder", "rexp", "rnorm", "runif", "sd", "spline",
+	"start", "summary.manova", "uniroot", "var",
+	"weighted.mean")
 importFrom("utils", "installed.packages", "modifyList",
-           "packageDescription", "packageVersion", "read.table",
-           "setTxtProgressBar", "tail", "txtProgressBar",
-           "write.table")
-importFrom("phytools", "fitMk", "matchNodes")
+	"packageDescription", "packageVersion", "read.table",
+	"setTxtProgressBar", "tail", "txtProgressBar",
+	"write.table")
+importFrom("phytools", "as.Qmatrix", "fitMk", "matchNodes",
+	"print.Qmatrix")
 

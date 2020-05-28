@@ -1,6 +1,5 @@
 \name{fitDiscrete}
 \alias{fitDiscrete}
-\alias{as.Qmatrix}
 \alias{as.Qmatrix.gfit}
 \title{ Model fitting for discrete comparative data }
 \description{
