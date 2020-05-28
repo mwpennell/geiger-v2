@@ -7,6 +7,8 @@ before_install:
 - sudo apt-get install libmagick++-dev
 - export RGL_USE_NULL=TRUE
 
+r_github_packages: liamrevell/phytools
+
 script:
 - R CMD build .
 - travis_wait 45 R CMD check *tar.gz --as-cran
