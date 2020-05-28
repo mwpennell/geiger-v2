@@ -15,7 +15,7 @@ heights.phylo=function(x){
 	labs = c(phy$tip.label, phy$node.label)
 	depth = max(xx)
 	tt = depth - xx # time to 'present day' of branch starts
-	#idx = 1:length(tt)
+	idx = 1:length(tt)
 	#dd = phy$edge.length[idx]
 	mm = match(1:length(tt), c(phy$edge[, 2], Ntip(phy) + 1))
 	dd = c(phy$edge.length, root)[mm] # reordered bls
@@ -1353,12 +1353,12 @@ argn.mkn=function(x, ...){
 }
 
 ## tree transformation
-rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend", 
+rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend",
 	"lambda", "kappa", "delta", "white", "depth"), ...){
 
 	phy=x
 
-	model=match.arg(model, c("BM", "OU", "EB", "nrate", "lrate", "trend", "lambda", 
+	model=match.arg(model, c("BM", "OU", "EB", "nrate", "lrate", "trend", "lambda",
 		"kappa", "delta", "white", "depth"))
 
 	if(!"phylo"%in%class(phy)) stop("supply 'phy' as a 'phylo' object")
@@ -1379,8 +1379,8 @@ rescale.phylo=function(x, model=c("BM", "OU", "EB", "nrate", "lrate", "trend",
 	class(FUN)=c("transformer", "function")
 	dots=list(...)
 	if(!missing(...)) {
-        if(!all(names(dots)%in%argn(FUN))) 
-			stop(paste("The following parameters are expected:\n\t", paste(argn(FUN), 
+        if(!all(names(dots)%in%argn(FUN)))
+			stop(paste("The following parameters are expected:\n\t", paste(argn(FUN),
 				collapse="\n\t", sep=""), sep=""))
         return(FUN(...))
     } else {
