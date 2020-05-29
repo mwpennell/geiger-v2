@@ -114,18 +114,6 @@ unique.phylo=function(x, incomparables=FALSE, ...){
 	}
 }
 
-unique.multiPhylo=function(x, incomparables=FALSE, ...){
-	phy=x
-	if(incomparables) warning("'incomparables' exerts no effect in this setting")
-	ss=sapply(phy, digest)
-	if(any(dd<-duplicated(ss))){
-		sub=phy[-which(dd)]
-		class(sub)="multiPhylo"
-		return(sub)
-	} else {
-		return(phy)
-	}
-}
 
 # wrapper for plot.phylo: plot tree with internal nodes labelled with ape numbering
 plotNN <- function (phy, time = TRUE, margin = TRUE, ...) {

@@ -169,4 +169,4 @@ importFrom("utils", "installed.packages", "modifyList",
 	"write.table")
 importFrom("phytools", "as.Qmatrix", "fitMk", "matchNodes",
 	"print.Qmatrix")
-
+importFrom("ape", "unique.multiphylo")

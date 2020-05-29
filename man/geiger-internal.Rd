@@ -75,7 +75,6 @@
 \alias{span.phylo}
 \alias{splitEdgeMatrixGeiger}
 \alias{ultrametricize.phylo}
-\alias{unique.multiPhylo}
 \alias{unique.phylo}
 \alias{white.mkn}
 \alias{write.pathd8}
@@ -89,4 +88,3 @@
 \details{
 This is an internal \pkg{geiger} function, either not intended to be called directly by the user or is currently undocumented.
 }
-
