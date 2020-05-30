@@ -236,7 +236,7 @@ load.rjmcmc <- function(x, phy=NULL, burnin = NULL, thin = NULL, ...){
 	# TREES: collect trees and resolve variable topologies
 	trees=lapply(raw, "[[", "phy")
 	class(trees)="multiPhylo"
-	uu=unique(trees)
+	uu=uniqueMultiPhylo(trees)
 	if(length(uu)>1){
 		if(is.null(phy)) stop("Encountered multiple topologies: a summary tree is necessary (supplied via the 'phy' argument)")
 	} else {
@@ -559,7 +559,7 @@ to.coda=function(obj){
     # ensure identity of trees
 	trees=sapply(samples, function(x) x$phy)
 	class(trees)="multiPhylo"
-	uu=unique(trees)
+	uu=uniqueMultiPhylo(trees)
 	if(length(uu)==1){
 		phy=uu[[1]]
 	} else {

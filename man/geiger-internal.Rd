@@ -76,6 +76,7 @@
 \alias{splitEdgeMatrixGeiger}
 \alias{ultrametricize.phylo}
 \alias{unique.phylo}
+\alias{uniqueMultiPhylo}
 \alias{white.mkn}
 \alias{write.pathd8}
 \alias{write.r8s}

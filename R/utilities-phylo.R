@@ -1880,3 +1880,16 @@ drop.random<-function (phy, n)
     r <- .drop.tip(phy, cut)
     return(r)
 }
+
+uniqueMultiPhylo=function(x, incomparables=FALSE, ...){
+	phy=x
+	if(incomparables) warning("'incomparables' exerts no effect in this setting")
+	ss=sapply(phy, digest)
+	if(any(dd<-duplicated(ss))){
+		sub=phy[-which(dd)]
+		class(sub)="multiPhylo"
+		return(sub)
+	} else {
+		return(phy)
+	}
+}
