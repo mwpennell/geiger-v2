@@ -8,16 +8,16 @@
 
 static double *parms_mkn;
 void initmod_mkn(void (* odeparms)(int *, double *)) {
-  DL_FUNC get_deSolve_gparms = 
+  DL_FUNC get_deSolve_gparms =
     R_GetCCallable("deSolve", "get_deSolve_gparms");
   parms_mkn = REAL(get_deSolve_gparms());
-} 
+}
 
 void initmod_mkn_pij(void (* odeparms)(int *, double *)) {
-  DL_FUNC get_deSolve_gparms = 
+  DL_FUNC get_deSolve_gparms =
     R_GetCCallable("deSolve", "get_deSolve_gparms");
   parms_mkn = REAL(get_deSolve_gparms());
-} 
+}
 
 /* Simplified matrix multiplication, assuming straightforward sizes
    and zeroing the input.  GEMM does:
@@ -35,14 +35,14 @@ void derivs_mkn_pij(int *neq, double *t, double *y, double *ydot,
   do_gemm(parms_mkn, k, k, y, k, k, ydot);
 }
 
-void initial_conditions_mkn(int k, double *x_l, double *x_r, 
+void initial_conditions_mkn(int k, double *x_l, double *x_r,
 			    double *x_out) {
   int i;
   for ( i = 0; i < k; i++ )
     x_out[i] = x_l[i] * x_r[i];
 }
 
-/* 
+/*
    This assumes that everything is going to be stored in row major,
    rather than column major, order
 */
@@ -57,9 +57,9 @@ void mkn_core(int k, int n, int *order, int *children, double *pij,
     y_in = branch_init + idx_k;
     y_out = branch_base + idx_k;
 
-    initial_conditions_mkn(k, 
+    initial_conditions_mkn(k,
 			   branch_base + k*children[idx*2],
-			   branch_base + k*children[idx*2 + 1], 
+			   branch_base + k*children[idx*2 + 1],
 			   y_in);
 
     do_gemm(pij + idx_k*k, k, k, y_in, k, 1, y_out);
@@ -77,9 +77,9 @@ void mkn_core(int k, int n, int *order, int *children, double *pij,
   idx = order[n];
   idx_k = idx * k;
   y_in = branch_init + idx_k;
-  initial_conditions_mkn(k, 
+  initial_conditions_mkn(k,
 			 branch_base + k*children[idx*2],
-			 branch_base + k*children[idx*2 + 1], 
+			 branch_base + k*children[idx*2 + 1],
 			 y_in);
 }
 
@@ -96,14 +96,14 @@ void r_mkn_core(int *k, int *n, int *order, int *children, double *pij,
    root
 
    And the precomputed results:
-   
+
    init
    base
    pij
 
    These need to be the *untransposed* calculations.
 */
-SEXP r_asr_marginal_mkn(SEXP r_k, SEXP r_pars, SEXP r_nodes, 
+SEXP r_asr_marginal_mkn(SEXP r_k, SEXP r_pars, SEXP r_nodes,
 			SEXP cache, SEXP res,
 			SEXP root_f, SEXP rho) {
   const int n_states = INTEGER(r_k)[0];
@@ -179,7 +179,7 @@ SEXP r_asr_marginal_mkn(SEXP r_k, SEXP r_pars, SEXP r_nodes,
 
 void asr_marginal_mkn_1(int k, int node, int root,
 			int *parent, int *children,
-			double *pij, double *branch_init, 
+			double *pij, double *branch_init,
 			double *branch_base, double *lq) {
   const int neq = k;
   int j, idx, idx_k, *kids;
@@ -210,8 +210,8 @@ void asr_marginal_mkn_1(int k, int node, int root,
     y_in = branch_init + idx_k;
     y_out = branch_base + idx_k;
     kids = children + idx * 2;
-    initial_conditions_mkn(neq, 
-			   branch_base + neq*kids[0], 
+    initial_conditions_mkn(neq,
+			   branch_base + neq*kids[0],
 			   branch_base + neq*kids[1], y_in);
   }
 }

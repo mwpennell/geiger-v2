@@ -3,25 +3,25 @@
 #include <vector>
 
 /* C++ | R INTERFACE; pruning algorithm of BM likelihood (based on diversitree:::make.bm.direct */
-RcppExport SEXP bm_direct (SEXP dat, SEXP pars) 
+RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 {
-	/* 
+	/*
 	 * all objects ordered from 1:(Nnode(phy)+Ntip(phy)) unless noted otherwise
-	 * dat: a list of elements 
+	 * dat: a list of elements
 		* len: edge lengths (vector)
 		* root: root ID
-		* y: tip data 
+		* y: tip data
 		* order: order of internal IDs for pruning algorithm
-	 * pars: rates associated with each branch 
+	 * pars: rates associated with each branch
 	 */
-		
+
 	try {
 		/* call in parameters associated with 'dat' object */
 		Rcpp::List cache(dat);
-		
+
 		int root = Rcpp::as<int>(cache["root"]);
 		int n = Rcpp::as<int>(cache["n"]);
-        
+
         double drift = Rcpp::as<double>(cache["drift"]);
 
 		std::vector<double> len = Rcpp::as<std::vector<double> >(cache["len"]);
@@ -34,14 +34,14 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 		std::vector<int> descL = Rcpp::as<std::vector<int> >(cache["descLeft"]);
 
 		std::vector<double> rates = Rcpp::as<std::vector<double> > (pars);
-		
+
 		std::vector<double> lq;
 		lq.assign(n,0.0);
 
 		double yi, ri, li, m1, m2, v1, v2, v12, m12, n12, nm, nv, m, mm, v, k;
-		
+
 		double const PIx = 4.0*atan(1.0);
-		
+
 		std::vector<double> branchinitM;
 		std::vector<double> branchinitV;
 		std::vector<double> branchbaseM;
@@ -51,25 +51,25 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 		branchinitV.assign(n,0.0);
 		branchbaseM.assign(n,0.0);
 		branchbaseV.assign(n,0.0);
-		
+
 		int i, z, cur, d1, d2;
-		
+
 		/* mean and variance for leaves */
 		z=tiporder.size();
-		for(i=0; i<z; i++){ 
+		for(i=0; i<z; i++){
 			cur=tiporder[i]-1;
 			yi=y[cur];
 			li=len[cur];
 			ri=rates[cur];
-			
+
 			branchinitM[cur] = yi;
 			branchbaseM[cur] = yi + drift*li;
 			branchbaseV[cur] = var[cur] + li*ri;
 		}
-		
+
 		/* mean, variance, and density for edges */
 		z=intorder.size();
-		for(i=0; i<z; i++){ 
+		for(i=0; i<z; i++){
 			cur=intorder[i]-1;
 			d1=descR[cur]-1;
 			d2=descL[cur]-1;
@@ -77,43 +77,43 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 			m2=branchbaseM[d2];
 			v1=branchbaseV[d1];
 			v2=branchbaseV[d2];
-            
+
             v12=v1+v2;
-            
+
             m = (((m1*v2) + (m2*v1))/v12);                  // phylogenetic mean expectation
             branchinitM[cur] = m;
-            
+
             v = ((v1*v2)/v12);
             branchinitV[cur] = v;
-            
+
             m12=pow((m1-m2),2);
             lq[cur] = ((-m12/(2*v12)) - (log(2*PIx*v12)/2));
-            
-            k=known[cur];                                   
-            
+
+            k=known[cur];
+
             if( k == (signed)1 )                            // resolve whether node state is given (k==1)
             {
                 nm=y[cur];
                 nv=var[cur];
                 mm=m;
-                
+
                 v12=v+nv;
                 m = ((mm*nv) + (nm*v))/v12;
                 branchinitM[cur] = m;
 
                 v = (v*nv)/v12;
                 branchinitV[cur] = v;
-                
+
                 m12=pow((mm-nm),2);
                 lq[cur]+=((-m12/(2*v12)) - (log(2*PIx*v12)/2));
             }
-            
-            li=len[cur];            
+
+            li=len[cur];
             branchbaseM[cur] = m + drift*li;
             branchbaseV[cur] = v + rates[cur]*li;
 		}
-		
-		/* compute root */ 
+
+		/* compute root */
 		cur=root-1;
 		d1=descR[cur]-1;
 		d2=descL[cur]-1;
@@ -122,30 +122,30 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 		v1=branchbaseV[d1];
 		v2=branchbaseV[d2];
 		v12=v1+v2;
-        
+
         m=(((m1*v2) + (m2*v1))/v12); //
 		branchinitM[cur] = m; //
         v=((v1*v2)/v12); //
 		branchinitV[cur] = v;
 		m12=pow((m1-m2),2);
 		lq[cur] = ((-m12/(2*v12)) - (log(2*PIx*v12)/2));
-        
+
         /* compute root lnL (either ML or given) */
         k=known[cur];
-        if(k == (signed)1 )                                
+        if(k == (signed)1 )
         { // given state
-            nm=y[cur];                                     
+            nm=y[cur];
             nv=var[cur] + v;
-            n12=pow((nm-m),2);                             
+            n12=pow((nm-m),2);
             lq[cur] += ((-n12/(2*nv)) - (log(2*PIx*nv)/2));
         }
         else
         { // ML state
             lq[cur] += (- (log(2*PIx*v)/2));
-            
+
         }
 
-		
+
 		/* PREPARE OUTPUT FOR R */
 		return Rcpp::List::create(
 								  Rcpp::Named("initM",branchinitM),
@@ -156,26 +156,26 @@ RcppExport SEXP bm_direct (SEXP dat, SEXP pars)
 								  );
 
 
-    } catch( std::exception &ex ) {		
+    } catch( std::exception &ex ) {
 		forward_exception_to_r( ex );
-    } catch(...) { 
-		::Rf_error( "C++ exception: unknown reason" ); 
+    } catch(...) {
+		::Rf_error( "C++ exception: unknown reason" );
     }
-    return R_NilValue; 
+    return R_NilValue;
 }
 
 
 /* C++ | R INTERFACE; determine which branches subtended by node are not in list of excluded nodes (and their descendants)  */
-RcppExport SEXP open_subtree (SEXP dat, SEXP desc) 
+RcppExport SEXP open_subtree (SEXP dat, SEXP desc)
 {
-	/* 
-	 * dat: a list of elements 
+	/*
+	 * dat: a list of elements
 	 *  node: of interest
 	 *  exclude: vector of excluded nodes
-	 *  N: tips 
+	 *  N: tips
 	 * desc: a list of ALL descendants from 1:(Ntip(phy)+Nnode(phy))
 	 */
-	
+
 	try {
 		/* call in parameters associated with 'dat' object */
 		Rcpp::List cache(dat);
@@ -208,7 +208,7 @@ RcppExport SEXP open_subtree (SEXP dat, SEXP desc)
 					}
 				}
 			}
-			
+
 			std::vector<int> nodedesc = adesc[node-1];
 			se=drop.size();
 			if(se>0)
@@ -231,8 +231,8 @@ RcppExport SEXP open_subtree (SEXP dat, SEXP desc)
 						res.push_back(cur);
 					}
 				}
-			} 
-			else 
+			}
+			else
 			{
 				sn=nodedesc.size();
 				for(i=0; i<sn; i++){
@@ -240,14 +240,14 @@ RcppExport SEXP open_subtree (SEXP dat, SEXP desc)
 				}
 			}
 		}
-		
+
 		/* PREPARE OUTPUT FOR R */
 		return Rcpp::wrap(res);
-		
-    } catch( std::exception &ex ) {		
+
+    } catch( std::exception &ex ) {
 		forward_exception_to_r( ex );
-    } catch(...) { 
-		::Rf_error( "C++ exception: unknown reason" ); 
+    } catch(...) {
+		::Rf_error( "C++ exception: unknown reason" );
     }
-    return R_NilValue; 
+    return R_NilValue;
 }

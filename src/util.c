@@ -6,8 +6,8 @@
    and zeroing the input.  GEMM does:
      Z = alpha X Y + beta Z
 
-   With 
-     beta = 0, this gives a fresh calculation of X Y, and with 
+   With
+     beta = 0, this gives a fresh calculation of X Y, and with
      beta = 1, this updates Z to give Z = Z + X Y
 */
 void do_gemm(double *x, int nrx, int ncx,
@@ -47,7 +47,7 @@ SEXP matrix_to_list(SEXP r_m) {
       out = REAL(VECTOR_ELT(ret, i));
 
       which falls somewhere between the two approaches in speed.
-      
+
       However, I've run this under gctorture, and it seems not to
       crash, which is a good sign.
     */
@@ -66,34 +66,34 @@ SEXP matrix_to_list(SEXP r_m) {
    needed to stop the argument list getting out of control */
 SEXP getListElement(SEXP list, const char *str) {
   SEXP elmt = R_NilValue, names = getAttrib(list, R_NamesSymbol);
-  int i; 
+  int i;
   for ( i = 0; i < length(list); i++ )
-    if ( strcmp(CHAR(STRING_ELT(names, i)), str) == 0 ) { 
-      elmt = VECTOR_ELT(list, i); 
-      break; 
+    if ( strcmp(CHAR(STRING_ELT(names, i)), str) == 0 ) {
+      elmt = VECTOR_ELT(list, i);
+      break;
     }
 
   if ( elmt == R_NilValue )
     error("%s missing from list", str);
 
   return elmt;
-} 
+}
 
 SEXP getListElementIfThere(SEXP list, const char *str) {
   SEXP elmt = R_NilValue, names = getAttrib(list, R_NamesSymbol);
-  int i; 
+  int i;
   for ( i = 0; i < length(list); i++ )
-    if ( strcmp(CHAR(STRING_ELT(names, i)), str) == 0 ) { 
-      elmt = VECTOR_ELT(list, i); 
-      break; 
+    if ( strcmp(CHAR(STRING_ELT(names, i)), str) == 0 ) {
+      elmt = VECTOR_ELT(list, i);
+      break;
     }
 
   return elmt;
-} 
+}
 
 /* Tree utilities */
 int descendants(int node, int *edge, int nedge, int ntip, int *desc);
-void descendants_flag(int node, int *edge, int nedge, int ntip, 
+void descendants_flag(int node, int *edge, int nedge, int ntip,
 		      int *flag);
 
 SEXP r_descendants(SEXP node, SEXP edge, SEXP ntip) {
@@ -119,7 +119,7 @@ int descendants(int node, int *edge, int nedge, int ntip, int *desc) {
       *desc = to[i];
       if ( to[i] > ntip ) /* R indexing... */
 	ni = descendants(to[i], edge, nedge, ntip, desc+1) + 1;
-      else 
+      else
 	ni = 1;
       n += ni;
       desc += ni;
@@ -143,7 +143,7 @@ SEXP r_descendants_flag(SEXP node, SEXP edge, SEXP ntip) {
   return ret;
 }
 
-void descendants_flag(int node, int *edge, int nedge, int ntip, 
+void descendants_flag(int node, int *edge, int nedge, int ntip,
 		      int *flag) {
   const int *from = edge, *to = edge + nedge;
   int i;
@@ -174,4 +174,3 @@ SEXP r_descendants_idx(SEXP node, SEXP edge, SEXP ntip) {
 
   return ret;
 }
-

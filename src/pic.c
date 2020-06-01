@@ -26,7 +26,7 @@ void pic_variance(int *ntip, int *nnode, int *edge1, int *edge2, double *edge_le
         //	if (*scaled) contr[ic] = contr[ic]/sqrt(sumbl);
         var[ic] = sumbl;
         //	phe[anc - 1] = (phe[d1]*edge_len[j] + phe[d2]*edge_len[i])/sumbl;
-		
+
         /* find the edge where `anc' is a descendant (except if at the root):
          it is obviously below the j'th edge */
         if (j != *ntip * 2 - 3) {
@@ -38,5 +38,3 @@ void pic_variance(int *ntip, int *nnode, int *edge1, int *edge2, double *edge_le
 }
 
 /* pic.c       2006-11-13 */
-
-

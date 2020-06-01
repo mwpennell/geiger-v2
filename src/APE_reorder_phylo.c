@@ -149,4 +149,3 @@ void neworder_pruningwise(int *ntip, int *nnode, int *edge1,
 	nextI++;
     }
 }
-
