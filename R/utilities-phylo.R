@@ -969,7 +969,9 @@ name.check <- function(phy, data, data.names = NULL) {
 	class(r) <- "name.check"
 
 	if (length(r1) == 0 && length(r2) == 0) {
-		return("OK");
+		r <- "OK"
+		class(r) <- "name.check"
+		return(r);
 	} else {
 		return(r);
 	}
