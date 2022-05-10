@@ -2,12 +2,12 @@
 
 [![Build Status](https://travis-ci.org/mwpennell/geiger-v2.svg?branch=master)](https://travis-ci.org/mwpennell/geiger-v2)
 
-This is the development version of the [geiger package](http://bioinformatics.oxfordjournals.org/content/30/15/2216) for manipulating phylogenetic comparative data
+This is the development version of the [geiger package](https://academic.oup.com/bioinformatics/article/30/15/2216/2390619) for manipulating phylogenetic comparative data
 and fitting macroevolutionary models. The package can be downloaded from CRAN
 ```
 install.packages("geiger")
 ```
-or installed directly from github with the [devtools](https://github.com/hadley/devtools) package
+or installed directly from github with the [devtools](https://github.com/r-lib/devtools) package
 ```
 install.packages("devtools")
 library(devtools)
@@ -16,17 +16,17 @@ install_github("mwpennell/geiger-v2")
 
 ## Major features
 
-geiger is a (growing) collection of methods developed over the years by many researchers.
+geiger is a collection of methods developed over the years by many researchers.
 Here is a a non-comprehensive list of methods:
 
 * Fit continuous models of evolution (BM, OU, EB, Pagel models, etc.)
 * Fit discrete models of evolution (Mk and variants)
-* [Identify shifts in the rate of continuous trait evolution](http://onlinelibrary.wiley.com/doi/10.1111/j.1558-5646.2011.01401.x/abstract)
-* [Fit continuous trait models to unresolved data using ABC](http://onlinelibrary.wiley.com/doi/10.1111/j.1558-5646.2011.01474.x/abstract)
-* [Use fossil information to improve macroevolutionary inference](http://onlinelibrary.wiley.com/doi/10.1111/j.1558-5646.2012.01723.x/abstract)
-* [Identify shifts in the rate of diversification](http://www.pnas.org/content/106/32/13410.short)
-* [Posterior predictive model assessment](http://sysbio.oxfordjournals.org/content/63/3/293)
-* [Time-scaling large phylogenies with 'congruification'](http://onlinelibrary.wiley.com/doi/10.1111/2041-210X.12051/full)
+* Identify shifts in the rate of continuous trait evolution
+* Fit continuous trait models to unresolved data using ABC
+* Use fossil information to improve macroevolutionary inference
+* Identify shifts in the rate of diversification
+* Posterior predictive model assessment
+* Time-scaling large phylogenies with 'congruification'
 
 ## Citing geiger
 

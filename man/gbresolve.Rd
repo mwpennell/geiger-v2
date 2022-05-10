@@ -21,7 +21,7 @@ working with NCBI taxonomy}
 }
 
 \details{
-	The functions access the NCBI taxonomy resource (\url{http://www.ncbi.nlm.nih.gov/Taxonomy/taxonomyhome.html}; see also \code{\link[ncbit]{ncbit}}).
+	The functions access the NCBI taxonomy resource (\url{https://www.ncbi.nlm.nih.gov/Taxonomy/taxonomyhome.html/}; see also \code{\link[ncbit]{ncbit}}).
 	\code{gbresolve} resolves the taxonomic hierarchy for queried taxa up to the given \code{rank} (or between the given \code{rank}s if two are given),
     and \code{gbcontain} resolves all taxa found within a given queried group and occurring at a specified \code{rank}.  The \code{rank} must be found
     within the object \code{Linnaean} (see \bold{Examples}). The argument \code{within} can restrict the group within which to conduct the search
