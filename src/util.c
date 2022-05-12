@@ -1,5 +1,6 @@
 #include <R.h>
 #include <Rinternals.h>
+#define USE_FC_LEN_T
 #include <R_ext/BLAS.h>
 
 /* Simplified matrix multiplication, assuming straightforward sizes
@@ -16,7 +17,7 @@ void do_gemm(double *x, int nrx, int ncx,
   const char *trans = "N";
   double alpha = 1.0, beta = 0.0;
   F77_CALL(dgemm)(trans, trans, &nrx, &ncy, &ncx, &alpha,
-                  x, &nrx, y, &nry, &beta, z, &nrx);
+                  x, &nrx, y, &nry, &beta, z, &nrx FCONE FCONE);
 }
 
 

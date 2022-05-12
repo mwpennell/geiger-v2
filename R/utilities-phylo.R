@@ -969,9 +969,7 @@ name.check <- function(phy, data, data.names = NULL) {
 	class(r) <- "name.check"
 
 	if (length(r1) == 0 && length(r2) == 0) {
-		r <- "OK"
-		class(r) <- "name.check"
-		return(r);
+		return("OK");
 	} else {
 		return(r);
 	}
@@ -1873,7 +1871,7 @@ is.extinct <- function (phy, tol=NULL) {
 
 drop.random<-function (phy, n)
 {
-    if (class(phy) != "phylo")
+    if (!inherits(phy, "phylo"))
 	stop("object \"phy\" is not of class \"phylo\"")
     nb.tip <- length(phy$tip.label)
     if (n > nb.tip)

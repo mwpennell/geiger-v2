@@ -36,7 +36,7 @@ Garland T Jr, AW Dickerman, CM Janis, and JA Jones. 1993. Phylogenetic analysis 
 \author{ JM Eastman and LJ Harmon }
 \seealso{ \code{\link[stats]{aov}}; \code{\link[stats]{anova}}; \code{\link[stats]{summary.manova}}; \code{\link[geiger]{ratematrix}} }
 \examples{
-
+\dontrun{
 geo=get(data(geospiza))
 dat=geo$dat
 d1=dat[,1]
@@ -49,6 +49,7 @@ print(attributes(x)$summary) # summary table
 
 ## ANOVA
 x1=aov.phylo(d1~grp, geo$phy, nsim=50)
+}
 }
 
 \keyword{univar}

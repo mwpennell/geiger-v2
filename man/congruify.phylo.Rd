@@ -39,6 +39,7 @@ Eastman JM, LJ Harmon, and DC Tank. 2013. Congruification: support for time scal
 \author{JM Eastman}
 
 \examples{
+\dontrun{
 sal=get(data(caudata))
 res=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, scale=NA, ncores=2)
 print(res$calibrations)
@@ -48,6 +49,7 @@ plot(ladderize(sal$fam,right=FALSE), cex=0.5, type="fan", label.offset=2.5, no.m
 # if you have PATHd8 installed you can also run
 # res=congruify.phylo(sal$fam, sal$phy, sal$tax, tol=0, scale=\"PATHd8\")
 # print(res)
+}
 }
 \keyword{graphs}
 \keyword{manip}

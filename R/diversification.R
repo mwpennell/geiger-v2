@@ -10,13 +10,13 @@ bd.ms=function(phy=NULL, time, n, missing = 0, crown=TRUE, epsilon=0){
 function(phy=NULL, time, n, epsilon = 0, missing = 0, crown=TRUE, type=c("magallon-sanderson", "kendall-moran"))
 {
 	type=match.arg(type, c("magallon-sanderson", "kendall-moran"))
-	
+
 	if(!is.null(phy)) {
-		if (class(phy) != "phylo") 
+		if (!inherits(phy, "phylo"))
 		stop("'phy' must be a 'phylo' object")
-       	
+
 		if(is.null(phy$root.edge)) phy$root.edge=0
-		
+
 		if(type=="kendall-moran")
 		{
 			if(missing != 0)
@@ -25,10 +25,10 @@ function(phy=NULL, time, n, epsilon = 0, missing = 0, crown=TRUE, type=c("magall
 		}
 		if(!missing(time)) warning("'time' argument has been ignored")
 		if(!missing(n)) warning("'n' argument has been ignored")
-		
+
     	time<-max(branching.times(phy))+phy$root.edge
 		n<-length(phy$tip.label)
-		
+
 		n<-n+missing;
 		ctmp=ifelse(phy$root.edge==0, TRUE, FALSE)
 		if(crown!=ctmp) {
@@ -40,7 +40,7 @@ function(phy=NULL, time, n, epsilon = 0, missing = 0, crown=TRUE, type=c("magall
 		}
 		crown=ctmp
 	}
-	
+
     if(crown==TRUE) {
     	if(epsilon==0) {
 			rate=(log(n)-log(2))/time
@@ -49,17 +49,17 @@ function(phy=NULL, time, n, epsilon = 0, missing = 0, crown=TRUE, type=c("magall
 							 2*epsilon+1/2*(1-epsilon)*sqrt(n*(n*epsilon^2-
 															   8*epsilon+2*n*epsilon+n)))-log(2))
     	}
-		
+
     } else {
     	if(epsilon==0) {
 			rate=log(n)/time
     	} else {
  			rate=1/time*log(n*(1-epsilon)+epsilon)
     	}
-		
-		
+
+
     }
-	
+
 	return(rate)
 }
 
@@ -71,7 +71,7 @@ function(phy)
 	return(rate)
 }
 
-crown.p <- 
+crown.p <-
 function(phy=NULL, time, n, r, epsilon)
 {
 	if(!is.null(phy)){
@@ -81,7 +81,7 @@ function(phy=NULL, time, n, r, epsilon)
 		if(!missing(n)) warning("'n' argument has been ignored")
 		n=Ntip(phy)
 	}
-	
+
 	b<-((exp((r*time)))-1)/((exp((r*time)))-epsilon)
 	a<-epsilon*b
 	p<-(((b^(n-2)))*((n*(1-a-b+(a*b)))+a+(2*b)-1))/(1+a)
@@ -101,7 +101,7 @@ function(phy=NULL, time, n, r, epsilon)
 		if(!missing(n)) warning("'n' argument has been ignored")
 		n=Ntip(phy)
 	}
-	
+
 	b<-((exp((r*time)))-1)/((exp((r*time)))-epsilon)
 	p<-(b^(n-1))
 	return(p)
@@ -112,7 +112,7 @@ function(time, r, epsilon, CI=0.95)
 {
     q=1-CI
     prob=c(q/2, 1-(q/2))
-	
+
 	limits <- matrix(nrow=length(time), ncol=2)
 	for (i in 1:length(time)) {
 		beta <- (exp(r*time[i])-1)/(exp(r*time[i]) - epsilon) #From M&S 01 2b
@@ -124,7 +124,7 @@ function(time, r, epsilon, CI=0.95)
 	}
 	rownames(limits)=time
 	colnames(limits)=c("lb", "ub")
-	return(limits)	
+	return(limits)
 }
 
 
@@ -133,7 +133,7 @@ crown.limits <-  function(time, r, epsilon, CI=0.95)
 {
     q=1-CI
     prob=c(q/2, 1-(q/2))
-	
+
 	limits <- matrix(nrow=length(time), ncol=2)
 	for (i in 1:length(time))
 	{
@@ -141,7 +141,7 @@ crown.limits <-  function(time, r, epsilon, CI=0.95)
 		(crown.p(time=time[i], r=r, epsilon=epsilon, n=x)-prob)^2
 		u<-optim(foo, par=exp(r*time), prob=prob[1], method="L-BFGS-B")
 		l<-optim(foo, par=exp(r*time), prob=prob[2], method="L-BFGS-B")
-		
+
 		limits[i, 1] <- l$par
 		limits[i, 2] <- u$par
 	}
@@ -154,11 +154,11 @@ crown.limits <-  function(time, r, epsilon, CI=0.95)
 rc <-
 function(phy, plot=TRUE, ...)
 {
-	
-	
+
+
 	nb.tip <- length(phy$tip.label)
 	nb.node <- phy$Nnode
-    
+
 	nd<-branching.times(phy);
 	node.depth<-c(nd, rep(0, nb.tip))
 	names(node.depth)<-c(names(nd), as.character(1:nb.tip))
@@ -166,19 +166,19 @@ function(phy, plot=TRUE, ...)
 	max.desc<-numeric(nb.node)
 	num.anc<-numeric(nb.node)
 	node.name<-character(nb.node)
-	
+
 	stem.depth<-numeric();
 	stem.depth[1]<-node.depth[1];
-	
+
 	for(i in 2:length(node.depth)) {
 		anc<-which(phy$edge[,2]==names(node.depth)[i])
 		stem.depth[i]<-node.depth[names(node.depth)==phy$edge[anc,1]]
 	}
-	
-	
-	
+
+
+
 	ltt<-sort(nd, decreasing=TRUE)
-	
+
 	for(i in 2:length(ltt)) {
 		nn<-stem.depth>=ltt[i-1]&node.depth<ltt[i-1]
 		anc<-sum(nn)
@@ -198,7 +198,7 @@ function(phy, plot=TRUE, ...)
 	bonf.p<-pmin(p*length(ltt),1)
 	res<-cbind(num.anc, max.desc, p, bonf.p)
 	rownames(res)<-c("root", node.name[2:nb.node])
-	
+
 	if(plot) {
         plotter=function(bonf=FALSE, p.cutoff=0.05, ...){
 
@@ -234,7 +234,7 @@ function(phy, plot=TRUE, ...)
 }
 
 .rcp <-
-function(ni, n, k) 
+function(ni, n, k)
 {
 	max<-floor((n-k)/(ni-1))
 	sum=0

@@ -106,8 +106,10 @@ ps <- load.rjmcmc(outdir)
 dev.new()
 plot(x=ps, par="shifts", burnin=0.25, legend=TRUE, show.tip=FALSE, edge.width=2)
 
-## PASTE UNCOMMENTED FOLLOWING LINE TO DROP DIRECTORIES CREATED BY RJMCMC
- # unlink(dir(pattern=paste(r)),recursive=TRUE)
+if(!interactive()) { ## clean up
+    dirs <- dir(pattern="^(jump-BM|relaxedBM)")
+    unlink(dirs, recursive=TRUE)
+}
 }
 }
 \keyword{models}

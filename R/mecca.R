@@ -32,7 +32,7 @@ function (tipdata, phy)
     else {
         x <- tipdata
     }
-    if (class(phy) != "phylo")
+    if (!inherits(phy, "phylo"))
         stop("object \"phy\" is not of class \"phylo\"")
     if (is.null(phy$edge.length))
         stop("your tree has no branch lengths: invalid input")

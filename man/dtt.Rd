@@ -57,7 +57,7 @@ Slater GJ, SA Price, F Santini, and MA Alfaro. 2010. Diversity vs disparity and 
 
 \author{ LJ Harmon and GJ Slater}
 \examples{
-
+\dontrun{
 geo=get(data(geospiza))
 
 ## disparity -- not tree-based
@@ -71,7 +71,7 @@ dttcul<-dtt(phy=geo$phy, data=geo$dat[,"culmenL"], nsim=100, plot=TRUE)
 
 ## disparity through time of entire dataset -- without simulated data
 dttgeo<-dtt(phy=geo$phy, data=geo$dat, nsim=0, plot=TRUE)
-
+}
 }
 
 \keyword{ arith }

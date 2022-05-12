@@ -71,7 +71,7 @@ aicw <- function (x) {
     } else {
         if (.check.parallel() & Sys.info()["sysname"] != "Windows") {
             if (is.null(ncores)) {
-                ncores <- parallel::detectCores()
+                ncores <- min(2L, parallel::detectCores())
             }
             fx <- function(X, FUN, ...) parallel::mclapply(X, FUN, ...,
                 mc.silent = TRUE, mc.cores = ncores)

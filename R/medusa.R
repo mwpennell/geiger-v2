@@ -7,7 +7,7 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 	initialE <- init[["epsilon"]];
 	initialR <- init[["r"]];
 	sp = c(initialR, initialE);
-	
+
 	## Medusa requires cladewise trees, so:
 	phy<-reorder(phy, "cladewise")
 
@@ -224,9 +224,9 @@ medusa <- function (phy, richness = NULL, criterion = c("aicc", "aic"), partitio
 		richness = data.frame(richness, stringsAsFactors = FALSE);
 		if (length(richness[1, ]) == 2) {
 			if (colnames(richness)[1] != "taxon" || colnames(richness)[2] != "n.taxa") {
-				if (class(richness[, 1]) == "factor" & class(richness[, 2]) == "integer") {
+				if (inherits(richness[, 1], "factor") && inherits(richness[, 2], "integer")) {
 					colnames(richness) = c("taxon", "n.taxa");
-				} else if (class(richness[, 1]) == "integer" & class(richness[, 2]) == "factor") {
+				} else if (inherits(richness[, 1], "integer") && inherits(richness[, 2], "factor")) {
 					colnames(richness) = c("n.taxa", "taxon");
 				} else {
 					stop("'richness' data appear incorrectly formated: see medusa()");
@@ -1284,9 +1284,9 @@ plot.medusa <- function (x, cex = 0.5, time = TRUE, ...) {
 
 			prof.par[i,1] <- uniroot(thresholdR, lower=low.bound, upper=par1)$root;
 			prof.par[i,2] <- uniroot(thresholdR, lower=par1, upper=up.bound)$root;
-            
+
 			# test
-			
+
 	## now, epsilon
 			thresholdE <- function (x) lik(c(par1, x)) - maxLik + crit;
 

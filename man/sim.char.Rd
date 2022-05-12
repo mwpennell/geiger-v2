@@ -33,6 +33,7 @@ sim.char(phy, par, nsim = 1, model = c("BM", "speciational", "discrete"), root =
 }
 \author{ LJ Harmon }
 \examples{
+\dontrun{
 geo <- get(data(geospiza))
 
 ## Continuous character -- univariate
@@ -55,7 +56,7 @@ fitD <- fitDiscrete(geo$phy, dsims[,,1], model="ER", niter=10, ncores=2)
 ## Discrete character -- multivariate
 qq <- list(rbind(c(-.5, .5), c(.5, -.5)), rbind(c(-.05, .05), c(.05, -.05)))
 msims <- sim.char(geo$phy, qq, model="discrete", n=10)
-
+}
   
 }
 

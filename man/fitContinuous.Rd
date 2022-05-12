@@ -106,7 +106,7 @@ Pagel M. 1999. Inferring the historical patterns of biological evolution. \emph{
 
 \author{LJ Harmon, W Challenger, and JM Eastman}
 \examples{
-
+\dontrun{
 geo=get(data(geospiza))
 
 tmp=treedata(geo$phy, geo$dat)
@@ -192,6 +192,6 @@ res=fitGeospiza("wingL")
 print(res)
 }
 }
+}
 
-\keyword{ arith }
 \keyword{models}

@@ -96,6 +96,7 @@ FitzJohn RG, WP Maddison, and SP Otto. 2009. Estimating trait-dependent speciati
 }
 \author{ LJ Harmon, RE Glor, RG FitzJohn, and JM Eastman }
 \examples{
+\dontrun{
 ## match data and tree
 tmp=get(data(geospiza))
 td=treedata(tmp$phy, tmp$dat)
@@ -111,7 +112,7 @@ lik(0.3336772, root="flat") #-8.125354
 lik(0.3336772, root="given", root.p=rep(1/3,3)) #-8.125354
 lik(0.3336772, root="given", root.p=c(0, 1, 0)) #-7.074039
 lik(c(0.3640363), root="given", root.p=rep(1,3)) #-7.020569 & comparable to ape:::ace solution
-
+}
 \donttest{
 # general model (ARD)
 fitDiscrete(geo$phy, gb, model="ARD", ncores=1) #-6.064573

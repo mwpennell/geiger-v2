@@ -1,20 +1,22 @@
 Package: geiger
 Type: Package
 Title: Analysis of Evolutionary Diversification
-Version: 2.0.8
-Date: 2022-5-09
-Author: Luke Harmon, Matthew Pennell, Chad Brock, Joseph Brown, Wendell Challenger,
-	Jon Eastman, Rich FitzJohn, Rich Glor, Gene Hunt, Liam Revell, Graham Slater,
-	Josef Uyeda, and Jason Weir
+Version: 2.0.9
+Date: 2022-05-11
+Author: Luke Harmon, Matthew Pennell, Chad Brock, Joseph Brown, Wendell Challenger, 
+	Jon Eastman, Rich FitzJohn, Rich Glor, Gene Hunt, Liam Revell, Graham Slater, 
+	Josef Uyeda, Jason Weir and CRAN team (corrections in 2022)
 Maintainer: Luke Harmon <lukeh@uidaho.edu>
 Depends: ape (>= 3.0-6), R (>= 2.15.0)
 Imports: MASS, mvtnorm, subplex, deSolve (>= 1.7), digest, Rcpp (>=
         0.11.0), coda, ncbit, colorspace, methods, phytools (>= 0.7.31)
 Suggests: TreeSim
 LinkingTo: Rcpp
-Description: Methods for fitting macroevolutionary models to phylogenetic trees
+Description: Methods for fitting macroevolutionary models to phylogenetic trees 
 	Pennell (2014) <doi:10.1093/bioinformatics/btu181>.
 License: GPL (>= 2)
-URL: https://github.com/mwpennell/geiger-v2
 ByteCompile: yes
 NeedsCompilation: yes
+Packaged: 2022-05-09 07:15:23 UTC; ripley
+Repository: CRAN
+Date/Publication: 2022-05-09 09:15:40

@@ -44,6 +44,7 @@ glomogram.phylo(phy, subtrees)
 \author{JM Eastman}
 
 \examples{
+\dontrun{
 sal=get(data(caudata))
 print(head(sal$tax))
 
@@ -116,6 +117,7 @@ cc=integer(length(zz))
 cc[!is.na(zz)]=1
 
 plot(ladderize(res, right=FALSE), cex=1, label.offset=5, tip.color=ifelse(cc==1, "red", "black"))
+}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
