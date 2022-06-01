@@ -115,6 +115,12 @@ lik(c(0.3640363), root="given", root.p=rep(1,3)) #-7.020569 & comparable to ape:
 }
 \donttest{
 # general model (ARD)
+## match data and tree
+tmp=get(data(geospiza))
+td=treedata(tmp$phy, tmp$dat)
+geo=list(phy=td$phy, dat=td$data)
+gb=round(geo$dat[,5]) ## create discrete data
+names(gb)=rownames(geo$dat)
 fitDiscrete(geo$phy, gb, model="ARD", ncores=1) #-6.064573
 
 # user-specified rate classes
@@ -122,7 +128,7 @@ mm=rbind(c(NA, 0, 0), c(1, NA, 2), c(0, 2, NA))
 fitDiscrete(geo$phy, gb, model=mm, ncores=1) #-7.037944
 
 # symmetric-rates model
-fitDiscrete(geo$phy, gb, model="SYM", ncores=1)#-6.822943} 
+fitDiscrete(geo$phy, gb, model="SYM", ncores=1)#-6.822943}
 }
 \keyword{ arith }
 \keyword{models}
