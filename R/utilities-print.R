@@ -194,7 +194,7 @@ print.gfit=function(x, format=c("default", "oldestyle"), ...){
         cat("\nConvergence diagnostics:\n\toptimization iterations = ",nrow(x$res),
 			"\n\tfailed iterations = ", sum(rownames(x$res)=="FAIL"), 
 			"\n\tnumber of iterations with same best fit = ", sprintf("%.0f", solnfreq(x)*nrow(x$res)),
-			"\n\tfrequency of best fit = ", sprintf("%.2f", solnfreq(x)), "\n", sep="")
+			"\n\tfrequency of best fit = ", sprintf("%.3f", solnfreq(x)), "\n", sep="")
         
         
         ## OBJECT SUMMARY
