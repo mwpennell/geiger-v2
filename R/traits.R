@@ -606,6 +606,9 @@ ncores=NULL,
         if (nrow(td$data) != length(unique(rownames(td$data))))
             stop("Multiple records per tip label")
 
+        if (nrow(td$data) == NA))
+            stop("NA values are not allowed in the input files")
+
 	phy=td$phy
 	dat=td$data
 	dd=dim(dat)
