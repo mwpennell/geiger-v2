@@ -605,6 +605,9 @@ ncores=NULL,
         ## add check to make sure only unique data used
         if (nrow(td$data) != length(unique(rownames(td$data))))
             stop("Multiple records per tip label")
+	## add check for NA data
+	if (any(is.na(td$data)))
+	     stop("Data has NAs")
 
 	phy=td$phy
 	dat=td$data
