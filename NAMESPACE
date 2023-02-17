@@ -140,8 +140,6 @@ export(tip.disparity)
 export(tips)
 export(to.auteur)
 export(to.coda)
-export(rescale)
-S3method(rescale,phylo)
 export(treedata)
 export(tworateTree)
 S3method(unique,phylo)
@@ -168,4 +166,6 @@ importFrom("utils", "installed.packages", "modifyList",
 	"setTxtProgressBar", "tail", "txtProgressBar",
 	"write.table")
 importFrom("phytools", "as.Qmatrix", "fitMk", "matchNodes",
-	"print.Qmatrix")
+	"print.Qmatrix", "rescale")
+
+S3method(rescale,phylo)

@@ -1,19 +1,17 @@
-\name{rescale}
+\name{rescale.phylo}
 \alias{rescale.phylo}
-\alias{rescale}
-
-\title{Tree transformations}
+\title{Rescale object of class \code{"phylo"}}
 \description{
-	applying various transformation to the branches of a phylogenetic tree.
-	}
+	Applying various transformation to the branches of a phylogenetic tree.
+}
 \usage{
 \method{rescale}{phylo}(x, model = c("BM", "OU", "EB", "nrate", "lrate",
     "trend", "lambda", "kappa", "delta", "white", "depth"), \dots)
 }
 \arguments{
-  \item{x}{an object of class phylo }
-  \item{model}{a model used to transform the tree (see \bold{Details})}
-  \item{...}{argument(s) to be passed to the transformation function (see \bold{Examples})}
+  \item{x}{an object of class \code{"phylo"}/}
+  \item{model}{a model used to transform the tree (see \bold{Details}).}
+  \item{...}{argument(s) to be passed to the transformation function (see \bold{Examples}).}
 }
 \details{
 	This function takes a tree and returns either a transformed tree if \code{...} is not empty and gives the parameter value(s) for the tree transformation. If \code{...} is left empty, a function is returned to the user that can be efficiently iterated over many parameter values for transformation. The available models are meant to correspond with changing the model of phenotypic evolution for discrete or continuous characters. 

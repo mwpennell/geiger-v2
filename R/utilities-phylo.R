@@ -1087,7 +1087,7 @@ treedata <- function(phy, data, sort=FALSE, warnings=TRUE) {
 }
 
 ## GENERIC
-rescale=function(x, ...) UseMethod("rescale")
+## rescale=function(x, ...) UseMethod("rescale")
 
 ## GENERIC
 

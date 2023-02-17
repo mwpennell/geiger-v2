@@ -43,35 +43,35 @@
 		\item{\code{BDsim}}: use \code{\link[geiger]{sim.bd}}
 		\item{\code{birthdeath.tree}}: use \code{\link[geiger]{sim.bdtree}}
 		\item{\code{calibrate.proposalwidth}}: use \code{\link[geiger]{calibrate.rjmcmc}}
-		\item{\code{deltaTree}}: use \code{\link[geiger]{rescale}}
+		\item{\code{deltaTree}}: use \code{\link[geiger]{rescale.phylo}}
 		\item{\code{disp.calc}}: use \code{\link[geiger]{disparity}}
 		\item{\code{dtt.full}}: use \code{\link[geiger]{dtt}}
-		\item{\code{exponentialchangeTree}}: use \code{\link[geiger]{rescale}}
+		\item{\code{exponentialchangeTree}}: use \code{\link[geiger]{rescale.phylo}}
 		\item{\code{get.simulation.matrix}}: use \code{geiger:::.get.simulation.matrix}
 		\item{\code{getAncStates}}: use \code{\link[phytools]{fastAnc}}
 		\item{\code{ic.sigma}}: use \code{\link[geiger]{ratematrix}}
 		\item{\code{intercalate.samples}}: use \code{geiger:::.intercalate.rjmcmc}
-		\item{\code{kappaTree}}: use \code{\link[geiger]{rescale}}
-		\item{\code{lambdaTree}}: use \code{\link[geiger]{rescale}}
-		\item{\code{linearchangeTree}}: use \code{\link[geiger]{rescale}}
+		\item{\code{kappaTree}}: use \code{\link[geiger]{rescale.phylo}}
+		\item{\code{lambdaTree}}: use \code{\link[geiger]{rescale.phylo}}
+		\item{\code{linearchangeTree}}: use \code{\link[geiger]{rescale.phylo}}
 		\item{\code{name.check}}: use \code{geiger:::.treedata}
 		\item{\code{node.leaves}}: use \code{\link[geiger]{tips}}
 		\item{\code{node.sons}}: use \code{geiger:::.get.desc.of.node}
-		\item{\code{ouTree}}: use \code{\link[geiger]{rescale}}
+		\item{\code{ouTree}}: use \code{\link[geiger]{rescale.phylo}}
         \item{\code{phy.anova}}: use \code{\link[geiger]{aov.phylo}}
         \item{\code{phy.manova}}: use \code{\link[geiger]{aov.phylo}}
 		\item{\code{pool.rjmcmcsamples}}: use \code{\link[geiger]{load}}
 		\item{\code{prune.extinct.taxa}}: use \code{\link[geiger]{drop.extinct}}
 		\item{\code{prune.random.taxa}}: use \code{\link[geiger]{drop.random}}
 		\item{\code{rate.estimate}}: use \code{\link[geiger]{bd.ms}} or \code{\link[geiger]{bd.km}}
-		\item{\code{rescaleTree}}: use \code{\link[geiger]{rescale}}
+		\item{\code{rescaleTree}}: use \code{\link[geiger]{rescale.phylo}}
         \item{\code{runMedusa}}: use \code{\link[geiger]{medusa}}
 		\item{\code{shifts.plot}}: use \code{plot}
-		\item{\code{speciationalTree}}: use \code{\link[geiger]{rescale}}
+		\item{\code{speciationalTree}}: use \code{\link[geiger]{rescale.phylo}}
 		\item{\code{tip.disparity}}: use \code{\link[geiger]{disparity}}
 		\item{\code{tracer}}: use of \code{\link[coda]{plot.mcmc}} and other functions in \pkg{coda} recommended
-        \item{\code{transform.phylo}}: use \code{\link[geiger]{rescale}}
-		\item{\code{tworateTree}}: use \code{\link[geiger]{rescale}}
+        \item{\code{transform.phylo}}: use \code{\link[geiger]{rescale.phylo}}
+		\item{\code{tworateTree}}: use \code{\link[geiger]{rescale.phylo}}
 		\item{\code{vmat}}: use \code{geiger:::.vmat}
 	}
 }
