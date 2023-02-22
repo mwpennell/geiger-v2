@@ -32,6 +32,7 @@ bibentry(bibtype="Article",
 	year = "2011",
 	volume = "65",
 	pages = "3578-3589",
+	doi="10.1111/j.1558-5646.2011.01401.x",
 	textVersion = "Eastman, J. M, M. E. Alfaro, P. Joyce, A. L. Hipp, and L. J. Harmon (2011) A novel comparative method for identifying shifts in the rate of character evolution on trees. Evolution, 65, 3578-3589.")
 
 bibentry(bibtype="Article",
@@ -47,6 +48,7 @@ bibentry(bibtype="Article",
 	year = "2012",
 	volume = "66",
 	pages = "752-762",
+	doi="10.1111/j.1558-5646.2011.01474.x",
 	textVersion = "Slater, G. J., L. J. Harmon, D. Wegmann, P. Joyce, L. J. Revell, and M. E. Alfaro (2012) Fitting models of continuous trait evolution to incompletely sampled comparative data using approximate Bayesian computation. Evolution, 66, 752-762.")
 
 bibentry(bibtype="Article",
@@ -61,6 +63,7 @@ bibentry(bibtype="Article",
   	year = "2008",
 	volume = "24",
 	pages = "129-131",
+	doi="10.1093/bioinformatics/btm538",
 	textVersion = "Harmon, L. J., J. T. Weir, C. D. Brock, R. E. Glor, and W. Challenger (2008) GEIGER: investigating evolutionary radiations. Bioinformatics, 24, 129-131.")
 
 bibentry(bibtype="Article",
@@ -78,4 +81,5 @@ bibentry(bibtype="Article",
   	year = "2014",
 	volume = "30",
 	pages = "2216-2218",
+	doi="10.1093/bioinformatics/btu181",
 	textVersion = "Pennell, M. W., J. M. Eastman, G. J. Slater, J. W. Brown, J. C. Uyeda, R. G. FitzJohn, M. E. Alfaro, and L. J. Harmon {2014} geiger v2.0: an expanded suite of methods for fitting macroevolutionary models to phylogenetic trees. Bioinformatics, 30, 2216-2218.")
