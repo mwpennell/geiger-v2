@@ -20,6 +20,9 @@ ncores=NULL, ...
         ## add check to make sure only unique data used
         if (nrow(td$data) != length(unique(rownames(td$data))))
             stop("Multiple records per tip label")
+        
+        if (anyNA(td$dat))
+            stop("NA values are not allowed in the input files")
 
 	phy=td$phy
 	dat=td$data
@@ -605,6 +608,9 @@ ncores=NULL,
         ## add check to make sure only unique data used
         if (nrow(td$data) != length(unique(rownames(td$data))))
             stop("Multiple records per tip label")
+
+        if (nrow(td$data) == NA))
+            stop("NA values are not allowed in the input files")
 
 	phy=td$phy
 	dat=td$data
