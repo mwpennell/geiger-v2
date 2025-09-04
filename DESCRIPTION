@@ -14,6 +14,7 @@ Suggests: TreeSim
 LinkingTo: Rcpp
 Description: Methods for fitting macroevolutionary models to phylogenetic trees
 	Pennell (2014) <doi:10.1093/bioinformatics/btu181>.
+URL: https://github.com/mwpennell/geiger-v2
 License: GPL (>= 2)
 ByteCompile: yes
 NeedsCompilation: yes
