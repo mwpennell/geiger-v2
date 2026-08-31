@@ -1,12 +1,25 @@
 Package: geiger
 Type: Package
 Title: Analysis of Evolutionary Diversification
-Version: 2.0.11
-Date: 2023-02-17
-Author: Luke Harmon, Matthew Pennell, Chad Brock, Joseph Brown, Wendell Challenger,
-	Jon Eastman, Rich FitzJohn, Rich Glor, Gene Hunt, Liam Revell, Graham Slater,
-	Josef Uyeda, Jason Weir and CRAN team (corrections in 2022)
-Maintainer: Luke Harmon <lukeh@uidaho.edu>
+Version: 2.0.12
+Date: 2026-08-31
+Authors@R: c(
+    person("Luke", "Harmon", role = c("aut", "cre"),
+           email = "lukeh@uidaho.edu"),
+    person("Matthew", "Pennell", role = "aut"),
+    person("Chad", "Brock", role = "aut"),
+    person("Joseph", "Brown", role = "aut"),
+    person("Wendell", "Challenger", role = "aut"),
+    person("Jon", "Eastman", role = "aut"),
+    person("Rich", "FitzJohn", role = "aut"),
+    person("Rich", "Glor", role = "aut"),
+    person("Gene", "Hunt", role = "aut"),
+    person("Liam", "Revell", role = "aut"),
+    person("Graham", "Slater", role = "aut"),
+    person("Josef", "Uyeda", role = "aut"),
+    person("Jason", "Weir", role = "aut"),
+    person("CRAN team", role = "ctb",
+           comment = "corrections in 2022"))
 Depends: ape (>= 3.0-6), R (>= 2.15.0), phytools (>= 1.5-1)
 Imports: MASS, mvtnorm, subplex, deSolve (>= 1.7), digest, Rcpp (>=
         0.11.0), coda, ncbit, colorspace, methods
