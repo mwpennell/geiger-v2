@@ -1,4 +1,5 @@
 \name{geiger-defunct}
+\alias{geiger-defunct}
 \alias{area.between.curves}
 \alias{BDsim}
 \alias{birthdeath.tree}

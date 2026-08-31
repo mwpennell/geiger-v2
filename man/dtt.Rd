@@ -26,10 +26,10 @@ dtt(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"),
 		The most complete implementation of \code{dtt} (where \code{nsim} is greater than 0) carries out the entire disparity-through-time (DTT) procedure described in Harmon et al. 2003, where simulated data are used to construct a null DTT distribution. The function \code{disparity} simply computes the morphological disparity for a set of species. Note that for \code{mdi.range}, time is relative to a total tree length of 1. The default \code{mdi.range} is the entire temporal span of the tree, from 0 (root) to 1 (tips). 
 		
         For either function, the disparity index can be one of the following:
-		\itemize{
-			\item{\bold{avg.sq }}{is average squared Euclidean distance among all pairs of points; this is the most common distance metric for disparity in macroevolution}
-			\item{\bold{avg.manhattan }}{is average Manhattan distance among all pairs of points}
-			\item{\bold{num.states }}{is number of unique character states; this is currently the only option for discrete 
+		\describe{
+			\item{\bold{avg.sq}}{is average squared Euclidean distance among all pairs of points; this is the most common distance metric for disparity in macroevolution}
+			\item{\bold{avg.manhattan}}{is average Manhattan distance among all pairs of points}
+			\item{\bold{num.states}}{is number of unique character states; this is currently the only option for discrete 
 					character data}
 		}
 }
@@ -39,11 +39,11 @@ dtt(phy, data, index=c("avg.sq", "avg.manhattan", "num.states"),
 	root is indexed by N+1, where N is the number of species in the tree; see \code{\link[ape]{read.tree}}). 
 	
 	The function \code{dtt} returns elements from the list below:
-	\itemize{
-		\item{\bold{dtt }}{is average disparity for clades whose stem crosses each time interval in the tree}
-        \item{\bold{times }}{are times for each value in disparity-through-time calculation; these are just the branching times of the phylogeny}
-		\item{\bold{sim }}{are disparities at time intervals for each simulated dataset}
-		\item{\bold{MDI }}{is the value of the MDI statistic, which is the area between the DTT for the data and the median of the simulations}
+	\describe{
+		\item{\bold{dtt}}{is average disparity for clades whose stem crosses each time interval in the tree}
+        \item{\bold{times}}{are times for each value in disparity-through-time calculation; these are just the branching times of the phylogeny}
+		\item{\bold{sim}}{are disparities at time intervals for each simulated dataset}
+		\item{\bold{MDI}}{is the value of the MDI statistic, which is the area between the DTT for the data and the median of the simulations}
 	}	
 	If results are plotted, the mean DTT from the simulated datasets appears in dashed line and the empirical DTT in solid line.  
 }

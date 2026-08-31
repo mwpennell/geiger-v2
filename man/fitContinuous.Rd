@@ -45,7 +45,7 @@ flat ridge which can be exceedingly difficult for optimization methods. Several 
 parameter of the Ornstein-Uhlenbeck model).  Default bounds under the different models are given below.
 
 Possible models are as follows:
-\itemize{
+\describe{
 	\item{\bold{BM} }{is the Brownian motion model (Felsenstein 1973), which assumes the correlation structure among trait values is proportional to the extent of shared ancestry
 		for pairs of species. Default bounds on the rate parameter are \code{sigsq=c(min=exp(-500),max=exp(100))}. The same bounds are applied to all other
 		models, which also estimate \code{sigsq}}
@@ -73,17 +73,17 @@ Possible models are as follows:
 \value{
 	\code{fitContinuous} returns a list with the following four elements:
 
-		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model.
+		\item{lik}{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model.
 			For instance, if estimating a Brownian-motion model with unknown standard error, the arguments (\code{pars}) to the \code{lik} function would be \code{sigsq} and \code{SE}. By default, the function evaluates the likelihood of the model by assuming the maximum likelihood root state. This behavior can be changed in the call to \code{lik} with \code{lik(pars, root=ROOT.GIVEN)} where \code{pars} includes a value for the root state (z0). See \bold{Examples} for a demonstration. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing the likelihood under different parameter values
 		}
-		\item{\bold{bnd} }{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
+		\item{bnd}{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
 		}
-		\item{\bold{res} }{is a matrix of results from optimization. Rownames of the \code{res} matrix are the optimization methods
+		\item{res}{is a matrix of results from optimization. Rownames of the \code{res} matrix are the optimization methods
 			(see \code{\link[stats]{optim}} and \code{\link[subplex]{subplex}}). The columns in the \code{res} matrix are the estimated
 			parameter values, the estimated model likelihood, and an indication of optimization convergence. Values of convergence not
 			equal to zero are not to be trusted
 		}
-		\item{\bold{opt} }{is a list of the primary results: estimates of the parameters, the maximum-likelihood estimate (\code{lnL}) of the model, the
+		\item{opt}{is a list of the primary results: estimates of the parameters, the maximum-likelihood estimate (\code{lnL}) of the model, the
 			optimization method used to compute the MLE, the number of model parameters (\code{k}, including one parameter for the root state), the AIC (\code{aic}),
 			sample-size corrected AIC (\code{aicc}). The number of observations for AIC computation is taken to be the number of trait values observed.
 			If the Hessian is used, confidence intervals on the parameter estimates (\code{CI}) and the Hessian matrix (\code{hessian}) are also returned

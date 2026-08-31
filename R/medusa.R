@@ -1166,7 +1166,7 @@ print.medusa <- function (x, ...) {
 	}
 }
 
-print.multimedusa <- function (x) {
+print.multimedusa <- function (x, ...) {
 	n.trees <- length(x) - 1;
 	n.taxa <- sum(x[[1]]$zSummary[,"n.t"], na.rm=TRUE);
 	n.tips <- length(x[[1]]$cache$phy$tip.label);

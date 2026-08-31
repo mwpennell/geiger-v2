@@ -28,7 +28,7 @@ differing in topology (see \code{\link[digest]{digest}}).
 Note that default settings (as the user assumes if nothing is specified in \code{...}) provide absolutely no guarantee of the chain achieving convergence.  The user is 
 emphatically encouraged to supply informed arguments for what are the most critical aspects of this MCMC sampler (see \code{\link[geiger]{make.gbm}} for more information on 
 permissible modifications to the MCMC sampler). Finding reasonable run parameters will likely require much trial and error.  Run diagnosis and inspection of chain mixing is 
-facilitated by the R-package \pkg{coda} or by the Java application, Tracer (\url{http://tree.bio.ed.ac.uk/software/tracer/}).
+facilitated by the R package \pkg{coda} or by the Java application \samp{Tracer} (\url{https://beast.community/tracer}).
 
 In the \bold{Examples} below, do \emph{not} expect such short chains to reach stationarity!
 

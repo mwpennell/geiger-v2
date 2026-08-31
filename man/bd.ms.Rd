@@ -43,7 +43,7 @@ stem.limits(time, r, epsilon, CI=0.95)
 }
 
 \value{
-	\itemize{
+	\describe{
 		\item{\bold{bd.ms} }{returns net diversification rate (\code{r} = \code{lambda} - \code{mu})}
 		\item{\bold{bd.km} }{returns speciation rate assuming a completely sampled tree}
 		\item{\bold{crown.p} and \bold{stem.p} }{return the probability of obtaining a clade as big as (or bigger than) size \code{n}, given 

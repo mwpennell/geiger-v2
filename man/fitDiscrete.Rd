@@ -36,7 +36,7 @@ The \code{FAIL} value within the \code{control} object should be a large value t
 
 The function can handle traits with any number of character states, under a range of models. The character model is specified by the \code{model} argument:
 
-\itemize{
+\describe{
 	\item{\bold{ER} }{is an \code{equal-rates} model of where a single parameter governs all transition rates}
 	\item{\bold{SYM} }{is a \code{symmetric} model where forward and reverse transitions share the same parameter}
 	\item{\bold{ARD} }{is an \code{all-rates-different} model where each rate is a unique parameter}
@@ -50,7 +50,7 @@ The \code{transform} argument allows one to test models where rates vary across 
 may be given through the \code{bounds} argument. Several bounds can be given at a time. Default bounds under the different models are given below.
 Options for \code{transform} are as follows:
 
-\itemize{
+\describe{
 	\item{\bold{none} }{is a model of rate constancy through time}
 	\item{\bold{EB} }{is the Early-burst model (Harmon et al. 2010) and also called the \code{ACDC} model (accelerating-decelerating; Blomberg et al. 2003). Set by the \code{a} rate parameter, \code{EB}
 		fits a model where the rate of evolution increases or decreases exponentially through time, under the model r[t] = r[0] * exp(a * t), where \code{r[0]} is the
@@ -71,17 +71,17 @@ Options for \code{transform} are as follows:
 \value{
 	\code{fitDiscrete} returns a list with the following four elements:
 
-		\item{\bold{lik} }{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model.
+		\item{lik}{is the function used to compute the model likelihood. The returned function (\code{lik}) takes arguments that are necessary for the given model.
 			For instance, if estimating an untransformed \code{ER} model, there would be a single argument (the transition rate) necessary for the \code{lik} function. The tree and data are stored internally within the \code{lik} function, which permits those elements to be efficiently reused when computing the likelihood under different parameter values. By default, the function evaluates the likelihood of the model by weighting root states in accordance with their conditional probability given the data (this is the \code{"obs"} option; see FitzJohn et al. 2009). This default behavior can be changed in the call to \code{lik} with \code{lik(pars, root="flat")}, for instance, which would weight each state equally at the root. The other useful option is \code{"given"}, where the user must also supply a vector (\code{root.p}) of probabilities for each possible state. To make likelihoods roughly comparable between \pkg{geiger} and \pkg{ape}, one should use the option \code{lik(pars, root="given", root.p=rep(1,k))}, where \code{k} is the number of character states. See \bold{Examples} for a demonstration
 		}
-		\item{\bold{bnd} }{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
+		\item{bnd}{is a matrix of the used bounds for the relevant parameters estimated in the model. Warnings will be issued if any parameter estimates occur at the supplied (or default) parameter bounds
 		}
-		\item{\bold{res} }{is a matrix of results from optimization. Rownames of the \code{res} matrix are the optimization methods
+		\item{res}{is a matrix of results from optimization. Rownames of the \code{res} matrix are the optimization methods
 			(see \code{\link[stats]{optim}} and \code{\link[subplex]{subplex}}). The columns in the \code{res} matrix are the estimated
 			parameter values, the estimated model likelihood, and an indication of optimization convergence. Values of convergence not
 			equal to zero are not to be trusted
 		}
-		\item{\bold{opt} }{is a list of the primary results: estimates of the parameters, the maximum-likelihood estimate (\code{lnL}) of the model, the
+		\item{opt}{is a list of the primary results: estimates of the parameters, the maximum-likelihood estimate (\code{lnL}) of the model, the
 			optimization method used to compute the MLE, the number of model parameters (\code{k}, including one parameter for the root state), the AIC (\code{aic}),
 			sample-size corrected AIC (\code{aicc}). The number of observations for AIC computation is taken to be the number of trait values observed.
 			If the Hessian is used, confidence intervals on the parameter estimates (\code{CI}) and the Hessian matrix (\code{hessian}) are also returned

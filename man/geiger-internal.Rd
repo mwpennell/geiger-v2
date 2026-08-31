@@ -89,3 +89,5 @@
 \details{
 This is an internal \pkg{geiger} function, either not intended to be called directly by the user or is currently undocumented.
 }
+
+\keyword{internal}
